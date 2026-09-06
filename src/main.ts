@@ -423,7 +423,11 @@ function frame() {
 }
 void select(library[0]);
 void loadRepertoire().then(async ({ pieces, failures }) => {
-  const untouched = loadId === 1;
+  const untouched =
+    loadId === 1 &&
+    !player.playing &&
+    !player.preparing &&
+    player.position === 0;
   library.unshift(...pieces);
   renderLibrary();
   if (untouched && pieces.length) await select(pieces[0]);
