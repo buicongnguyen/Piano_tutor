@@ -14,8 +14,17 @@ describe("falling note timing", () => {
     expect(fallingBar({ ...note, duration: 3 }, 1, 150).length).toBe(150);
   });
   it("validates saved effects including the off option", () => {
-    for (const effect of ["none", "ripple", "sparkles", "glow"])
+    for (const effect of [
+      "flow",
+      "none",
+      "ripple",
+      "aurora",
+      "bubbles",
+      "sparkles",
+      "glow",
+    ])
       expect(validEffect(effect)).toBe(effect);
-    expect(validEffect("bad")).toBe("ripple");
+    expect(validEffect("bad")).toBe("flow");
+    expect(validEffect(null)).toBe("flow");
   });
 });

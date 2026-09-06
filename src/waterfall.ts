@@ -1,8 +1,16 @@
 import type { Note } from "./music";
 import { keyboardLayout } from "./keyboard";
-export const effects = ["ripple", "flow", "sparkles", "glow", "none"] as const;
+export const effects = [
+  "flow",
+  "ripple",
+  "aurora",
+  "bubbles",
+  "sparkles",
+  "glow",
+  "none",
+] as const;
 export function validEffect(value: string | null) {
-  return effects.find((effect) => effect === value) ?? "ripple";
+  return effects.find((effect) => effect === value) ?? "flow";
 }
 
 export function fallingBar(
@@ -104,7 +112,7 @@ export function mountWaterfall() {
       const bottom = Math.min(height, bar.bottom);
       if (bottom > top) {
         const gradient = ctx.createLinearGradient(x, top, x + w, bottom);
-        gradient.addColorStop(0, "#1678c8");
+        gradient.addColorStop(0, effect === "aurora" ? "#7350d4" : "#1678c8");
         gradient.addColorStop(1, "#7ceaff");
         ctx.fillStyle = gradient;
         ctx.shadowColor = "#29c9ff";
@@ -159,6 +167,70 @@ export function mountWaterfall() {
           ctx.fillRect(px, py, 1.4, 1.4);
         }
         ctx.globalCompositeOperation = "source-over";
+      }
+      if (
+        playing &&
+        (effect === "aurora" || effect === "bubbles") &&
+        age >= 0 &&
+        age < note.duration + 0.65 &&
+        !reduced.matches
+      ) {
+        const fade = Math.max(0, 1 - Math.max(0, age - note.duration) / 0.65);
+        const center = x + w / 2;
+        ctx.save();
+        ctx.globalCompositeOperation = "lighter";
+        if (effect === "aurora") {
+          // Bounded ribbons derived from score time: seeking never leaves stale particles.
+          for (let ribbon = 0; ribbon < 3; ribbon++) {
+            const reach = Math.min(90, height * 0.65, age * 120 + 3);
+            const sway =
+              Math.sin(age * 3 + note.midi + ribbon * 2) * (10 + ribbon * 5);
+            const tint = ctx.createLinearGradient(
+              center,
+              height,
+              center,
+              height - reach,
+            );
+            tint.addColorStop(0, "rgba(100,235,255," + 0.7 * fade + ")");
+            tint.addColorStop(0.6, "rgba(155,110,255," + 0.4 * fade + ")");
+            tint.addColorStop(1, "rgba(155,110,255,0)");
+            ctx.strokeStyle = tint;
+            ctx.shadowColor = "#a080ff";
+            ctx.shadowBlur = 8;
+            ctx.lineWidth = 2 + ribbon;
+            ctx.beginPath();
+            ctx.moveTo(center, height - 2);
+            ctx.bezierCurveTo(
+              center + sway,
+              height - reach * 0.3,
+              center - sway,
+              height - reach * 0.7,
+              center + sway / 2,
+              height - reach,
+            );
+            ctx.stroke();
+          }
+        } else {
+          for (let bubble = 0; bubble < 7; bubble++) {
+            const delay = bubble * 0.065;
+            if (age < delay) continue;
+            const life = (age - delay) % 0.9;
+            const opacity = (1 - life / 0.9) * fade;
+            const px =
+              center +
+              Math.sin(note.midi + bubble * 2.4) * life * 20 +
+              Math.sin(life * 5 + bubble) * 3;
+            const py = height - 4 - life * (40 + bubble * 5);
+            ctx.strokeStyle = "rgba(125,235,255," + opacity + ")";
+            ctx.fillStyle = "rgba(75,190,255," + opacity * 0.12 + ")";
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.arc(px, py, 1.5 + (bubble % 3) + life, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+          }
+        }
+        ctx.restore();
       }
       if (playing && effect === "glow" && age >= 0 && age < note.duration) {
         const glow = ctx.createRadialGradient(
