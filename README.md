@@ -27,6 +27,10 @@ For Yiruma's **River Flows in You**, use the linked online piano or import your 
 
 ## Musical fidelity
 
+**Hand dynamics:** the default **Melody forward** preset scales identified left-hand velocities to 75% and leaves the right hand at 100%. Separate sliders allow 0–125% of source velocity; **Original dynamics** restores both to 100%. This changes attack strength/sample velocity layers while preserving each hand's relative dynamics. It is an adjustable balance, not an automatically inferred human interpretation. Changes affect newly scheduled notes (up to 120 ms lookahead), not already ringing notes.
+
+Hands come from explicit MIDI track names (treble/up/right, bass/down/left) or a two-staff MusicXML layout. Unassigned notes remain unchanged. No pitch threshold is used, so labeled hands can cross middle C. Sliders for absent/unidentified hands are disabled. The supplied MIDI files have matching hand labels.
+
 - Independent voices, simultaneous chords, rests, MusicXML ties and tempo changes.
 - MIDI note timing and velocity retained; CC64 sustain extends notes until release.
 - MusicXML sound tempo, metronome tempo, sound dynamics and common dynamic marks supported.

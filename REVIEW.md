@@ -1,5 +1,12 @@
 # Logic and code review
 
+## Hand dynamics refinement
+
+- Inspected actual source data: Für Elise uses MIDI velocity 62 throughout both tracks; Gymnopédie bass primarily uses 90 while treble varies from 62 to 95. Preserving the source alone does not provide a melody-forward interpretation.
+- Added labeled hand metadata during import and configurable per-hand velocity multipliers. Defaults LH 75% / RH 100%; original dynamics preset is exactly 100% / 100%. Multipliers preserve relative expression, clamp at the valid range, skip muted note attacks and do not mutate source notes.
+- Tests check crossed-hand pitch ranges in both bundled MIDI files, MusicXML staff assignment, clamping/muting/unassigned notes, and the effective velocity passed into the sampler. No fixed pitch split or random humanization is introduced.
+- Controls apply to newly scheduled attacks. A maximum 120 ms of lookahead can retain previous settings, and held notes keep their original attack; this is communicated in the UI/README.
+
 ## September 6 refinement
 
 - Added unchanged Mutopia public-domain MIDI files (Satie 2:21 / 282 notes, Beethoven 2:10 / 905 notes). Both are tested through the same importer used for local uploads. Source edition and PDF links accompany each piece; no copyrighted commercial song is bundled.

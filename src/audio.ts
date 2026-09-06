@@ -3,6 +3,13 @@ import { SplendidGrandPiano } from "smplr";
 export function activeAt(notes: Note[], time: number) {
   return notes.filter((n) => n.time <= time && n.time + n.duration > time);
 }
+export type HandBalance = { left: number; right: number };
+export function performanceVelocity(note: Note, balance: HandBalance) {
+  return Math.max(
+    0,
+    Math.min(1, note.velocity * (note.hand ? balance[note.hand] : 1)),
+  );
+}
 export class Player {
   context?: AudioContext;
   gain?: GainNode;
@@ -13,6 +20,7 @@ export class Player {
   position = 0;
   speed = 1;
   volume = 0.65;
+  handBalance: HandBalance = { left: 0.75, right: 1 };
   loop = false;
   a = 0;
   b = 0;
@@ -221,11 +229,12 @@ export class Player {
           (Math.min(n.time + n.duration, end) -
             Math.max(n.time, this.position)) /
           this.speed;
-        if (duration > 0)
+        const velocity = performanceVelocity(n, this.handBalance);
+        if (duration > 0 && velocity > 0)
           this.tone(
             n.midi,
             duration,
-            n.velocity,
+            velocity,
             Math.max(0, (n.time - this.position) / this.speed),
             this.anchor +
               (Math.max(n.time, this.position) - this.offset) / this.speed,

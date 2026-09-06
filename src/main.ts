@@ -75,6 +75,14 @@ async function select(p: Piece) {
   const id = ++loadId;
   player.load(p);
   current = p;
+  const leftCount = p.notes.filter((n) => n.hand === "left").length,
+    rightCount = p.notes.filter((n) => n.hand === "right").length;
+  $("#hand-info").textContent =
+    leftCount && rightCount
+      ? "Both hands identified. Soften the accompaniment or bring the right hand forward."
+      : "Only identified hands are adjusted. Unassigned notes keep their original strength.";
+  $<HTMLInputElement>("#left-strength").disabled = !leftCount;
+  $<HTMLInputElement>("#right-strength").disabled = !rightCount;
   renderLibrary();
   $("#title").textContent = p.title;
   $("#composer").textContent = p.composer;
@@ -215,6 +223,35 @@ $("#play").onclick = async () => {
   }
 };
 $("#restart").onclick = () => player.seek(player.loop ? player.a : 0);
+function updateHandControls() {
+  for (const hand of ["left", "right"] as const) {
+    const value = Math.round(player.handBalance[hand] * 100);
+    $<HTMLInputElement>(`#${hand}-strength`).value = String(value);
+    $(`#${hand}-value`).textContent = `${value}%`;
+  }
+  $("#melody-balance").setAttribute(
+    "aria-pressed",
+    String(player.handBalance.left === 0.75 && player.handBalance.right === 1),
+  );
+  $("#original-balance").setAttribute(
+    "aria-pressed",
+    String(player.handBalance.left === 1 && player.handBalance.right === 1),
+  );
+}
+for (const hand of ["left", "right"] as const)
+  $<HTMLInputElement>(`#${hand}-strength`).oninput = (e) => {
+    player.handBalance[hand] =
+      Number((e.target as HTMLInputElement).value) / 100;
+    updateHandControls();
+  };
+$("#melody-balance").onclick = () => {
+  player.handBalance = { left: 0.75, right: 1 };
+  updateHandControls();
+};
+$("#original-balance").onclick = () => {
+  player.handBalance = { left: 1, right: 1 };
+  updateHandControls();
+};
 $<HTMLInputElement>("#seek").oninput = (e) =>
   player.seek(Number((e.target as HTMLInputElement).value));
 $<HTMLSelectElement>("#speed").onchange = (e) =>

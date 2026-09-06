@@ -8,6 +8,14 @@ const wrap = (body: string) =>
 const note = (step: string, duration = 1, extra = "") =>
   `<note>${extra}<pitch><step>${step}</step><octave>4</octave></pitch><duration>${duration}</duration></note>`;
 describe("score import", () => {
+  it("uses two-staff MusicXML hand labels rather than pitch", () => {
+    const p = parseXml(
+      wrap(
+        `<measure><attributes><staves>2</staves></attributes>${note("C", 1, "<staff>2</staff>")}${note("D", 1, "<staff>1</staff>")}</measure>`,
+      ),
+    );
+    expect(p.notes.map((n) => n.hand)).toEqual(["left", "right"]);
+  });
   it("honors dynamics and metronome tempo", () => {
     const p = parseXml(
       wrap(

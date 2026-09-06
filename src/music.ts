@@ -4,6 +4,7 @@ export type Note = {
   duration: number;
   midi: number;
   velocity: number;
+  hand?: "left" | "right";
 };
 export type Piece = {
   id: string;
@@ -63,11 +64,20 @@ export function parseMidi(data: ArrayBuffer, title: string): Piece {
             ) - n.time,
           midi: n.midi,
           velocity: n.velocity,
+          hand: handFromTrackName(t.name),
         })),
       ),
     warning:
       "MIDI is shown as a piano roll; all pitched tracks use the piano voice.",
   });
+}
+// Use explicit staff/track labels, never a middle-C split: hands can cross.
+export function handFromTrackName(name: string): Note["hand"] {
+  if (/^(right(?: hand)?|rh|treble|up)(?:\b|:)/i.test(name.trim()))
+    return "right";
+  if (/^(left(?: hand)?|lh|bass|down)(?:\b|:)/i.test(name.trim()))
+    return "left";
+  return undefined;
 }
 export function sustainEnd(
   events: { time: number; value: number }[],
@@ -129,6 +139,9 @@ export function parseXml(xml: string, title = "Imported score"): Piece {
   for (const part of parts) {
     let div = 1,
       start = 0;
+    const twoStaves = [...part.querySelectorAll("staves")].some(
+      (e) => Number(e.textContent) >= 2,
+    );
     let velocity = 0.7;
     const ties = new Map<string, Note>();
     [...part.children].forEach((measure, i) => {
@@ -197,7 +210,21 @@ export function parseXml(xml: string, title = "Imported score"): Piece {
         const stop = !!e.querySelector('tie[type="stop"]');
         const begin = !!e.querySelector('tie[type="start"]');
         const previous = ties.get(key);
-        const n = { time: start + at, duration: d, midi: pitch, velocity };
+        const staff = num(e, "staff", 1);
+        const hand: Note["hand"] = twoStaves
+          ? staff === 1
+            ? "right"
+            : staff === 2
+              ? "left"
+              : undefined
+          : undefined;
+        const n: Note = {
+          time: start + at,
+          duration: d,
+          midi: pitch,
+          velocity,
+          hand,
+        };
         if (
           stop &&
           previous &&

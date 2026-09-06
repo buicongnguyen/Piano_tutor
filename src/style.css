@@ -5,6 +5,92 @@
   background: #f5f5ef;
   font-synthesis: none;
 }
+.hand-balance {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  border: 1px solid #dce3d4;
+  background: #edf1e5;
+  border-radius: 12px;
+  padding: 20px 24px;
+  margin-top: 22px;
+}
+.hand-balance > div:first-child {
+  flex: 1;
+}
+.hand-balance h3 {
+  font-size: 15px;
+  margin: 7px 0;
+}
+.hand-balance p {
+  font-size: 10px;
+  line-height: 1.6;
+  color: #73816b;
+  margin: 6px 0 0;
+  max-width: 280px;
+}
+.hand-sliders {
+  width: 180px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+.hand-sliders label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #4b6244;
+}
+.hand-sliders output {
+  font-variant-numeric: tabular-nums;
+  color: #758268;
+}
+.hand-sliders input {
+  width: 100%;
+  margin: 0 0 6px;
+}
+.balance-presets {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.balance-presets button {
+  font-size: 10px;
+  padding: 8px 12px;
+}
+.balance-presets small {
+  font-size: 8px;
+  color: #7d8971;
+}
+.hand-sliders input:disabled {
+  opacity: 0.4;
+}
+@media (max-width: 1050px) {
+  .hand-balance {
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  .hand-balance > div:first-child {
+    flex-basis: 100%;
+  }
+  .hand-sliders {
+    flex: 1;
+  }
+  .balance-presets {
+    flex: 1;
+  }
+}
+@media (max-width: 500px) {
+  .hand-balance {
+    padding: 18px;
+  }
+  .hand-balance h3 {
+    font-size: 14px;
+  }
+  .balance-presets small {
+    font-size: 7px;
+  }
+}
 
 /* Instrument cabinet: wood cheeks, recessed console, felt and a sculpted keybed. */
 .piano-cabinet {

@@ -15,6 +15,12 @@ describe("bundled internet editions", () => {
       const piece = parseMidi(bytes.buffer, file);
       expect(piece.notes.length).toBe(minNotes);
       expect(piece.duration).toBeCloseTo(seconds, 1);
+      expect(piece.notes.some((n) => n.hand === "left" && n.midi >= 60)).toBe(
+        true,
+      );
+      expect(piece.notes.some((n) => n.hand === "right" && n.midi < 60)).toBe(
+        true,
+      );
       expect(
         piece.notes.some(
           (n, i) =>
