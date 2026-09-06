@@ -1,4 +1,5 @@
 import { shell } from "./shell";
+import { mountGeneratedSheet } from "./generated-sheet";
 import { mountKeyboard } from "./keyboard";
 import { loadRepertoire } from "./repertoire";
 import { musicMatches } from "./collection";
@@ -95,6 +96,7 @@ let current: Piece,
   osmd: OpenSheetMusicDisplay | undefined,
   view = "sheet",
   loadId = 0;
+let resizeGenerated: (() => void) | undefined;
 const time = (s: number) =>
   `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
 const status = (s: string) => {
@@ -260,6 +262,7 @@ async function select(p: Piece) {
   $("#total").textContent = time(p.duration);
   $<HTMLInputElement>("#seek").max = String(p.duration);
   osmd = undefined;
+  resizeGenerated = undefined;
   cursorTimes = [];
   cursorIndex = 0;
   $("#score").replaceChildren();
@@ -309,6 +312,18 @@ function setView(v: string) {
   $("#roll-tab").classList.toggle("selected", v === "roll");
   if (v === "sheet" && !current.xml) {
     const container = $("#score");
+    if (resizeGenerated) {
+      resizeGenerated();
+      return;
+    }
+    try {
+      resizeGenerated = mountGeneratedSheet(container, current);
+      return;
+    } catch {
+      status(
+        "Could not generate notation for this performance. Piano roll is still available.",
+      );
+    }
     container.replaceChildren();
     const empty = document.createElement("div");
     empty.className = "midi-sheet";
@@ -344,6 +359,7 @@ new ResizeObserver(() => {
       osmd.render();
       osmd.cursor.show();
     }
+    if (!current.xml && view === "sheet") resizeGenerated?.();
   }, 100);
 }).observe($(".score-wrap"));
 $("#sheet-tab").onclick = () => setView("sheet");

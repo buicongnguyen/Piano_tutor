@@ -5,6 +5,14 @@
   background: #f5f5ef;
   font-synthesis: none;
 }
+.generated-sheet-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0;
+  font-size: 12px;
+}
 @media (min-width: 761px) {
   #library {
     max-height: 440px;

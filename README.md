@@ -128,3 +128,9 @@ Original MIDI instruments is enabled by default. MIDI imports retain each pitche
 Up to 16 distinct voices load on demand and are cached during the session. Missing or additional voices fall back to the selected sound, with an explicit count in the sound status. Piano program 0 uses the sampled grand. Note durations, velocity, tempo maps and pedal lengths are unchanged. Sample source and catalog: [MusyngKite](https://github.com/gleitz/midi-js-soundfonts), CC BY-SA 3.0.
 
 This improves timbre, not the source performance: notation-generated MIDI can still have rigid timing and limited dynamics. Drum tracks, pitch bend, continuous expression, stereo controller data and within-track program changes are not reproduced. It does not recreate a mastered recording or add automatic humanization. Earlier descriptions of all tracks using one sound now apply only when Original MIDI instruments is off.
+
+## Generated MIDI sheet music
+
+Choose Sheet music on a MIDI piece to generate a display-only piano reduction. The full note sequence is available in pages of 16 bars, with Previous/Next controls and a MusicXML download for the displayed page. Existing MusicXML notation and original PDF links remain available.
+
+This is approximate notation: MIDI tempo maps recover beat positions, notes snap to a sixteenth-note grid, and bars use 4/4 with sharp pitch spelling. Explicit hands determine staves when available; other notes use a visual middle-C split without changing practice-hand assignments. Chords, overlapping durations, rests, and bar-line ties are retained. Original MIDI timing, velocities, pedal and instruments are unchanged. Generated pages do not automatically follow playback. Meter, key signatures, triplets, articulation and original engraving are not reconstructed.

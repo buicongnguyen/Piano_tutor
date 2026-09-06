@@ -92,7 +92,7 @@ export function parseMidi(data: ArrayBuffer, title: string): Piece {
         })),
       ),
     warning:
-      "MIDI is shown as a piano roll. Original MIDI instruments preserves pitched track voices; drums are not imported.",
+      "MIDI playback preserves pitched track voices; drums are not imported. Sheet music offers an approximate generated transcription.",
   });
 }
 // Use explicit staff/track labels, never a middle-C split: hands can cross.
