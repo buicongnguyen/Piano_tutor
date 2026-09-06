@@ -1,5 +1,15 @@
 # Logic and code review
 
+## September 6 refinement
+
+- Added unchanged Mutopia public-domain MIDI files (Satie 2:21 / 282 notes, Beethoven 2:10 / 905 notes). Both are tested through the same importer used for local uploads. Source edition and PDF links accompany each piece; no copyrighted commercial song is bundled.
+- Rebuilt the digital piano cabinet and isolated keyboard geometry and repertoire loading into modules. A geometry test covers all 88 keys / 52 white keys. Compact and full-range keyboards scroll within the cabinet on narrow screens.
+- Fixed a real sampler cancellation bug: `smplr.stop()` only stops active voices. Retain each `start()` cancellation function to cancel pending queue entries too, with unique IDs for independent voices.
+- Chords now receive identical absolute audio timestamps. A regression test verifies onset, independent velocity/duration, unique voice IDs and cancellation.
+- First Play awaits sampled grand loading. Concurrent loading shares one promise, cancellation invalidates pending playback, and failure has a labeled synth fallback. A light compressor controls combined peaks without normalizing individual note strengths.
+- Narrow-screen testing exposed stale OSMD auto-resize listeners repainting an old score over a MIDI selection. Disabled per-instance auto-resize and replaced it with an observer that redraws only the current MusicXML score.
+- 16 tests plus TypeScript/production build pass. Browser checks verify automatic sample loading, elapsed playback beyond 25 seconds, 88-key count, label toggle, printable-score URL and no console errors.
+
 ## Completed checks
 
 - Parser separates notation time (quarter-note beats) from playback seconds. Chords share an onset; backup permits independent simultaneous voices; shared measure lengths align parts. Ties merge to avoid repeated attacks. Tests verify all these cases.

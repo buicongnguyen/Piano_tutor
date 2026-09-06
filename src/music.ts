@@ -14,6 +14,7 @@ export type Piece = {
   xml?: string;
   warning?: string;
   beatToSeconds?: (beat: number) => number;
+  source?: { url: string; sheetUrl: string; fileUrl: string; edition: string };
 };
 const names = ["C", "C♯", "D", "D♯", "E", "F", "F♯", "G", "G♯", "A", "A♯", "B"];
 export const noteName = (m: number) => names[m % 12] + (Math.floor(m / 12) - 1);

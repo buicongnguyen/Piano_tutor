@@ -2,9 +2,24 @@
 
 A browser piano studio with a local score library, MusicXML engraving, MIDI piano roll, polyphonic Web Audio playback, sampled Steinway option, synchronized notation/keys, speed, seek, volume and A/B looping.
 
+**[Open the live piano studio](https://buicongnguyen.github.io/Piano_tutor/)**
+
+The digital piano has a wood-sided cabinet, recessed display, speaker grilles, sculpted keys, note-label toggle and an expandable 88-key keyboard.
+
+## Ready-to-play collection
+
+| Piece | Composer | Duration | Edition |
+| --- | --- | --- | --- |
+| Gymnopédie No. 1 | Erik Satie | 2:21 | [Mutopia, public domain](https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=37) |
+| Für Elise | Ludwig van Beethoven | 2:10 | [Mutopia, public domain](https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=931) |
+| Morning light | Original exercise | 0:22 | Two-hand study |
+| A little room to breathe | Original exercise | 0:13 | Melody study |
+
+The internet-sourced MIDI files are bundled locally, with downloadable originals and links to printable scores. See [source provenance](public/music/SOURCES.md). They are notation-generated renditions, not recordings of a human performance.
+
 ## Use
 
-Press **Load grand piano** for sampled sound, then **Play**. The original **Morning light** exercise has a right-hand melody and sustained left-hand chords, demonstrating simultaneous notes. Click piano keys or use A W S E D F T G Y H U J K (C4–C5).
+Press **Play**: the sampled grand loads automatically before playback begins. Cancel loading if needed; unavailable samples fall back to a clearly labeled synth. **Load grand piano** can preload or retry the samples. The original **Morning light** exercise has a right-hand melody and sustained left-hand chords, demonstrating simultaneous notes. Click piano keys or use A W S E D F T G Y H U J K (C4–C5).
 
 Import uncompressed `.musicxml` / `.xml` or `.mid` / `.midi` files up to 5 MB. Files remain in browser memory until reload and are never uploaded. Select imported scores from the sidebar. Seek to the beginning of a phrase and select Set A, seek to its end and select Set B, enable Loop, then play.
 
@@ -15,10 +30,10 @@ For Yiruma's **River Flows in You**, use the linked online piano or import your 
 - Independent voices, simultaneous chords, rests, MusicXML ties and tempo changes.
 - MIDI note timing and velocity retained; CC64 sustain extends notes until release.
 - MusicXML sound tempo, metronome tempo, sound dynamics and common dynamic marks supported.
-- Audio-clock scheduling with 120 ms lookahead; pause, seek and score changes cancel voices. Background tabs pause to prevent timer throttling from creating bad rhythm.
-- Optional Splendid Grand sampled Steinway through smplr. Samples download from the smpldsnds host; synth fallback works if unavailable. Sample loading requires internet. Fonts also use Google Fonts with local font fallback.
+- Audio-clock scheduling with 120 ms lookahead and one absolute onset per chord. Each voice preserves its duration and velocity; a gentle master compressor controls dense mixes. Pause, seek and score changes cancel both active voices and queued sample callbacks. Background tabs pause to prevent timer throttling from creating bad rhythm.
+- Splendid Grand sampled Steinway through smplr loads automatically on first Play. Samples download from the smpldsnds host; synth fallback works if unavailable. Sample loading requires internet. Fonts also use Google Fonts with local font fallback.
 - MusicXML plays in written order: repeats, navigation jumps, grace ornaments, pedal and hairpin expression are not interpreted. Export expressive MIDI for those performance details. Transposing scores must be exported in concert pitch. MIDI tracks all use piano, excluding percussion.
-- Piano keyboard displays C3–C6; imported playback supports the full 88-key range. All sounding pitches appear in text even outside the visible keyboard.
+- Piano keyboard displays C2–C6 in compact mode; **Full 88 keys** expands to A0–C8 with horizontal scrolling. Playback supports the full 88-key range. All sounding pitches appear in the display even outside the visible keyboard. Piano roll adapts to each score's pitch range.
 - Manual keys currently use a fixed 1.3-second duration. This is a score player/practice keyboard, not a replacement for a velocity-sensitive MIDI controller.
 
 ## Development

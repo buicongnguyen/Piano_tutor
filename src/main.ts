@@ -1,3 +1,6 @@
+import { shell } from "./shell";
+import { mountKeyboard } from "./keyboard";
+import { loadRepertoire } from "./repertoire";
 import "./style.css";
 import { OpenSheetMusicDisplay } from "opensheetmusicdisplay";
 import { exercise, parseXml, parseMidi, noteName, type Piece } from "./music";
@@ -35,8 +38,7 @@ duet = duet.replace(/<\/measure>/g, () => {
   return `<backup><duration>4</duration></backup>${[root, root + 7].map((m, i) => `<note>${i ? "<chord/>" : ""}<pitch><step>${["C", "C", "D", "D", "E", "F", "F", "G", "G", "A", "A", "B"][m % 12]}</step><octave>${Math.floor(m / 12) - 1}</octave></pitch><duration>4</duration><voice>2</voice><type>whole</type><staff>2</staff></note>`).join("")}</measure>`;
 });
 library[0] = parseXml(duet);
-$("#app").innerHTML =
-  `<aside><a class="brand" href="./"><span class="brand-icon">♮</span> stillnote<span class="brand-dot">.</span></a><div class="eyebrow">YOUR PIANO STUDIO</div><div class="nav-item">▤ <span>Practice library</span><span class="count" id="count">2</span></div><div class="library-label">YOUR MUSIC <span>♫</span></div><div id="library"></div><button class="import-side" id="import-side">＋ Import a score</button><div class="reference"><span class="eyebrow">ON YOUR MUSIC STAND</span><h3>River Flows in You</h3><p>Yiruma</p><p class="small">For the full two-hand sound, import your own MusicXML or MIDI arrangement.</p><a href="https://virtualpiano.net/?song-post-14075" target="_blank" rel="noopener">Open online piano ↗</a><a href="https://www.virtualsheetmusic.com/score/HL-302236.html" target="_blank" rel="noopener">Find licensed sheet music ↗</a></div><div class="aside-bottom"><span class="status-dot"></span> A little practice, every day.</div></aside><main><header><div><span class="eyebrow">SLOW DOWN. FIND YOUR FLOW.</span><h1>Make time for music.</h1><p>Your scores, your pace. One note at a time.</p></div><button class="primary" id="import">↑ &nbsp; Import score</button></header><input hidden id="file" type="file" accept=".xml,.musicxml,.mid,.midi"><div id="status" role="status">Choose a piece, then press play. Scores stay on this device for this session.</div><section class="workspace"><div class="piece-header"><div class="piece-icon">♫</div><div><span class="eyebrow">NOW ON THE STAND</span><h2 id="title"></h2><p id="composer"></p></div><span class="badge">PIANO · <span id="note-count"></span> NOTES</span></div><div class="view-toolbar"><div class="tabs"><button class="selected" id="sheet-tab">Sheet music</button><button id="roll-tab">Piano roll</button></div><span id="duration"></span></div><div class="score-wrap"><div id="score"></div><canvas id="roll" hidden aria-label="Piano roll showing all simultaneous notes"></canvas></div><div class="score-caption"><span id="warning"></span><button id="download">↓ Download score</button></div><div class="transport"><div class="seek-row"><span id="elapsed">0:00</span><input id="seek" aria-label="Playback position" type="range" min="0" step="0.01" value="0"><span id="total">0:00</span></div><div class="controls"><div class="play-controls"><button id="restart" aria-label="Restart">↤</button><button id="play" class="play">▶ <span>Play</span></button></div><label>Speed <select id="speed"><option value="0.5">0.5×</option><option value="0.75">0.75×</option><option value="1" selected>1×</option><option value="1.25">1.25×</option><option value="1.5">1.5×</option></select></label><div class="loop-controls"><button id="loop" aria-pressed="false">⟳ Loop</button><button id="set-a">Set A</button><button id="set-b">Set B</button><small id="loop-range"></small></div><label class="volume">Volume <input id="volume" aria-label="Volume" type="range" min="0" max="1" step=".01" value=".65"></label></div></div></section><section class="keyboard-section"><div class="keyboard-heading"><div><span class="eyebrow">MEET THE KEYS</span><h3>Play along, or just explore.</h3></div><div class="sound"><button id="sample">Load grand piano</button><span id="sound-label">Synth piano · polyphonic</span></div></div><div class="keyboard-scroll"><div id="keyboard"></div></div><div class="key-caption"><span><i class="legend"></i> <span id="active-notes">Ready when you are</span></span><span>Keyboard: A W S E D F T G Y H U J K · C4–C5</span></div></section><footer>Built for the joy of playing.<span>MusicXML & MIDI · Local imports · No account needed</span></footer></main><dialog id="import-dialog"><h2>Bring your own music.</h2><p>Choose a MusicXML or MIDI file to see it, slow it down, and play it with both hands.</p><div class="upload-zone"><span>↑</span><button class="primary" id="choose">Choose a score</button><p>.musicxml, .xml, .mid, .midi · up to 5 MB</p></div><p class="small">PDFs and photos are visual sheets, not playable note data. Convert them to uncompressed MusicXML in notation software first. Imported scores are kept only until you reload.</p><button id="close-dialog">Back to practice</button></dialog>`;
+$("#app").innerHTML = shell;
 let cursorTimes: number[] = [],
   cursorIndex = 0;
 let current: Piece,
@@ -60,7 +62,8 @@ function renderLibrary() {
     const label = document.createElement("span");
     label.textContent = p.title;
     const sub = document.createElement("small");
-    sub.textContent = p.composer;
+    sub.textContent = `${p.composer} · ${time(p.duration)}`;
+    b.setAttribute("aria-pressed", String(p === current));
     label.append(sub);
     b.append(n, label);
     b.onclick = () => void select(p);
@@ -77,6 +80,12 @@ async function select(p: Piece) {
   $("#composer").textContent = p.composer;
   $("#note-count").textContent = String(p.notes.length);
   $("#warning").textContent = p.warning || "";
+  const edition = $<HTMLAnchorElement>("#edition-link");
+  edition.hidden = !p.source;
+  if (p.source) {
+    edition.href = p.source.url;
+    edition.title = p.source.edition;
+  }
   $("#duration").textContent =
     `${time(p.duration)} · ${p.xml ? "MusicXML score" : "MIDI performance"}`;
   $("#total").textContent = time(p.duration);
@@ -85,12 +94,13 @@ async function select(p: Piece) {
   cursorTimes = [];
   cursorIndex = 0;
   $("#score").replaceChildren();
-  $<HTMLButtonElement>("#download").disabled = !p.xml;
+  $<HTMLButtonElement>("#download").disabled = !p.xml && !p.source;
+  $("#download").textContent = p.xml ? "↓ Download score" : "↓ Download MIDI";
   $("#loop").setAttribute("aria-pressed", "false");
   if (p.xml) {
     try {
       const renderer = new OpenSheetMusicDisplay($("#score"), {
-        autoResize: true,
+        autoResize: false,
         drawTitle: false,
         drawComposer: false,
         backend: "svg",
@@ -127,10 +137,45 @@ function setView(v: string) {
   $("#roll").hidden = v !== "roll";
   $("#sheet-tab").classList.toggle("selected", v === "sheet");
   $("#roll-tab").classList.toggle("selected", v === "roll");
-  if (v === "sheet" && !current.xml)
-    $("#score").textContent =
-      "MIDI contains performance notes. Choose Piano roll to see them.";
+  if (v === "sheet" && !current.xml) {
+    const container = $("#score");
+    container.replaceChildren();
+    const empty = document.createElement("div");
+    empty.className = "midi-sheet";
+    const title = document.createElement("h3");
+    title.textContent = "The original score, beside your piano.";
+    const description = document.createElement("p");
+    description.textContent = current.source
+      ? "This edition plays from MIDI. Follow its notes in Piano roll, or open the original printable sheet music."
+      : "MIDI contains performance notes. Choose Piano roll to see every note, or import MusicXML for engraved notation.";
+    empty.append(title, description);
+    if (current.source) {
+      const link = document.createElement("a");
+      link.href = current.source.sheetUrl;
+      link.target = "_blank";
+      link.rel = "noopener";
+      link.className = "primary";
+      link.textContent = "Open printable score ↗";
+      empty.append(link);
+      const credit = document.createElement("small");
+      credit.textContent = current.source.edition;
+      empty.append(credit);
+    }
+    container.append(empty);
+  }
 }
+// Only the currently selected score may redraw on resize. OSMD's per-instance
+// auto-resize callback otherwise survives selection and can repaint an old score.
+let resizeTimer: ReturnType<typeof setTimeout>;
+new ResizeObserver(() => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => {
+    if (osmd && current.xml && view === "sheet") {
+      osmd.render();
+      osmd.cursor.show();
+    }
+  }, 100);
+}).observe($(".score-wrap"));
 $("#sheet-tab").onclick = () => setView("sheet");
 $("#roll-tab").onclick = () => setView("roll");
 const dialog = $<HTMLDialogElement>("#import-dialog");
@@ -163,7 +208,7 @@ $<HTMLInputElement>("#file").onchange = async (e) => {
 };
 $("#play").onclick = async () => {
   try {
-    if (player.playing) player.pause();
+    if (player.playing || player.preparing) player.pause();
     else await player.play();
   } catch {
     status("Audio could not start. Try pressing Play again.");
@@ -196,6 +241,13 @@ $("#set-b").onclick = () => {
   player.b = player.position;
 };
 $("#download").onclick = () => {
+  if (current.source && !current.xml) {
+    const a = document.createElement("a");
+    a.href = current.source.fileUrl;
+    a.download = current.source.fileUrl.split("/").at(-1)!;
+    a.click();
+    return;
+  }
   if (!current.xml) return;
   const url = URL.createObjectURL(
     new Blob([current.xml], { type: "application/vnd.recordare.musicxml+xml" }),
@@ -210,37 +262,22 @@ $("#sample").onclick = async () => {
   const b = $<HTMLButtonElement>("#sample");
   b.disabled = true;
   $("#sound-label").textContent = "Loading piano samples…";
+  $("#lcd-voice").textContent = "LOADING GRAND…";
   try {
     await player.loadGrand();
     $("#sound-label").textContent = "Steinway grand · polyphonic";
     b.textContent = "Grand piano ready";
+    $("#lcd-voice").textContent = "STEINWAY GRAND";
   } catch {
     $("#sound-label").textContent =
       "Sample download unavailable · synth active";
     b.disabled = false;
+    $("#lcd-voice").textContent = "SYNTH PIANO";
   }
 };
 const keyMap = "awsedftgyhujk",
   pitches = [60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72];
-const keys = new Map<number, HTMLButtonElement>();
-let white = 0;
-for (let m = 48; m <= 84; m++) {
-  const black = [1, 3, 6, 8, 10].includes(m % 12),
-    b = document.createElement("button");
-  b.className = "key " + (black ? "black" : "white");
-  b.style.left = `${black ? (white * 100) / 22 - (100 / 22) * 0.32 : (white++ * 100) / 22}%`;
-  b.setAttribute("aria-label", `Play ${noteName(m)}`);
-  b.textContent = noteName(m);
-  b.onpointerdown = async (e) => {
-    e.preventDefault();
-    await player.init();
-    player.tone(m, 1.3);
-    b.classList.add("pressed");
-    setTimeout(() => b.classList.remove("pressed"), 250);
-  };
-  keys.set(m, b);
-  $("#keyboard").append(b);
-}
+const keys = mountKeyboard(player);
 document.addEventListener("keydown", async (e) => {
   if (
     e.repeat ||
@@ -248,9 +285,7 @@ document.addEventListener("keydown", async (e) => {
     e.metaKey ||
     e.altKey ||
     dialog.open ||
-    ["INPUT", "SELECT", "TEXTAREA", "BUTTON"].includes(
-      (e.target as HTMLElement).tagName,
-    )
+    ["INPUT", "SELECT", "TEXTAREA"].includes((e.target as HTMLElement).tagName)
   )
     return;
   const i = keyMap.indexOf(e.key.toLowerCase());
@@ -259,6 +294,7 @@ document.addEventListener("keydown", async (e) => {
     player.tone(pitches[i], 1.3);
   }
   if (e.code === "Space") {
+    if ((e.target as HTMLElement).closest("button,a")) return;
     e.preventDefault();
     $("#play").click();
   }
@@ -277,6 +313,21 @@ function roll(t: number) {
   ctx.scale(devicePixelRatio, devicePixelRatio);
   ctx.fillStyle = "#f7f8f4";
   ctx.fillRect(0, 0, w, h);
+  const low = Math.min(...current.notes.map((n) => n.midi)) - 2,
+    high = Math.max(...current.notes.map((n) => n.midi)) + 2;
+  const yFor = (m: number) => 230 - ((m - low) / (high - low)) * 200;
+  for (let m = 24; m <= 108; m += 12) {
+    if (m < low || m > high) continue;
+    const y = yFor(m);
+    ctx.strokeStyle = "#e0e5dc";
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(w, y);
+    ctx.stroke();
+    ctx.fillStyle = "#84947e";
+    ctx.font = "9px sans-serif";
+    ctx.fillText(noteName(m), 4, y - 5);
+  }
   const span = 12,
     start = Math.max(0, t - 2);
   ctx.strokeStyle = "#e4e8df";
@@ -290,7 +341,7 @@ function roll(t: number) {
   for (const n of current.notes) {
     if (n.time + n.duration < start || n.time > start + span) continue;
     const x = ((n.time - start) / span) * w,
-      y = 240 - ((n.midi - 36) / 60) * 220;
+      y = yFor(n.midi);
     ctx.fillStyle =
       n.time <= t && n.time + n.duration > t
         ? "#cf9e56"
@@ -324,9 +375,11 @@ function frame() {
     }
     $("#elapsed").textContent = time(t);
     $<HTMLInputElement>("#seek").value = String(t);
-    $("#play").innerHTML = player.playing
-      ? "Ⅱ <span>Pause</span>"
-      : "▶ <span>Play</span>";
+    $("#play").innerHTML = player.preparing
+      ? "× <span>Cancel loading</span>"
+      : player.playing
+        ? "Ⅱ <span>Pause</span>"
+        : "▶ <span>Play</span>";
     $("#loop-range").textContent = `${time(player.a)}–${time(player.b)}`;
     const active = player.playing ? activeAt(current.notes, t) : [];
     for (const [m, b] of keys)
@@ -337,9 +390,47 @@ function frame() {
     $("#active-notes").textContent = active.length
       ? active.map((n) => noteName(n.midi)).join(" · ")
       : "Ready when you are";
+    $("#lcd-notes").textContent = active.length
+      ? active.map((n) => noteName(n.midi)).join(" · ")
+      : current.title;
+    $("#lcd-time").textContent = time(t);
+    $("#lcd-state").textContent = player.playing ? "PLAYING" : "READY";
+    const soundLabels = {
+      synth: "Grand piano loads when you press Play",
+      loading: "Loading piano samples…",
+      grand: "Steinway grand · polyphonic",
+      fallback: "Sample download unavailable · synth active",
+    };
+    $("#sound-label").textContent = soundLabels[player.soundState];
+    $("#lcd-voice").textContent =
+      player.soundState === "grand"
+        ? "STEINWAY GRAND"
+        : player.soundState === "loading"
+          ? "LOADING GRAND…"
+          : "SYNTH PIANO";
+    const sample = $<HTMLButtonElement>("#sample");
+    sample.disabled =
+      player.soundState === "grand" || player.soundState === "loading";
+    sample.textContent =
+      player.soundState === "grand"
+        ? "Grand piano ready"
+        : player.soundState === "loading"
+          ? "Loading grand…"
+          : "Load grand piano";
     roll(t);
   }
   requestAnimationFrame(frame);
 }
 void select(library[0]);
+void loadRepertoire().then(async ({ pieces, failures }) => {
+  const untouched = loadId === 1;
+  library.unshift(...pieces);
+  renderLibrary();
+  if (untouched && pieces.length) await select(pieces[0]);
+  status(
+    failures
+      ? "Some collection files could not load. Your exercises and local imports are still available."
+      : "Two complete piano pieces, ready to play. Grand piano loads automatically.",
+  );
+});
 frame();

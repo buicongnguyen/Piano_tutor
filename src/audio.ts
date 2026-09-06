@@ -8,6 +8,8 @@ export class Player {
   gain?: GainNode;
   piece?: Piece;
   playing = false;
+  preparing = false;
+  soundState: "synth" | "loading" | "grand" | "fallback" = "synth";
   position = 0;
   speed = 1;
   volume = 0.65;
@@ -21,39 +23,76 @@ export class Player {
   private grand?: ReturnType<typeof SplendidGrandPiano>;
   private grandReady = false;
   private generation = 0;
+  private sampleAttempted = false;
+  private sampleCancels = new Set<() => void>();
+  private voiceId = 0;
+  private pendingGrand?: Promise<void>;
   async loadGrand() {
-    await this.init();
-    this.grand ??= SplendidGrandPiano(this.context!, {
-      destination: this.gain!,
-    });
-    await Promise.race([
-      this.grand.ready,
-      new Promise((_, reject) =>
-        setTimeout(() => reject(Error("Sample timeout")), 45000),
-      ),
-    ]);
-    this.grandReady = true;
+    if (this.grandReady) return;
+    if (this.pendingGrand) return this.pendingGrand;
+    this.pendingGrand = this.prepareGrand();
+    try {
+      await this.pendingGrand;
+    } finally {
+      this.pendingGrand = undefined;
+    }
+  }
+  private async prepareGrand() {
+    this.sampleAttempted = true;
+    this.soundState = "loading";
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      await this.init();
+      this.grand ??= SplendidGrandPiano(this.context!, {
+        destination: this.gain!,
+      });
+      await Promise.race([
+        this.grand.ready,
+        new Promise((_, reject) => {
+          timer = setTimeout(() => reject(Error("Sample timeout")), 20000);
+        }),
+      ]);
+      this.grandReady = true;
+      this.soundState = "grand";
+    } catch (error) {
+      this.soundState = "fallback";
+      throw error;
+    } finally {
+      clearTimeout(timer);
+    }
   }
   async init() {
     this.context ??= new AudioContext();
     if (!this.gain) {
       this.gain = this.context.createGain();
-      this.gain.connect(this.context.destination);
+      const compressor = this.context.createDynamicsCompressor();
+      compressor.threshold.value = -8;
+      compressor.knee.value = 12;
+      compressor.ratio.value = 3;
+      compressor.attack.value = 0.003;
+      compressor.release.value = 0.18;
+      this.gain.connect(compressor).connect(this.context.destination);
     }
     this.gain.gain.value = this.volume * 0.2;
     await this.context.resume();
   }
-  tone(midi: number, duration: number, velocity = 0.7, delay = 0) {
+  tone(midi: number, duration: number, velocity = 0.7, delay = 0, at?: number) {
     if (!this.context || !this.gain) return;
     const ctx = this.context;
-    const start = ctx.currentTime + delay;
+    const start = at ?? ctx.currentTime + delay;
     if (this.grandReady) {
-      this.grand!.start({
+      const cancel = this.grand!.start({
         note: midi,
         time: start,
         duration,
         velocity: Math.round(velocity * 127),
+        stopId: ++this.voiceId,
       });
+      this.sampleCancels.add(cancel);
+      setTimeout(
+        () => this.sampleCancels.delete(cancel),
+        (Math.max(0, start - ctx.currentTime) + duration + 1) * 1000,
+      );
       return;
     }
     const env = ctx.createGain();
@@ -83,6 +122,8 @@ export class Player {
     setTimeout(() => env.disconnect(), (delay + duration + 0.3) * 1000);
   }
   silence() {
+    for (const cancel of this.sampleCancels) cancel();
+    this.sampleCancels.clear();
     this.grand?.stop();
     for (const v of this.voices) {
       try {
@@ -104,21 +145,36 @@ export class Player {
   }
   async play() {
     const gen = ++this.generation;
-    await this.init();
-    if (gen !== this.generation || !this.piece) return;
-    if (
-      this.position >= this.piece.duration ||
-      (this.loop && (this.position < this.a || this.position >= this.b))
-    )
-      this.position = this.loop ? this.a : 0;
-    this.silence();
-    this.offset = this.position;
-    this.anchor = this.context!.currentTime;
-    this.playing = true;
-    this.tick();
+    this.preparing = true;
+    try {
+      await this.init();
+      if (gen !== this.generation) return;
+      if (!this.sampleAttempted || this.pendingGrand) {
+        try {
+          await this.loadGrand();
+        } catch {
+          /* Explicitly labeled synth fallback if samples cannot load. */
+        }
+      }
+      if (gen !== this.generation || !this.piece) return;
+      this.preparing = false;
+      if (
+        this.position >= this.piece.duration ||
+        (this.loop && (this.position < this.a || this.position >= this.b))
+      )
+        this.position = this.loop ? this.a : 0;
+      this.silence();
+      this.offset = this.position;
+      this.anchor = this.context!.currentTime;
+      this.playing = true;
+      this.tick();
+    } finally {
+      if (gen === this.generation) this.preparing = false;
+    }
   }
   pause() {
     this.generation++;
+    this.preparing = false;
     if (this.playing) this.position = this.now();
     this.playing = false;
     this.silence();
@@ -171,6 +227,8 @@ export class Player {
             duration,
             n.velocity,
             Math.max(0, (n.time - this.position) / this.speed),
+            this.anchor +
+              (Math.max(n.time, this.position) - this.offset) / this.speed,
           );
       }
     });
