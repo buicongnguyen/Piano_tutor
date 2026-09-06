@@ -6,6 +6,32 @@ import { keyboardLayout } from "./keyboard";
 import { repertoire } from "./repertoire";
 
 describe("bundled internet editions", () => {
+  for (const [file, notes, duration] of [
+    ["canon-in-d.mid", 1956, 245.45452500000002],
+    ["spring-1.mid", 3173, 171.39126149999998],
+    ["spring-2.mid", 1042, 140.4],
+    ["spring-3.mid", 2071, 222.499644],
+    ["summer-1.mid", 3621, 252],
+    ["summer-2.mid", 629, 117.33330399999998],
+    ["summer-3.mid", 5158, 156],
+    ["autumn-1.mid", 3111, 230],
+    ["autumn-2.mid", 187, 152.83012499999998],
+    ["autumn-3.mid", 2582, 176.625],
+    ["winter-1.mid", 3255, 107.999892],
+    ["winter-2.mid", 851, 93.912984],
+    ["winter-3.mid", 2696, 183.60000000000002],
+  ] as const) {
+    it("loads the complete ensemble edition " + file, () => {
+      const piece = parseMidi(
+        Uint8Array.from(readFileSync("public/music/" + file)).buffer,
+        file,
+      );
+      expect(piece.notes).toHaveLength(notes);
+      expect(piece.duration).toBeCloseTo(duration, 3);
+      expect(piece.notes.every((n) => n.hand === undefined)).toBe(true);
+      expect(piece.beatToSeconds?.(1)).toBeGreaterThan(0);
+    });
+  }
   for (const [file, notes, seconds] of [
     ["maple-leaf-rag.mid", 2566, 144],
     ["arabesque-no-1.mid", 1448, 176.249718],

@@ -38,7 +38,7 @@ The digital piano has a wood-sided cabinet, recessed display, speaker grilles, s
 | Morning light | Original exercise | 0:22 | Two-hand study |
 | A little room to breathe | Original exercise | 0:13 | Melody study |
 
-Thirteen complete MIDI selections and eleven printable PDF scores are bundled locally, totaling about 61 minutes of source-file playback. Use **PDF sheet** or **Download MIDI** for a local copy. See [source provenance and licenses](public/music/SOURCES.md). These are notation-generated renditions, not recordings of a human performance. Moonlight's three movements are separate selections; its source MIDI uses 60 BPM, so durations can be longer than familiar recordings. The speed control changes playback without modifying downloads.
+Twenty-six complete MIDI selections and sixteen printable PDF scores are bundled locally. Use **PDF sheet** or **Download MIDI** for a local copy. See [source provenance and licenses](public/music/SOURCES.md). These are notation-generated renditions, not recordings of a human performance. Moonlight's three movements are separate selections; its source MIDI uses 60 BPM, so durations can be longer than familiar recordings. The speed control changes playback without modifying downloads.
 
 The three 2000s selections are contemporary original piano compositions, not chart hits. Their Creative Commons licenses permit redistribution with attribution and ShareAlike terms; these music files retain their source licenses.
 
@@ -116,3 +116,7 @@ Metronome uses quarter-note beats from the MIDI/MusicXML tempo map, including te
 Import file now opens the device file chooser directly from the header, sidebar and song discovery entries. Select a local MIDI or uncompressed MusicXML file; it is read, added to the collection and selected. The old information dialog is only a fallback if opening the picker throws. Same-file re-import is supported. Song discovery import buttons select local files; they do not automatically buy or download retailer files.
 
 Flow particles is now the default visual effect for browsers without a saved effect preference (and for invalid saved values). Existing saved selections remain in effect. Display options → Effect also includes Aurora ribbons (blue/violet rising trails) and Bubbles (floating cyan rings). Both are deterministic, bounded canvas effects driven by score time, stop while paused and respect reduced motion. They do not affect note timing or audio.
+
+## Canon and The Four Seasons
+
+The collection includes Canon in D (full ensemble score) and all twelve movements of Vivaldi’s The Four Seasons: Spring, Summer, Autumn and Winter. Search `canon`, `four seasons`, or a season name. Each entry plays immediately and includes a downloadable MIDI plus its complete ensemble PDF score. These are ensemble editions rendered with the selected sound; they are not two-hand piano reductions, so hand practice is unavailable. All source note timings are preserved. Attribution, movement mapping and CC BY/CC BY-SA license links are in [SOURCES](public/music/SOURCES.md).

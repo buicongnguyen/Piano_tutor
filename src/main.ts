@@ -660,7 +660,7 @@ void loadRepertoire().then(async ({ pieces, failures }) => {
   status(
     failures
       ? "Some collection files could not load. Your exercises and local imports are still available."
-      : `${pieces.length} complete piano selections, with downloadable PDF scores. Grand piano loads automatically.`,
+      : `${pieces.length} complete MIDI selections, with downloadable PDF scores. Grand piano loads automatically.`,
   );
 });
 frame();

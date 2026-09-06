@@ -109,3 +109,68 @@ The three 2000s compositions are contemporary originals, not famous modern pop s
 
 ## River Flows in You — Yiruma (not bundled)
 Research on 2026-09-06 did not establish a public redistribution license for a full playable arrangement. The collection offers local MIDI/MusicXML import and a licensed sheet retailer link. Personal purchase or free download access alone does not establish permission to redistribute an edition in this repository. Imported files remain in browser memory until reload and are not uploaded.
+
+## Canon in D — Johann Pachelbel
+- Source: https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=2047
+- Edition: Mutopia-2015/09/02-2047; Michael Fischer v. Mollard; based on IMSLP.
+- License: [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+- Archives: https://www.mutopiaproject.org/ftp/PachelbelJ/Canon_per_3_Violini_e_Basso/Canon_per_3_Violini_e_Basso-mids.zip and the matching -a4-pdfs.zip.
+- Local canon-in-d.mid is the full canon_per_3_violini_e_basso.mid, not any of the individual part files. PDF: canon_per_3_violini_e_basso-a4.pdf renamed canon-in-d.pdf. Both retain their original bytes and license.
+
+## The Four Seasons — Spring — Antonio Vivaldi
+- Source: https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=301
+- Edition: Mutopia-2010/02/08-301; attributed to Anonymous as requested by the published header; source Performers’ Facsimiles (1725).
+- License: [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/).
+- MIDI archive: https://www.mutopiaproject.org/ftp/VivaldiA/O8/spring/spring-mids.zip
+- PDF archive: https://www.mutopiaproject.org/ftp/VivaldiA/O8/spring/spring-a4-pdfs.zip
+- Original spring-score.mid, spring-score-1.mid, spring-score-2.mid map respectively to local spring-1.mid, spring-2.mid, spring-3.mid. Movement order verified against the source score blocks.
+- Full score spring-score-a4.pdf is bundled as spring.pdf and shared by the three movements.
+- Extracted bytes unchanged; only filenames changed. These music files retain their source license independently of application code.
+
+## The Four Seasons — Summer — Antonio Vivaldi
+- Source: https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=336
+- Edition: Mutopia-2010/02/08-336; attributed to Anonymous as requested by the published header; source Performers’ Facsimiles (1725).
+- License: [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/).
+- MIDI archive: https://www.mutopiaproject.org/ftp/VivaldiA/O8/summer/summer-mids.zip
+- PDF archive: https://www.mutopiaproject.org/ftp/VivaldiA/O8/summer/summer-a4-pdfs.zip
+- Original summer-score.mid, summer-score-1.mid, summer-score-2.mid map respectively to local summer-1.mid, summer-2.mid, summer-3.mid. Movement order verified against the source score blocks.
+- Full score summer-score-a4.pdf is bundled as summer.pdf and shared by the three movements.
+- Extracted bytes unchanged; only filenames changed. These music files retain their source license independently of application code.
+
+## The Four Seasons — Autumn — Antonio Vivaldi
+- Source: https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=350
+- Edition: Mutopia-2010/02/08-350; attributed to Anonymous as requested by the published header; source Performers’ Facsimiles (1725).
+- License: [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/).
+- MIDI archive: https://www.mutopiaproject.org/ftp/VivaldiA/O8/autumn/autumn-mids.zip
+- PDF archive: https://www.mutopiaproject.org/ftp/VivaldiA/O8/autumn/autumn-a4-pdfs.zip
+- Original autumn-score.mid, autumn-score-1.mid, autumn-score-2.mid map respectively to local autumn-1.mid, autumn-2.mid, autumn-3.mid. Movement order verified against the source score blocks.
+- Full score autumn-score-a4.pdf is bundled as autumn.pdf and shared by the three movements.
+- Extracted bytes unchanged; only filenames changed. These music files retain their source license independently of application code.
+
+## The Four Seasons — Winter — Antonio Vivaldi
+- Source: https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=351
+- Edition: Mutopia-2010/02/08-351; attributed to Anonymous as requested by the published header; source Performers’ Facsimiles (1725).
+- License: [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/).
+- MIDI archive: https://www.mutopiaproject.org/ftp/VivaldiA/O8/winter/winter-mids.zip
+- PDF archive: https://www.mutopiaproject.org/ftp/VivaldiA/O8/winter/winter-a4-pdfs.zip
+- Original winter-score.mid, winter-score-1.mid, winter-score-2.mid map respectively to local winter-1.mid, winter-2.mid, winter-3.mid. Movement order verified against the source score blocks.
+- Full score winter-score-a4.pdf is bundled as winter.pdf and shared by the three movements.
+- Extracted bytes unchanged; only filenames changed. These music files retain their source license independently of application code.
+
+All thirteen additions were downloaded on 2026-09-06. They are ensemble editions, played through the selected instrument, not piano reductions. Explicit piano hand assignments are absent. Source MIDI timings are retained; no extra repeats or instrument parts have been fabricated.
+
+| File | Notes | Seconds |
+| --- | --- | --- |
+| canon-in-d.mid | 1956 | 245.45452500000002 |
+| spring-1.mid | 3173 | 171.39126149999998 |
+| spring-2.mid | 1042 | 140.4 |
+| spring-3.mid | 2071 | 222.499644 |
+| summer-1.mid | 3621 | 252 |
+| summer-2.mid | 629 | 117.33330399999998 |
+| summer-3.mid | 5158 | 156 |
+| autumn-1.mid | 3111 | 230 |
+| autumn-2.mid | 187 | 152.83012499999998 |
+| autumn-3.mid | 2582 | 176.625 |
+| winter-1.mid | 3255 | 107.999892 |
+| winter-2.mid | 851 | 93.912984 |
+| winter-3.mid | 2696 | 183.60000000000002 |
