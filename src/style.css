@@ -1250,3 +1250,138 @@ header p,
     width: 100%;
   }
 }
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.theme-control {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  background: #111a17;
+  color: #d9e7dc;
+}
+:root[data-theme="dark"] aside {
+  background: #19251f;
+  border-color: #35483b;
+}
+:root[data-theme="dark"]
+  :is(
+    .workspace,
+    .score-wrap,
+    .collection-menu,
+    .collection-picker summary,
+    dialog
+  ) {
+  background: #1d2a23;
+  color: #d9e7dc;
+  border-color: #3b5042;
+}
+:root[data-theme="dark"]
+  :is(
+    .transport,
+    .hand-balance,
+    .reference,
+    .nav-item,
+    .upload-zone,
+    .collection-unavailable
+  ) {
+  background: #24352b;
+  border-color: #405b48;
+}
+:root[data-theme="dark"]
+  :is(
+    .piece.active,
+    .piece[aria-pressed="true"],
+    .sound button,
+    button[aria-pressed="true"]
+  ) {
+  background: #365140;
+  color: #eff6e9;
+  border-color: #78976d;
+}
+:root[data-theme="dark"] :is(select, #collection-search) {
+  background: #16231c;
+  color: #e0eddf;
+  border-color: #61785c;
+}
+:root[data-theme="dark"]
+  :is(
+    .eyebrow,
+    #status,
+    .piece small,
+    .piece-num,
+    .reference p,
+    .score-caption,
+    .piece-header p,
+    #duration,
+    .sound span,
+    .key-caption,
+    footer,
+    .controls label,
+    .seek-row,
+    .loop-controls small,
+    .badge,
+    #collection-results,
+    .hand-balance p,
+    .hand-sliders label,
+    .hand-sliders output,
+    .balance-presets small,
+    .midi-sheet,
+    .tabs button,
+    .collection-picker summary
+  ) {
+  color: #b2c4b3;
+}
+:root[data-theme="dark"]
+  :is(
+    .collection-picker summary strong,
+    .midi-sheet h3,
+    .tabs button.selected
+  ) {
+  color: #e5efd9;
+}
+:root[data-theme="dark"]
+  :is(.view-toolbar, .score-caption, .transport, footer, button, .badge) {
+  border-color: #405345;
+}
+:root[data-theme="dark"] .tabs button.selected {
+  border-bottom-color: #b5ce8e;
+}
+:root[data-theme="dark"] .piece-icon {
+  background: #314736;
+  color: #c3d7ab;
+}
+:root[data-theme="dark"] :is(.primary, .play) {
+  background: #a8c98f;
+  color: #14231a;
+}
+:root[data-theme="dark"] input[type="range"] {
+  accent-color: #b5ce8e;
+}
+/* Invert notation only, preserving physical piano keys and imported PDF colors. */
+:root[data-theme="dark"] #score svg {
+  filter: invert(0.88) hue-rotate(165deg);
+}
+:root[data-theme="dark"] a:hover {
+  color: #d5eaa7;
+}
+@media (max-width: 760px) {
+  .header-actions {
+    gap: 6px;
+  }
+  .theme-control {
+    font-size: 10px;
+  }
+  .theme-control select {
+    padding: 5px;
+  }
+}

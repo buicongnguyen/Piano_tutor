@@ -2,6 +2,8 @@
 
 A browser piano studio with a local score library, MusicXML engraving, MIDI piano roll, polyphonic Web Audio playback, sampled Steinway option, synchronized notation/keys, speed, seek, volume and A/B looping.
 
+Use **Theme** in the header to choose System, Light or Dark. Your choice is saved in this browser; System follows changes to the device appearance. The collection dropdown searches titles and composers, including accent-insensitive matches.
+
 **[Open the live piano studio](https://buicongnguyen.github.io/Piano_tutor/)**
 
 The digital piano has a wood-sided cabinet, recessed display, speaker grilles, sculpted keys, note-label toggle and an expandable 88-key keyboard.

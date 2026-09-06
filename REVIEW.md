@@ -1,5 +1,14 @@
 # Logic and code review
 
+## Dark mode and follow-up review
+
+- Fixed a stale asynchronous MusicXML error handler: an older failed load now returns before changing the current score view or status.
+- Avoid resizing the piano-roll canvas on every animation frame. Resize only when its actual pixel dimensions change, and reset the transform explicitly to prevent cumulative scaling.
+- Handle computer-key AudioContext initialization failures through the visible status message, consistent with clicking a piano key.
+- Ignore non-finite seek values and non-positive/non-finite speeds before mutating transport state.
+- Added System / Light / Dark appearance with persisted explicit preference, OS theme-change handling and graceful behavior when storage is blocked. Piano-roll colors follow the theme; only engraved SVG notation is inverted, preserving physical key colors.
+- 36 tests and production build pass. Browser checks confirm dark selection persists after navigation and collection/notation switching remains available. The existing large JavaScript bundle advisory and MusicXML interpretation limitations remain.
+
 ## Precise note lengths
 
 - Separated MIDI key-down duration from pedal-held sound; CC64 follows its channel even when stored on another track. Keyboard highlights and piano-roll widths follow key release. Removed the fixed two-pixel shortening of every roll note.

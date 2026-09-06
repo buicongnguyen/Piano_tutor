@@ -2,6 +2,7 @@ import { shell } from "./shell";
 import { mountKeyboard } from "./keyboard";
 import { loadRepertoire } from "./repertoire";
 import { musicMatches } from "./collection";
+import { mountTheme } from "./theme";
 import "./style.css";
 import { OpenSheetMusicDisplay } from "opensheetmusicdisplay";
 import { exercise, parseXml, parseMidi, noteName, type Piece } from "./music";
@@ -40,6 +41,7 @@ duet = duet.replace(/<\/measure>/g, () => {
 });
 library[0] = parseXml(duet);
 $("#app").innerHTML = shell;
+mountTheme($<HTMLSelectElement>("#theme"));
 let cursorTimes: number[] = [],
   cursorIndex = 0;
 let current: Piece,
@@ -204,6 +206,7 @@ async function select(p: Piece) {
         c.show();
       }
     } catch {
+      if (id !== loadId) return;
       status(
         "The score could not be engraved. You can still play it in piano roll view.",
       );
@@ -402,8 +405,12 @@ document.addEventListener("keydown", async (e) => {
     return;
   const i = keyMap.indexOf(e.key.toLowerCase());
   if (i >= 0) {
-    await player.init();
-    player.tone(pitches[i], 1.3);
+    try {
+      await player.init();
+      player.tone(pitches[i], 1.3);
+    } catch {
+      status("Audio could not start. Try the key again.");
+    }
   }
   if (e.code === "Space") {
     if ((e.target as HTMLElement).closest("button,a")) return;
@@ -419,11 +426,16 @@ function roll(t: number) {
   if (c.hidden) return;
   const w = c.clientWidth || 800,
     h = c.clientHeight || 184;
-  c.width = w * devicePixelRatio;
-  c.height = h * devicePixelRatio;
+  const pixelWidth = Math.round(w * devicePixelRatio),
+    pixelHeight = Math.round(h * devicePixelRatio);
+  if (c.width !== pixelWidth || c.height !== pixelHeight) {
+    c.width = pixelWidth;
+    c.height = pixelHeight;
+  }
   const ctx = c.getContext("2d")!;
-  ctx.scale(devicePixelRatio, devicePixelRatio);
-  ctx.fillStyle = "#f7f8f4";
+  ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+  const dark = document.documentElement.dataset.theme === "dark";
+  ctx.fillStyle = dark ? "#17231f" : "#f7f8f4";
   ctx.fillRect(0, 0, w, h);
   const low = Math.min(...current.notes.map((n) => n.midi)) - 2,
     high = Math.max(...current.notes.map((n) => n.midi)) + 2;
@@ -431,18 +443,18 @@ function roll(t: number) {
   for (let m = 24; m <= 108; m += 12) {
     if (m < low || m > high) continue;
     const y = yFor(m);
-    ctx.strokeStyle = "#e0e5dc";
+    ctx.strokeStyle = dark ? "#35483e" : "#e0e5dc";
     ctx.beginPath();
     ctx.moveTo(0, y);
     ctx.lineTo(w, y);
     ctx.stroke();
-    ctx.fillStyle = "#84947e";
+    ctx.fillStyle = dark ? "#b0c5b5" : "#84947e";
     ctx.font = "9px sans-serif";
     ctx.fillText(noteName(m), 4, y - 5);
   }
   const span = 12,
     start = Math.max(0, t - 2);
-  ctx.strokeStyle = "#e4e8df";
+  ctx.strokeStyle = dark ? "#2d3e35" : "#e4e8df";
   for (let i = 0; i < 13; i++) {
     const x = (i * w) / 12;
     ctx.beginPath();
@@ -459,7 +471,9 @@ function roll(t: number) {
         ? "#cf9e56"
         : n.midi < 60
           ? "#89a7a3"
-          : "#2b5a4a";
+          : dark
+            ? "#83bba3"
+            : "#2b5a4a";
     ctx.fillRect(x, y, Math.max(0.5, (n.duration / span) * w), 7);
   }
   ctx.fillStyle = "#b88647";

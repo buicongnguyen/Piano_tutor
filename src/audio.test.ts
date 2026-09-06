@@ -5,6 +5,14 @@ import { finish } from "./music";
 vi.mock("smplr", () => ({ SplendidGrandPiano: vi.fn() }));
 afterEach(() => vi.useRealTimers());
 describe("sampled piano mixing and scheduling", () => {
+  it("ignores invalid transport values without corrupting playback state", () => {
+    const player = new Player();
+    player.position = 0.5;
+    for (const value of [0, -1, NaN, Infinity]) player.setSpeed(value);
+    expect(player.speed).toBe(1);
+    for (const value of [NaN, Infinity, -Infinity]) player.seek(value);
+    expect(player.position).toBe(0.5);
+  });
   it("scales exact sound lengths at different speeds and clips seek/loop boundaries", async () => {
     vi.useFakeTimers();
     const start = vi.fn(() => vi.fn());

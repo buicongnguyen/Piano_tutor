@@ -195,12 +195,14 @@ export class Player {
       : this.position;
   }
   seek(time: number) {
+    if (!Number.isFinite(time)) return;
     const playing = this.playing;
     this.pause();
     this.position = Math.max(0, Math.min(this.piece?.duration || 0, time));
     if (playing) void this.play();
   }
   setSpeed(speed: number) {
+    if (!Number.isFinite(speed) || speed <= 0) return;
     const playing = this.playing;
     this.pause();
     this.speed = speed;
