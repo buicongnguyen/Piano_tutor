@@ -1779,3 +1779,30 @@ header p,
   color: inherit;
   opacity: 0.85;
 }
+
+/* Touch layouts keep the instrument usable without a computer keyboard. */
+.mobile-piano-controls { display: none; }
+#keyboard .key { touch-action: none; -webkit-touch-callout: none; }
+@media (max-width: 760px), (hover: none) and (max-width: 1100px) {
+  .computer-keyboard, .key-caption > span:last-child { display: none; }
+  .mobile-piano-controls { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+  .mobile-piano-controls span { flex: 1; font-size: 11px; text-align: center; }
+  .mobile-piano-controls button { min-height: 44px; padding: 8px 12px; }
+  .piano-options-menu { left: 0; right: auto; }
+  .piano-options summary, .sound button, .controls button, .tabs button { min-height: 44px; }
+  .sound { justify-content: flex-start; width: 100%; }
+  .sound #sound-label { max-width: none; text-align: left; }
+  .keyboard-heading { gap: 8px; }
+  .controls { flex-wrap: wrap; }
+  .score-caption { flex-wrap: wrap; overflow-wrap: anywhere; }
+  .header-actions { justify-content: flex-start; }
+  input, select, #collection-search { font-size: 16px; }
+}
+@media (max-width: 480px) {
+  header { flex-direction: column; align-items: flex-start; }
+  header h1 { font-size: 22px; }
+  header p { display: none; }
+  aside { padding: 12px 14px; }
+  .brand { margin-bottom: 8px; }
+  .piano-cabinet { padding-left: 6px; padding-right: 6px; }
+}

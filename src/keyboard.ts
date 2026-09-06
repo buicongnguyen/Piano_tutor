@@ -119,5 +119,21 @@ export function mountKeyboard(player: Player) {
     labels.setAttribute("aria-pressed", String(!hide));
   };
   render();
+  const scroll = root.closest<HTMLElement>(".keyboard-scroll");
+  for (const [id, direction] of [
+    ["#piano-lower", -1],
+    ["#piano-higher", 1],
+  ] as const) {
+    document
+      .querySelector<HTMLButtonElement>(id)
+      ?.addEventListener("click", () => {
+        releaseAll();
+        if (scroll)
+          scroll.scrollLeft +=
+            ((direction * root.clientWidth) /
+              Number(root.style.getPropertyValue("--white-count"))) *
+            7;
+      });
+  }
   return keys;
 }
