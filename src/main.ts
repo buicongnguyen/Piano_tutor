@@ -136,10 +136,11 @@ function renderLibrary() {
     ? `${matches.length} ${matches.length === 1 ? "piece" : "pieces"} · select, then press Play`
     : "No playable matches. Import a MIDI or MusicXML score.";
   const suggestions = findDiscoverSongs(query);
+  const requested = document.createDocumentFragment();
   if (suggestions.length) {
     const heading = document.createElement("p");
-    heading.textContent = "Discover songs · import required";
-    el.append(heading);
+    heading.textContent = "Requested songs · import required";
+    requested.append(heading);
   }
   for (const song of suggestions) {
     const card = document.createElement("div");
@@ -164,8 +165,16 @@ function renderLibrary() {
     note.textContent =
       "Not bundled. Import your permitted MIDI/MusicXML to play in this browser session.";
     card.append(title, info, button, link, note);
-    el.append(card);
+    requested.append(card);
   }
+  if (suggestions.length) {
+    const heading = document.createElement("p");
+    heading.textContent = "Ready to play";
+    if (matches.length) requested.append(heading);
+    el.prepend(requested);
+  }
+  $("#collection-results").textContent =
+    `${matches.length} ready to play · ${suggestions.length} require a file import`;
 }
 const picker = $<HTMLDetailsElement>("#collection-picker");
 const search = $<HTMLInputElement>("#collection-search");

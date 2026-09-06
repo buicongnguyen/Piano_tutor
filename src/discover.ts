@@ -6,10 +6,19 @@ export const discoverSongs = [
     title: "River Flows in You",
     artist: "Yiruma",
     tags: "contemporary piano",
-    url: "https://www.virtualsheetmusic.com/score/HL-302236.html",
-    sourceLabel: "Licensed sheet music",
+    url: "https://synthesia.app/store/Song/11",
+    sourceLabel: "Licensed MIDI at Synthesia",
     detail:
-      "Sheet music source; playback needs a MIDI or MusicXML arrangement.",
+      "Piano MIDI source. Purchase availability depends on region; import your file to play and generate sheet music.",
+  },
+  {
+    title: "Faded",
+    artist: "Alan Walker",
+    tags: "electronic EDM dance",
+    url: "https://www.midi.com.au/alan-walker/faded-midi/",
+    sourceLabel: "Licensed MIDI at Hit Trax",
+    detail:
+      "Paid MIDI backing track. Import your file and enable Original MIDI instruments for its arrangement.",
   },
   {
     title: "Someone Like You",

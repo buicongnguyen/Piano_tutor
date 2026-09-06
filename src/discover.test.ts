@@ -12,6 +12,8 @@ describe("song discovery", () => {
     ]);
     expect(findDiscoverSongs("pop")).toHaveLength(4);
     expect(findDiscoverSongs("Rivers flow in you")[0].artist).toBe("Yiruma");
+    expect(findDiscoverSongs("Alan Walker")[0].title).toBe("Faded");
+    expect(findDiscoverSongs("electronic")[0].title).toBe("Faded");
     expect(findDiscoverSongs("not a real song")).toHaveLength(0);
     expect(
       findDiscoverSongs("").every(
