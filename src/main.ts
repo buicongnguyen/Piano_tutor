@@ -2,6 +2,7 @@ import { shell } from "./shell";
 import { mountKeyboard } from "./keyboard";
 import { loadRepertoire } from "./repertoire";
 import { musicMatches } from "./collection";
+import { openScorePicker } from "./import-picker";
 import { hasBothHands } from "./practice";
 import { findDiscoverSongs } from "./discover";
 import { mountTheme } from "./theme";
@@ -141,7 +142,8 @@ function renderLibrary() {
     const info = document.createElement("p");
     info.textContent = song.detail;
     const button = document.createElement("button");
-    button.textContent = "Import " + song.title;
+    button.textContent = "Import file · " + song.title;
+    button.title = "Choose a MIDI or MusicXML file from your device";
     button.onclick = () => {
       $<HTMLDetailsElement>("#collection-picker").open = false;
       $("#import").click();
@@ -342,15 +344,27 @@ new ResizeObserver(() => {
 $("#sheet-tab").onclick = () => setView("sheet");
 $("#roll-tab").onclick = () => setView("roll");
 const dialog = $<HTMLDialogElement>("#import-dialog");
-for (const id of ["#import", "#import-side"])
-  $(id).onclick = () => dialog.showModal();
+const chooseScore = () => {
+  player.pause();
+  try {
+    openScorePicker($<HTMLInputElement>("#file"));
+  } catch {
+    if (!dialog.open) dialog.showModal();
+    status(
+      "File chooser could not open. Use Choose a file below, or try opening this site in your browser.",
+    );
+  }
+};
+for (const id of ["#import", "#import-side", "#choose"])
+  $(id).onclick = chooseScore;
 $("#close-dialog").onclick = () => dialog.close();
-$("#choose").onclick = () => $<HTMLInputElement>("#file").click();
+
 $<HTMLInputElement>("#file").onchange = async (e) => {
   const input = e.target as HTMLInputElement;
   const f = input.files?.[0];
   if (!f) return;
-  dialog.close();
+  if (dialog.open) dialog.close();
+  status(`Reading ${f.name}…`);
   try {
     if (f.size > 5 * 1024 * 1024)
       throw Error("Choose a score smaller than 5 MB.");
