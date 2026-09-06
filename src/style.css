@@ -1709,3 +1709,22 @@ header p,
     padding-top: 0;
   }
 }
+
+.pc-heading {
+  flex-wrap: wrap;
+}
+.pc-pedal {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+}
+.pc-pedal button {
+  padding: 4px 10px;
+  font-size: 11px;
+}
+.pc-pedal button[aria-pressed="true"] {
+  background: #075985;
+  color: #e0faff;
+  border-color: #38bdf8;
+  box-shadow: 0 0 12px #38bdf855;
+}

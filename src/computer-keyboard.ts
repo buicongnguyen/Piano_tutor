@@ -36,15 +36,31 @@ export function keyCode(label: string) {
     )[label] ?? (/\d/.test(label) ? `Digit${label}` : `Key${label}`)
   );
 }
-export function computerLayout(rows = 2) {
-  const offsets = { ...pcOffsets };
+export type ComputerMapping = "classic" | "home";
+const homeOffsets: Record<string, number> = {
+  KeyA: 0,
+  KeyW: 1,
+  KeyS: 2,
+  KeyE: 3,
+  KeyD: 4,
+  KeyF: 5,
+  KeyT: 6,
+  KeyJ: 7,
+  KeyI: 8,
+  KeyK: 9,
+  KeyO: 10,
+  KeyL: 11,
+  Semicolon: 12,
+};
+export function computerLayout(rows = 2, mapping: ComputerMapping = "classic") {
+  const offsets = { ...(mapping === "home" ? homeOffsets : pcOffsets) };
   if (rows >= 3)
     bottomRow.forEach((label, i) => {
       offsets[keyCode(label)] = i - 10;
     });
   if (rows === 4)
     numberRow.forEach((label, i) => {
-      offsets[keyCode(label)] = i + 17;
+      offsets[keyCode(label)] = i + (mapping === "home" ? 13 : 17);
     });
   return {
     offsets,
@@ -55,8 +71,13 @@ export function computerLayout(rows = 2) {
     ],
   };
 }
-export function computerNote(code: string, octave: number, rows = 2) {
-  const offsets = computerLayout(rows).offsets;
+export function computerNote(
+  code: string,
+  octave: number,
+  rows = 2,
+  mapping: ComputerMapping = "classic",
+) {
+  const offsets = computerLayout(rows, mapping).offsets;
   const midi = 12 * (octave + 1) + offsets[code];
   return Object.hasOwn(offsets, code) &&
     midi >= 21 &&
@@ -72,7 +93,19 @@ export function mountComputerKeyboard(player: Player) {
   const octaveSelect =
     document.querySelector<HTMLSelectElement>("#computer-octave")!;
   const buttons = new Map<string, HTMLButtonElement>();
-  const held = new Map<string, { midi: number; stop?: () => void }>();
+  const held = new Map<
+    string,
+    { midi: number; down: boolean; stop?: () => void }
+  >();
+  const mappingSelect =
+    document.querySelector<HTMLSelectElement>("#computer-mapping");
+  let mapping: ComputerMapping =
+    mappingSelect?.value === "home" ? "home" : "classic";
+  const sustainSelect =
+    document.querySelector<HTMLSelectElement>("#computer-sustain");
+  const sustainButton =
+    document.querySelector<HTMLButtonElement>("#pc-sustain");
+  let sustain = false;
   let octave = 4;
   let rowCount = 2;
   const rowSelect = document.querySelector<HTMLSelectElement>("#computer-rows");
@@ -82,26 +115,48 @@ export function mountComputerKeyboard(player: Player) {
   root.after(chain);
   const reduced = matchMedia("(prefers-reduced-motion: reduce)");
   let sequenceSignature = "";
-  const release = (code: string) => {
-    held.get(code)?.stop?.();
+  const release = (code: string, force = false) => {
+    const entry = held.get(code);
+    if (entry) entry.down = false;
+    if (sustain && !force) return;
+    entry?.stop?.();
     held.delete(code);
   };
-  const releaseAll = () => {
-    for (const code of held.keys()) release(code);
+  const setSustain = (value: boolean) => {
+    sustain = value;
+    sustainButton?.setAttribute("aria-pressed", String(value));
+    if (sustainButton)
+      sustainButton.textContent = value
+        ? "Sustain on · release"
+        : "Sustain off";
+    if (!value)
+      for (const [code, entry] of held) if (!entry.down) release(code, true);
   };
+  const releaseAll = () => {
+    setSustain(false);
+    for (const code of held.keys()) release(code, true);
+  };
+  if (sustainButton) sustainButton.onclick = () => setSustain(!sustain);
+  if (sustainSelect) sustainSelect.onchange = releaseAll;
+  document.querySelector("#pc-release")?.addEventListener("click", releaseAll);
   player.onSilence.add(releaseAll);
   const press = async (code: string) => {
-    if (held.has(code)) return;
-    const midi = computerNote(code, octave, rowCount);
+    if (held.get(code)?.down) return;
+    release(code, true);
+    const midi = computerNote(code, octave, rowCount, mapping);
     if (midi === undefined) return;
-    const entry = { midi } as { midi: number; stop?: () => void };
+    const entry = { midi, down: true } as {
+      midi: number;
+      down: boolean;
+      stop?: () => void;
+    };
     held.set(code, entry);
     try {
       await player.init();
       if (held.get(code) === entry) entry.stop = player.hold(midi);
     } catch {
       if (held.get(code) !== entry) return;
-      release(code);
+      release(code, true);
       document.querySelector("#status")!.textContent =
         "Audio could not start. Try the key again.";
     }
@@ -110,12 +165,12 @@ export function mountComputerKeyboard(player: Player) {
     root.replaceChildren();
     buttons.clear();
     root.dataset.rows = String(rowCount);
-    for (const row of computerLayout(rowCount).rows) {
+    for (const row of computerLayout(rowCount, mapping).rows) {
       const container = document.createElement("div");
       container.className = "pc-row";
       for (const label of row) {
         const code = keyCode(label);
-        const midi = computerNote(code, octave, rowCount);
+        const midi = computerNote(code, octave, rowCount, mapping);
         const key = document.createElement("button");
         key.className = "pc-key";
         const letter = document.createElement("kbd");
@@ -161,6 +216,13 @@ export function mountComputerKeyboard(player: Player) {
       root.append(container);
     }
   };
+  if (mappingSelect)
+    mappingSelect.onchange = () => {
+      releaseAll();
+      mapping = mappingSelect.value === "home" ? "home" : "classic";
+      sequenceSignature = "";
+      render();
+    };
   octaveSelect.onchange = () => {
     releaseAll();
     octave = Number(octaveSelect.value);
@@ -190,17 +252,53 @@ export function mountComputerKeyboard(player: Player) {
       )
     )
       return;
-    if (computerNote(event.code, octave, rowCount) !== undefined) {
+    if (event.code === "Escape") {
+      event.preventDefault();
+      releaseAll();
+      return;
+    }
+    if (
+      event.code === "Space" &&
+      sustainSelect?.value !== "off" &&
+      sustainSelect &&
+      !target.closest("button,a,summary")
+    ) {
+      event.preventDefault();
+      setSustain(sustainSelect.value === "toggle" ? !sustain : true);
+      return;
+    }
+    if (computerNote(event.code, octave, rowCount, mapping) !== undefined) {
       event.preventDefault();
       void press(event.code);
     }
   });
-  document.addEventListener("keyup", (event) => release(event.code));
+  document.addEventListener("keyup", (event) => {
+    if (event.code === "Space" && sustainSelect?.value === "hold")
+      setSustain(false);
+    release(event.code);
+  });
   window.addEventListener("blur", releaseAll);
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) releaseAll();
   });
   document.querySelector("#instrument")!.addEventListener("change", releaseAll);
+  const updateHint = () => {
+    const hint = document.querySelector("#pc-help");
+    if (hint)
+      hint.textContent =
+        (mapping === "home"
+          ? "Home fingers: A S D F · J K L ; = C D E F · G A B C. W E T I O = sharps. "
+          : "Classic chromatic QWERTY mapping. ") +
+        (sustainSelect?.value === "hold"
+          ? "Hold Space with a thumb to sustain; release it to lift the pedal. "
+          : sustainSelect?.value === "toggle"
+            ? "Tap Space to turn sustain on/off; build chords one note at a time. "
+            : "Space plays/pauses the score. ") +
+        "Escape releases all manual notes. Bars show score key-down durations; pedal extends your manual sound only. Use the Play button for score playback.";
+  };
+  mappingSelect?.addEventListener("change", updateHint);
+  sustainSelect?.addEventListener("change", updateHint);
+  updateHint();
   render();
   return (active: number[], notes: Note[] = [], time = 0) => {
     const visible = new Map<number, Note[]>();
@@ -212,9 +310,9 @@ export function mountComputerKeyboard(player: Player) {
       visible.set(note.midi, list);
     }
     const labels = new Map<number, string>();
-    for (const row of computerLayout(rowCount).rows)
+    for (const row of computerLayout(rowCount, mapping).rows)
       for (const label of row) {
-        const midi = computerNote(keyCode(label), octave, rowCount);
+        const midi = computerNote(keyCode(label), octave, rowCount, mapping);
         if (midi !== undefined) labels.set(midi, label);
       }
     const cues = upcomingKeys(notes, time, labels);
@@ -247,7 +345,7 @@ export function mountComputerKeyboard(player: Player) {
         );
     }
     for (const [code, key] of buttons) {
-      const midi = computerNote(code, octave, rowCount);
+      const midi = computerNote(code, octave, rowCount, mapping);
       const fall = key.querySelector<HTMLElement>(".pc-fall")!;
       fall.replaceChildren();
       if (!reduced.matches && midi !== undefined) {

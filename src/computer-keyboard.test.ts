@@ -8,6 +8,18 @@ import {
 } from "./computer-keyboard";
 import type { Player } from "./audio";
 describe("computer keyboard", () => {
+  it("places a complete octave on eight home fingers with unique chromatic extensions", () => {
+    expect(
+      ["KeyA", "KeyS", "KeyD", "KeyF", "KeyJ", "KeyK", "KeyL", "Semicolon"].map(
+        (code) => computerNote(code, 4, 2, "home"),
+      ),
+    ).toEqual([60, 62, 64, 65, 67, 69, 71, 72]);
+    expect(computerNote("KeyG", 4, 2, "home")).toBeUndefined();
+    for (const rows of [2, 3, 4]) {
+      const values = Object.values(computerLayout(rows, "home").offsets);
+      expect(new Set(values).size).toBe(values.length);
+    }
+  });
   it("adds distinct lower and upper keys for three and four rows", () => {
     expect(computerLayout(2).rows).toHaveLength(2);
     expect(computerLayout(3).rows).toHaveLength(3);
@@ -39,7 +51,7 @@ describe("computer keyboard", () => {
   it("handles chords, releases on keyup and cancels notes released before audio initializes", async () => {
     vi.stubGlobal("matchMedia", () => ({ matches: false }));
     document.body.innerHTML =
-      '<div id="computer-keys"></div><select id="computer-octave"><option value="4">4</option></select><select id="instrument"></select><div id="keyboard"></div><div id="status"></div>';
+      '<select id="computer-mapping"><option value="classic">Classic</option><option value="home">Home</option></select><select id="computer-sustain"><option value="off">Off</option><option value="hold">Hold</option><option value="toggle">Toggle</option></select><button id="pc-sustain"></button><button id="pc-release"></button><div id="pc-help"></div><div id="computer-keys"></div><select id="computer-octave"><option value="4">4</option></select><select id="instrument"></select><div id="keyboard"></div><div id="status"></div>';
     let ready!: () => void;
     const stop = vi.fn();
     const player = {
@@ -122,6 +134,88 @@ describe("computer keyboard", () => {
     ready();
     await Promise.resolve();
     expect(player.hold).toHaveBeenCalledTimes(starts);
+    player.init.mockResolvedValue();
+    const pedal =
+      document.querySelector<HTMLSelectElement>("#computer-sustain")!;
+    const send = (type: string, code: string) =>
+      document.body.dispatchEvent(
+        new KeyboardEvent(type, { code, bubbles: true, cancelable: true }),
+      );
+    pedal.value = "hold";
+    pedal.dispatchEvent(new Event("change"));
+    send("keydown", "Space");
+    down();
+    await Promise.resolve();
+    const beforePedalRelease = stop.mock.calls.length;
+    up();
+    expect(stop).toHaveBeenCalledTimes(beforePedalRelease);
+    expect(
+      document.querySelector("#pc-sustain")?.getAttribute("aria-pressed"),
+    ).toBe("true");
+    send("keyup", "Space");
+    expect(stop).toHaveBeenCalledTimes(beforePedalRelease + 1);
+    // Toggle sustain lets a low-rollover keyboard build a chord sequentially.
+    pedal.value = "toggle";
+    pedal.dispatchEvent(new Event("change"));
+    send("keydown", "Space");
+    send("keyup", "Space");
+    down();
+    await Promise.resolve();
+    up();
+    send("keydown", "KeyD");
+    await Promise.resolve();
+    send("keyup", "KeyD");
+    const beforeLift = stop.mock.calls.length;
+    send("keydown", "Space");
+    send("keyup", "Space");
+    expect(stop).toHaveBeenCalledTimes(beforeLift + 2);
+    // Re-striking a sustained key cancels its previous voice.
+    send("keydown", "Space");
+    send("keyup", "Space");
+    down();
+    await Promise.resolve();
+    up();
+    const beforeRestrike = stop.mock.calls.length;
+    down();
+    await Promise.resolve();
+    expect(stop).toHaveBeenCalledTimes(beforeRestrike + 1);
+    send("keydown", "Escape");
+    expect(stop).toHaveBeenCalledTimes(beforeRestrike + 2);
+    expect(
+      document.querySelector("#pc-sustain")?.getAttribute("aria-pressed"),
+    ).toBe("false");
+    // Pending sustained audio cannot start after the pedal has been lifted.
+    player.init.mockImplementationOnce(
+      () =>
+        new Promise<void>((r) => {
+          ready = r;
+        }),
+    );
+    send("keydown", "Space");
+    send("keyup", "Space");
+    const beforePending = player.hold.mock.calls.length;
+    down();
+    up();
+    send("keydown", "Space");
+    send("keyup", "Space");
+    ready();
+    await Promise.resolve();
+    expect(player.hold).toHaveBeenCalledTimes(beforePending);
+    // Layout switching updates keys and releases existing voices.
+    down();
+    await Promise.resolve();
+    const mapping =
+      document.querySelector<HTMLSelectElement>("#computer-mapping")!;
+    const beforeSwitch = stop.mock.calls.length;
+    mapping.value = "home";
+    mapping.dispatchEvent(new Event("change"));
+    expect(stop).toHaveBeenCalledTimes(beforeSwitch + 1);
+    expect(
+      document.querySelector('[aria-label="Computer J: G4"]'),
+    ).not.toBeNull();
+    expect(document.querySelector("#pc-help")?.textContent).toContain(
+      "Home fingers",
+    );
     // Events from non-elements must be harmless.
     document.dispatchEvent(new KeyboardEvent("keydown", { code: "KeyA" }));
   });
