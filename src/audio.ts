@@ -184,6 +184,51 @@ export class Player {
     });
     setTimeout(() => env.disconnect(), (delay + duration + 0.3) * 1000);
   }
+  hold(midi: number, velocity = 0.7): () => void {
+    if (!this.context || !this.gain) return () => {};
+    if (this.grandReady) {
+      const cancel = this.grand!.start({
+        note: midi,
+        velocity: Math.round(velocity * 127),
+        stopId: ++this.voiceId,
+      });
+      this.sampleCancels.add(cancel);
+      return () => {
+        cancel();
+        this.sampleCancels.delete(cancel);
+      };
+    }
+    const ctx = this.context,
+      env = ctx.createGain(),
+      osc = ctx.createOscillator();
+    osc.frequency.value = 440 * 2 ** ((midi - 69) / 12);
+    env.gain.setValueAtTime(0, ctx.currentTime);
+    env.gain.linearRampToValueAtTime(velocity * 0.6, ctx.currentTime + 0.006);
+    env.gain.exponentialRampToValueAtTime(
+      Math.max(0.001, velocity * 0.12),
+      ctx.currentTime + 0.5,
+    );
+    osc.connect(env).connect(this.gain);
+    this.voices.add(osc);
+    osc.onended = () => {
+      this.voices.delete(osc);
+      osc.disconnect();
+      env.disconnect();
+    };
+    osc.start();
+    let released = false;
+    return () => {
+      if (released) return;
+      released = true;
+      env.gain.cancelAndHoldAtTime(ctx.currentTime);
+      env.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.12);
+      try {
+        osc.stop(ctx.currentTime + 0.12);
+      } catch {
+        /* Already silenced. */
+      }
+    };
+  }
   silence() {
     for (const cancel of this.sampleCancels) cancel();
     this.sampleCancels.clear();

@@ -1,5 +1,11 @@
 # Logic and code review
 
+## Computer keyboard guide
+
+- Added a QWERTY-position guide with 17 semitones, octave selection, blue ripple highlights and playback-following within the chosen range. Input fields and dialogs are excluded from musical shortcuts.
+- Physical keyboard notes use note-on/note-off rather than fixed durations. A per-key token prevents delayed initialization from starting an already released note. Blur, hidden documents and octave/instrument changes release held notes.
+- 42 tests and build pass. Tests cover complete chromatic mapping, octave bounds, chords, key release, blur cleanup and release before initialization. Browser checked octave relabeling, clickable guide keys and physical-key input dispatch.
+
 ## Selectable sampled instruments
 
 - Added ten instrument choices using the existing smplr package: Splendid grand plus nine MusyngKite soundfonts. Sample libraries are independent of Virtual Piano.

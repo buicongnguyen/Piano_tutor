@@ -1438,3 +1438,108 @@ header p,
   color: #d2edec;
   border-color: #536d60;
 }
+.computer-keyboard {
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid #3b586b;
+  border-radius: 10px;
+  background: linear-gradient(145deg, #182731, #0b171f);
+  color: #c8e3ed;
+}
+.pc-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 11px;
+  margin-bottom: 8px;
+}
+.pc-heading label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.pc-heading select {
+  padding: 4px;
+  font-size: 11px;
+}
+#computer-keys {
+  overflow-x: auto;
+  padding: 3px 5px 10px;
+}
+.pc-row {
+  display: flex;
+  gap: 5px;
+  min-width: 470px;
+}
+.pc-row + .pc-row {
+  margin: 6px 0 0 15px;
+}
+.pc-key {
+  position: relative;
+  flex: 1;
+  min-width: 38px;
+  padding: 7px 4px;
+  border: 1px solid #526672;
+  border-bottom: 4px solid #060c12;
+  border-radius: 6px;
+  background: linear-gradient(#344957, #1d2e3a);
+  color: #e2f2f7;
+  box-shadow: 0 2px 3px #0006;
+}
+.pc-key kbd {
+  display: block;
+  font: 600 14px monospace;
+}
+.pc-key small {
+  display: block;
+  font-size: 9px;
+  margin-top: 3px;
+  color: #a8cbd8;
+}
+.pc-key.pc-active {
+  background: linear-gradient(#2873aa, #4dccec);
+  border-color: #b2efff;
+  color: white;
+  box-shadow:
+    0 0 15px #22c9ff99,
+    inset 0 0 10px #84e9ff;
+}
+.pc-key.pc-active small {
+  color: #fff;
+}
+.pc-key.pc-active::after {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  border: 1px solid #a6efff;
+  border-radius: 50%;
+  animation: pc-ripple 0.65s ease-out infinite;
+  pointer-events: none;
+}
+@keyframes pc-ripple {
+  from {
+    transform: scale(0.25);
+    opacity: 0.9;
+  }
+  to {
+    transform: scale(1.25);
+    opacity: 0;
+  }
+}
+#keyboard .key.pc-held {
+  background: linear-gradient(#2a9fd1, #94eaff);
+  box-shadow: 0 0 12px #32c5ff;
+}
+.computer-keyboard p {
+  margin: 7px 0 0;
+  font-size: 10px;
+  line-height: 1.5;
+  color: #a3becb;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pc-key.pc-active::after {
+    animation: none;
+    display: none;
+  }
+}

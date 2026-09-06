@@ -4,6 +4,7 @@ import { loadRepertoire } from "./repertoire";
 import { musicMatches } from "./collection";
 import { mountTheme } from "./theme";
 import { mountWaterfall } from "./waterfall";
+import { mountComputerKeyboard } from "./computer-keyboard";
 import "./style.css";
 import { OpenSheetMusicDisplay } from "opensheetmusicdisplay";
 import { exercise, parseXml, parseMidi, noteName, type Piece } from "./music";
@@ -408,9 +409,8 @@ $("#sample").onclick = async () => {
     $("#lcd-voice").textContent = "SYNTH PIANO";
   }
 };
-const keyMap = "awsedftgyhujk",
-  pitches = [60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72];
 const keys = mountKeyboard(player);
+const updateComputerKeyboard = mountComputerKeyboard(player);
 const drawWaterfall = mountWaterfall();
 document.addEventListener("keydown", async (e) => {
   if (
@@ -424,15 +424,6 @@ document.addEventListener("keydown", async (e) => {
     ["INPUT", "SELECT", "TEXTAREA"].includes((e.target as HTMLElement).tagName)
   )
     return;
-  const i = keyMap.indexOf(e.key.toLowerCase());
-  if (i >= 0) {
-    try {
-      await player.init();
-      player.tone(pitches[i], 1.3);
-    } catch {
-      status("Audio could not start. Try the key again.");
-    }
-  }
   if (e.code === "Space") {
     if ((e.target as HTMLElement).closest("button,a")) return;
     e.preventDefault();
@@ -530,6 +521,7 @@ function frame() {
         : "▶ <span>Play</span>";
     $("#loop-range").textContent = `${time(player.a)}–${time(player.b)}`;
     const active = player.playing ? activeAt(current.notes, t) : [];
+    updateComputerKeyboard(active.map((n) => n.midi));
     for (const [m, b] of keys)
       b.classList.toggle(
         "sounding",
