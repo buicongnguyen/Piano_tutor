@@ -20,12 +20,51 @@ export const pcOffsets: Record<string, number> = {
   KeyP: 15,
   Semicolon: 16,
 };
-export function computerNote(code: string, octave: number) {
-  return Object.hasOwn(pcOffsets, code) &&
+const baseRows = [
+  ["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"],
+  ["A", "S", "D", "F", "G", "H", "J", "K", "L", ";"],
+];
+const bottomRow = ["Z", "X", "C", "V", "B", "N", "M", ",", ".", "/"];
+const numberRow = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"];
+export function keyCode(label: string) {
+  return (
+    (
+      { ";": "Semicolon", ",": "Comma", ".": "Period", "/": "Slash" } as Record<
+        string,
+        string
+      >
+    )[label] ?? (/\d/.test(label) ? `Digit${label}` : `Key${label}`)
+  );
+}
+export function computerLayout(rows = 2) {
+  const offsets = { ...pcOffsets };
+  if (rows >= 3)
+    bottomRow.forEach((label, i) => {
+      offsets[keyCode(label)] = i - 10;
+    });
+  if (rows === 4)
+    numberRow.forEach((label, i) => {
+      offsets[keyCode(label)] = i + 17;
+    });
+  return {
+    offsets,
+    rows: [
+      ...(rows === 4 ? [numberRow] : []),
+      ...baseRows,
+      ...(rows >= 3 ? [bottomRow] : []),
+    ],
+  };
+}
+export function computerNote(code: string, octave: number, rows = 2) {
+  const offsets = computerLayout(rows).offsets;
+  const midi = 12 * (octave + 1) + offsets[code];
+  return Object.hasOwn(offsets, code) &&
+    midi >= 21 &&
+    midi <= 108 &&
     Number.isInteger(octave) &&
     octave >= 2 &&
     octave <= 6
-    ? 12 * (octave + 1) + pcOffsets[code]
+    ? midi
     : undefined;
 }
 export function mountComputerKeyboard(player: Player) {
@@ -35,6 +74,8 @@ export function mountComputerKeyboard(player: Player) {
   const buttons = new Map<string, HTMLButtonElement>();
   const held = new Map<string, { midi: number; stop?: () => void }>();
   let octave = 4;
+  let rowCount = 2;
+  const rowSelect = document.querySelector<HTMLSelectElement>("#computer-rows");
   const chain = document.createElement("div");
   chain.className = "pc-sequence";
   chain.setAttribute("aria-label", "Upcoming computer key sequence");
@@ -51,7 +92,7 @@ export function mountComputerKeyboard(player: Player) {
   player.onSilence.add(releaseAll);
   const press = async (code: string) => {
     if (held.has(code)) return;
-    const midi = computerNote(code, octave);
+    const midi = computerNote(code, octave, rowCount);
     if (midi === undefined) return;
     const entry = { midi } as { midi: number; stop?: () => void };
     held.set(code, entry);
@@ -68,15 +109,13 @@ export function mountComputerKeyboard(player: Player) {
   const render = () => {
     root.replaceChildren();
     buttons.clear();
-    for (const row of [
-      ["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"],
-      ["A", "S", "D", "F", "G", "H", "J", "K", "L", ";"],
-    ]) {
+    root.dataset.rows = String(rowCount);
+    for (const row of computerLayout(rowCount).rows) {
       const container = document.createElement("div");
       container.className = "pc-row";
       for (const label of row) {
-        const code = label === ";" ? "Semicolon" : `Key${label}`;
-        const midi = computerNote(code, octave);
+        const code = keyCode(label);
+        const midi = computerNote(code, octave, rowCount);
         const key = document.createElement("button");
         key.className = "pc-key";
         const letter = document.createElement("kbd");
@@ -127,6 +166,15 @@ export function mountComputerKeyboard(player: Player) {
     octave = Number(octaveSelect.value);
     render();
   };
+  if (rowSelect)
+    rowSelect.onchange = () => {
+      releaseAll();
+      rowCount = [2, 3, 4].includes(Number(rowSelect.value))
+        ? Number(rowSelect.value)
+        : 2;
+      sequenceSignature = "";
+      render();
+    };
   document.addEventListener("keydown", (event) => {
     const target = event.target;
     if (
@@ -138,11 +186,11 @@ export function mountComputerKeyboard(player: Player) {
       !(target instanceof HTMLElement) ||
       target.isContentEditable ||
       target.closest(
-        'input,select,textarea,[contenteditable="true"],#collection-picker,dialog[open]',
+        'input,select,textarea,[contenteditable="true"],#collection-picker,#piano-options,dialog[open]',
       )
     )
       return;
-    if (computerNote(event.code, octave) !== undefined) {
+    if (computerNote(event.code, octave, rowCount) !== undefined) {
       event.preventDefault();
       void press(event.code);
     }
@@ -164,11 +212,11 @@ export function mountComputerKeyboard(player: Player) {
       visible.set(note.midi, list);
     }
     const labels = new Map<number, string>();
-    for (const code of Object.keys(pcOffsets))
-      labels.set(
-        computerNote(code, octave)!,
-        code === "Semicolon" ? ";" : code.slice(3),
-      );
+    for (const row of computerLayout(rowCount).rows)
+      for (const label of row) {
+        const midi = computerNote(keyCode(label), octave, rowCount);
+        if (midi !== undefined) labels.set(midi, label);
+      }
     const cues = upcomingKeys(notes, time, labels);
     const signature = JSON.stringify(
       cues.map((c) => [c.labels, c.outside, c.time <= time]),
@@ -199,7 +247,7 @@ export function mountComputerKeyboard(player: Player) {
         );
     }
     for (const [code, key] of buttons) {
-      const midi = computerNote(code, octave);
+      const midi = computerNote(code, octave, rowCount);
       const fall = key.querySelector<HTMLElement>(".pc-fall")!;
       fall.replaceChildren();
       if (!reduced.matches && midi !== undefined) {
@@ -210,9 +258,10 @@ export function mountComputerKeyboard(player: Player) {
             note.time + note.duration <= time
           )
             continue;
-          const bar = keyBar(note, time);
+          const height = fall.clientHeight;
+          const bar = keyBar(note, time, height);
           const top = Math.max(0, bar.bottom - bar.length),
-            bottom = Math.min(72, bar.bottom);
+            bottom = Math.min(height, bar.bottom);
           if (bottom <= top) continue;
           const drop = document.createElement("i");
           drop.className = "pc-drop";

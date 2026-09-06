@@ -44,6 +44,17 @@ duet = duet.replace(/<\/measure>/g, () => {
 library[0] = parseXml(duet);
 $("#app").innerHTML = shell;
 mountTheme($<HTMLSelectElement>("#theme"));
+const pianoOptions = $<HTMLDetailsElement>("#piano-options");
+document.addEventListener("click", (event) => {
+  if (event.target instanceof Node && !pianoOptions.contains(event.target))
+    pianoOptions.open = false;
+});
+pianoOptions.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") {
+    pianoOptions.open = false;
+    pianoOptions.querySelector<HTMLElement>("summary")!.focus();
+  }
+});
 const instrumentSelect = $<HTMLSelectElement>("#instrument");
 for (const [id, instrument] of Object.entries(instruments)) {
   instrumentSelect.add(new Option(instrument.label, id));
@@ -416,6 +427,7 @@ document.addEventListener("keydown", async (e) => {
   if (
     e.defaultPrevented ||
     picker.contains(e.target as Node) ||
+    pianoOptions.contains(e.target as Node) ||
     e.repeat ||
     e.ctrlKey ||
     e.metaKey ||

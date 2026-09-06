@@ -1614,3 +1614,98 @@ header p,
     display: none;
   }
 }
+/* Compact computer rows retain short predictive lanes. */
+.computer-keyboard {
+  padding: 8px 10px;
+  margin-top: 8px;
+}
+.pc-heading {
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.pc-heading > strong {
+  margin-right: auto;
+}
+.pc-key {
+  padding: 3px 4px;
+  border-bottom-width: 3px;
+}
+.pc-key kbd {
+  font-size: 12px;
+}
+.pc-key small {
+  display: inline;
+  margin-left: 5px;
+  font-size: 9px;
+}
+.pc-key kbd {
+  display: inline;
+}
+.pc-row {
+  padding-top: 32px;
+}
+.pc-row + .pc-row {
+  margin-top: 3px;
+  margin-left: 0;
+}
+.pc-fall {
+  top: -32px;
+  height: 28px;
+}
+#computer-keys {
+  padding-bottom: 4px;
+}
+.pc-sequence {
+  padding-top: 4px;
+}
+.pc-cue {
+  padding: 3px 5px;
+}
+.piano-options {
+  position: relative;
+}
+.piano-options summary {
+  cursor: pointer;
+  list-style: none;
+  border: 1px solid #789082;
+  border-radius: 6px;
+  padding: 7px 9px;
+  font-size: 11px;
+  white-space: nowrap;
+}
+.piano-options-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 5px);
+  z-index: 25;
+  display: grid;
+  gap: 8px;
+  width: 205px;
+  padding: 12px;
+  background: #20312b;
+  color: #e2ede5;
+  border: 1px solid #648272;
+  border-radius: 8px;
+  box-shadow: 0 8px 25px #0006;
+}
+.piano-options-menu button {
+  color: #dceae2;
+  font-size: 11px;
+  text-align: left;
+}
+.sound {
+  flex-direction: row;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.keyboard-heading {
+  flex-wrap: wrap;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pc-row {
+    padding-top: 0;
+  }
+}

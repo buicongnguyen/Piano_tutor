@@ -4,9 +4,25 @@ import {
   computerNote,
   mountComputerKeyboard,
   pcOffsets,
+  computerLayout,
 } from "./computer-keyboard";
 import type { Player } from "./audio";
 describe("computer keyboard", () => {
+  it("adds distinct lower and upper keys for three and four rows", () => {
+    expect(computerLayout(2).rows).toHaveLength(2);
+    expect(computerLayout(3).rows).toHaveLength(3);
+    expect(computerLayout(4).rows).toHaveLength(4);
+    expect(computerNote("KeyZ", 4, 2)).toBeUndefined();
+    expect(computerNote("KeyZ", 4, 3)).toBe(50);
+    expect(computerNote("Digit1", 4, 3)).toBeUndefined();
+    expect(computerNote("Digit1", 4, 4)).toBe(77);
+    expect(computerNote("Digit0", 6, 4)).toBeUndefined();
+    for (const rows of [2, 3, 4]) {
+      const offsets = Object.values(computerLayout(rows).offsets);
+      expect(new Set(offsets).size).toBe(offsets.length);
+      expect(computerNote("KeyA", 4, rows)).toBe(60);
+    }
+  });
   it("maps every semitone once and keeps all octave choices in piano range", () => {
     expect(Object.values(pcOffsets).sort((a, b) => a - b)).toEqual(
       Array.from({ length: 17 }, (_, i) => i),
