@@ -523,7 +523,11 @@ function frame() {
         : "▶ <span>Play</span>";
     $("#loop-range").textContent = `${time(player.a)}–${time(player.b)}`;
     const active = player.playing ? activeAt(current.notes, t) : [];
-    updateComputerKeyboard(active.map((n) => n.midi));
+    updateComputerKeyboard(
+      active.map((n) => n.midi),
+      current.notes,
+      t,
+    );
     for (const [m, b] of keys)
       b.classList.toggle(
         "sounding",

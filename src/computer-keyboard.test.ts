@@ -21,6 +21,7 @@ describe("computer keyboard", () => {
     expect(computerNote("KeyA", 8)).toBeUndefined();
   });
   it("handles chords, releases on keyup and cancels notes released before audio initializes", async () => {
+    vi.stubGlobal("matchMedia", () => ({ matches: false }));
     document.body.innerHTML =
       '<div id="computer-keys"></div><select id="computer-octave"><option value="4">4</option></select><select id="instrument"></select><div id="keyboard"></div><div id="status"></div>';
     let ready!: () => void;

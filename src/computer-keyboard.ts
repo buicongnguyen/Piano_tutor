@@ -1,4 +1,5 @@
-import { noteName } from "./music";
+import { noteName, type Note } from "./music";
+import { upcomingKeys, keyBar } from "./key-cues";
 import type { Player } from "./audio";
 export const pcOffsets: Record<string, number> = {
   KeyA: 0,
@@ -34,6 +35,12 @@ export function mountComputerKeyboard(player: Player) {
   const buttons = new Map<string, HTMLButtonElement>();
   const held = new Map<string, { midi: number; stop?: () => void }>();
   let octave = 4;
+  const chain = document.createElement("div");
+  chain.className = "pc-sequence";
+  chain.setAttribute("aria-label", "Upcoming computer key sequence");
+  root.after(chain);
+  const reduced = matchMedia("(prefers-reduced-motion: reduce)");
+  let sequenceSignature = "";
   const release = (code: string) => {
     held.get(code)?.stop?.();
     held.delete(code);
@@ -76,7 +83,10 @@ export function mountComputerKeyboard(player: Player) {
         letter.textContent = label;
         const name = document.createElement("small");
         name.textContent = midi === undefined ? "—" : noteName(midi);
-        key.append(letter, name);
+        const fall = document.createElement("span");
+        fall.className = "pc-fall";
+        fall.setAttribute("aria-hidden", "true");
+        key.append(fall, letter, name);
         key.disabled = midi === undefined;
         key.setAttribute(
           "aria-label",
@@ -144,9 +154,73 @@ export function mountComputerKeyboard(player: Player) {
   });
   document.querySelector("#instrument")!.addEventListener("change", releaseAll);
   render();
-  return (active: number[]) => {
+  return (active: number[], notes: Note[] = [], time = 0) => {
+    const visible = new Map<number, Note[]>();
+    for (const note of notes) {
+      if (note.time > time + 4) break;
+      if (note.time + note.duration <= time) continue;
+      const list = visible.get(note.midi) ?? [];
+      list.push(note);
+      visible.set(note.midi, list);
+    }
+    const labels = new Map<number, string>();
+    for (const code of Object.keys(pcOffsets))
+      labels.set(
+        computerNote(code, octave)!,
+        code === "Semicolon" ? ";" : code.slice(3),
+      );
+    const cues = upcomingKeys(notes, time, labels);
+    const signature = JSON.stringify(
+      cues.map((c) => [c.labels, c.outside, c.time <= time]),
+    );
+    if (signature !== sequenceSignature) {
+      sequenceSignature = signature;
+      chain.replaceChildren();
+      const caption = document.createElement("span");
+      caption.textContent = "NEXT KEYS";
+      chain.append(caption);
+      for (const [index, cue] of cues.entries()) {
+        if (index) chain.append(document.createTextNode(" → "));
+        const token = document.createElement("span");
+        token.className =
+          "pc-cue" +
+          (cue.time <= time ? " current" : "") +
+          (cue.outside ? " outside" : "");
+        token.textContent =
+          cue.labels.length > 1 ? `[${cue.labels.join(" ")}]` : cue.labels[0];
+        token.title = cue.outside
+          ? "↕ Note outside the selected computer-keyboard octave"
+          : "Press these keys together";
+        chain.append(token);
+      }
+      if (!cues.length)
+        chain.append(
+          document.createTextNode(" · No notes in the next 8 seconds"),
+        );
+    }
     for (const [code, key] of buttons) {
       const midi = computerNote(code, octave);
+      const fall = key.querySelector<HTMLElement>(".pc-fall")!;
+      fall.replaceChildren();
+      if (!reduced.matches && midi !== undefined) {
+        for (const note of visible.get(midi) ?? []) {
+          if (
+            note.midi !== midi ||
+            note.time > time + 4 ||
+            note.time + note.duration <= time
+          )
+            continue;
+          const bar = keyBar(note, time);
+          const top = Math.max(0, bar.bottom - bar.length),
+            bottom = Math.min(72, bar.bottom);
+          if (bottom <= top) continue;
+          const drop = document.createElement("i");
+          drop.className = "pc-drop";
+          drop.style.top = `${top}px`;
+          drop.style.height = `${bottom - top}px`;
+          fall.append(drop);
+        }
+      }
       key.classList.toggle(
         "pc-active",
         held.has(code) || (midi !== undefined && active.includes(midi)),
