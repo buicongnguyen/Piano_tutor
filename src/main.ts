@@ -68,7 +68,12 @@ const instrumentSelect = $<HTMLSelectElement>("#instrument");
 for (const [id, instrument] of Object.entries(instruments)) {
   instrumentSelect.add(new Option(instrument.label, id));
 }
+$("#original-instruments").onclick = () => {
+  player.setOriginalInstruments(!player.originalInstruments);
+  status("Sound mode changed. Press Play to continue.");
+};
 instrumentSelect.onchange = async () => {
+  player.setOriginalInstruments(false);
   const id = instrumentSelect.value as InstrumentId;
   $("#instrument-tip").textContent = instrumentTips[id] ?? "";
   $("#instrument-tip").hidden = !instrumentTips[id];
@@ -627,13 +632,22 @@ function frame() {
       grand: `${player.instrumentLabel} · sampled · polyphonic`,
       fallback: "Sample download unavailable · synth active",
     };
-    $("#sound-label").textContent = soundLabels[player.soundState];
+    $("#sound-label").textContent =
+      player.originalInstruments && player.ensembleStatus
+        ? player.ensembleStatus
+        : soundLabels[player.soundState];
+    $("#original-instruments").setAttribute(
+      "aria-pressed",
+      String(player.originalInstruments),
+    );
     $("#lcd-voice").textContent =
-      player.soundState === "grand"
-        ? player.instrumentLabel.toUpperCase()
-        : player.soundState === "loading"
-          ? "LOADING GRAND…"
-          : "SYNTH PIANO";
+      player.originalInstruments && player.ensembleStatus
+        ? "MIDI ENSEMBLE"
+        : player.soundState === "grand"
+          ? player.instrumentLabel.toUpperCase()
+          : player.soundState === "loading"
+            ? "LOADING GRAND…"
+            : "SYNTH PIANO";
     const sample = $<HTMLButtonElement>("#sample");
     sample.disabled =
       player.soundState === "grand" || player.soundState === "loading";

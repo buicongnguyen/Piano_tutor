@@ -7,6 +7,7 @@ export type Note = {
   midi: number;
   velocity: number;
   hand?: "left" | "right";
+  program?: number; // General MIDI program for this pitched track (zero-based).
 };
 export type Piece = {
   id: string;
@@ -87,10 +88,11 @@ export function parseMidi(data: ArrayBuffer, title: string): Piece {
           midi: n.midi,
           velocity: n.velocity,
           hand: handFromTrackName(t.name),
+          program: t.instrument.number,
         })),
       ),
     warning:
-      "MIDI is shown as a piano roll; all pitched tracks use the selected sound.",
+      "MIDI is shown as a piano roll. Original MIDI instruments preserves pitched track voices; drums are not imported.",
   });
 }
 // Use explicit staff/track labels, never a middle-C split: hands can cross.

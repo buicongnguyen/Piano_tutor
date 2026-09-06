@@ -1,3 +1,4 @@
+import { gmInstruments } from "./gm-instruments";
 import type { Note, Piece } from "./music";
 import { soundDuration } from "./music";
 import { hasBothHands, scoreBeats, type PracticeHand } from "./practice";
@@ -42,9 +43,86 @@ export function performanceVelocity(note: Note, balance: HandBalance) {
 export class Player {
   readonly onSilence = new Set<() => void>();
   instrument: InstrumentId = "grand";
+  originalInstruments = true;
+  ensembleStatus = "";
+  private ensembleVoices = new Map<number, ReturnType<typeof Soundfont>>();
+  setOriginalInstruments(enabled: boolean) {
+    this.pause();
+    this.originalInstruments = enabled;
+    this.ensembleVoices.clear();
+    this.ensembleStatus = enabled ? "Original MIDI voices load on Play" : "";
+  }
+  private async prepareEnsemble(gen: number) {
+    const programs = [
+      ...new Set(
+        this.piece?.notes.flatMap((n) =>
+          n.program === undefined ? [] : [n.program],
+        ),
+      ),
+    ];
+    const requested = programs
+      .filter((p) => Number.isInteger(p) && p >= 0 && p < 128)
+      .slice(0, 16);
+    if (!requested.length) {
+      this.ensembleStatus = "";
+      return;
+    }
+    this.ensembleStatus = "Loading original MIDI instruments…";
+    const results = await Promise.allSettled(
+      requested.map(async (program) => {
+        const key = program === 0 ? "grand" : "midi-" + program;
+        let voice = this.instrumentCache.get(key);
+        if (!voice) {
+          voice =
+            program === 0
+              ? SplendidGrandPiano(this.context!, {
+                  destination: this.gain!,
+                  decayTime: 0.12,
+                })
+              : Soundfont(this.context!, {
+                  destination: this.gain!,
+                  kit: "MusyngKite",
+                  instrument: gmInstruments[program],
+                });
+          this.instrumentCache.set(key, voice);
+        }
+        let timer: ReturnType<typeof setTimeout> | undefined;
+        try {
+          await Promise.race([
+            voice.ready,
+            new Promise((_, reject) => {
+              timer = setTimeout(
+                () => reject(Error("Instrument timeout")),
+                20000,
+              );
+            }),
+          ]);
+          return [program, voice] as const;
+        } catch (error) {
+          if (this.instrumentCache.get(key) === voice)
+            this.instrumentCache.delete(key);
+          throw error;
+        } finally {
+          clearTimeout(timer);
+        }
+      }),
+    );
+    if (gen !== this.generation || !this.originalInstruments) return;
+    this.ensembleVoices.clear();
+    for (const result of results)
+      if (result.status === "fulfilled")
+        this.ensembleVoices.set(...result.value);
+    const missing = programs.length - this.ensembleVoices.size;
+    this.ensembleStatus =
+      this.ensembleVoices.size +
+      " original MIDI voices" +
+      (missing
+        ? " · " + missing + " use the selected sound as fallback"
+        : " · sampled");
+  }
   private soundGeneration = 0;
   private instrumentCache = new Map<
-    InstrumentId,
+    string,
     ReturnType<typeof SplendidGrandPiano>
   >();
   get instrumentLabel() {
@@ -52,7 +130,7 @@ export class Player {
   }
   async setInstrument(id: InstrumentId) {
     if (!Object.hasOwn(instruments, id) || id === this.instrument) return;
-    this.pause();
+    this.setOriginalInstruments(false);
     this.soundGeneration++;
     this.instrument = id;
     this.grand = undefined;
@@ -168,12 +246,23 @@ export class Player {
     this.gain.gain.value = this.volume * 0.2;
     await this.context.resume();
   }
-  tone(midi: number, duration: number, velocity = 0.7, delay = 0, at?: number) {
+  tone(
+    midi: number,
+    duration: number,
+    velocity = 0.7,
+    delay = 0,
+    at?: number,
+    program?: number,
+  ) {
     if (!this.context || !this.gain) return;
     const ctx = this.context;
     const start = at ?? ctx.currentTime + delay;
-    if (this.grandReady) {
-      const cancel = this.grand!.start({
+    const voice =
+      (this.originalInstruments && program !== undefined
+        ? this.ensembleVoices.get(program)
+        : undefined) ?? (this.grandReady ? this.grand : undefined);
+    if (voice) {
+      const cancel = voice.start({
         note: midi,
         time: start,
         duration,
@@ -277,6 +366,12 @@ export class Player {
   load(piece: Piece) {
     this.pause();
     this.piece = piece;
+    this.ensembleVoices.clear();
+    this.ensembleStatus =
+      this.originalInstruments &&
+      piece.notes.some((n) => n.program !== undefined)
+        ? "Original MIDI voices load on Play"
+        : "";
     if (!hasBothHands(piece.notes)) this.practiceHand = undefined;
     this.beats = scoreBeats(piece);
     if (!this.beats.length) this.metronome = false;
@@ -299,6 +394,8 @@ export class Player {
         }
       }
       if (gen !== this.generation || !this.piece) return;
+      if (this.originalInstruments) await this.prepareEnsemble(gen);
+      if (gen !== this.generation || !this.piece) return;
       this.preparing = false;
       if (
         this.position >= this.piece.duration ||
@@ -316,6 +413,10 @@ export class Player {
   }
   pause() {
     this.generation++;
+    if (this.ensembleStatus.startsWith("Loading original"))
+      this.ensembleStatus = this.originalInstruments
+        ? "Original MIDI voices load on Play"
+        : "";
     this.preparing = false;
     if (this.playing) this.position = this.now();
     this.playing = false;
@@ -410,6 +511,7 @@ export class Player {
             Math.max(0, (n.time - this.position) / this.speed),
             this.anchor +
               (Math.max(n.time, this.position) - this.offset) / this.speed,
+            n.program,
           );
       }
     });

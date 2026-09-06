@@ -240,7 +240,7 @@ export async function loadRepertoire(): Promise<{
         composer: item.composer,
         warning:
           "ensemble" in item && item.ensemble
-            ? "Ensemble score: all parts use the selected sound. Not a two-hand piano arrangement; hand practice unavailable. Source MIDI timing retained."
+            ? "Ensemble score: enable Original MIDI instruments for the written voices. Not a two-hand piano arrangement; hand practice unavailable. Source MIDI timing retained."
             : "Complete Mutopia MIDI edition · notation-generated timing, not a live performance.",
         source: {
           url: `https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=${item.id}`,

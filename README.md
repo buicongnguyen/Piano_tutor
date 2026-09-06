@@ -120,3 +120,11 @@ Flow particles is now the default visual effect for browsers without a saved eff
 ## Canon and The Four Seasons
 
 The collection includes Canon in D (full ensemble score) and all twelve movements of Vivaldi’s The Four Seasons: Spring, Summer, Autumn and Winter. Search `canon`, `four seasons`, or a season name. Each entry plays immediately and includes a downloadable MIDI plus its complete ensemble PDF score. These are ensemble editions rendered with the selected sound; they are not two-hand piano reductions, so hand practice is unavailable. All source note timings are preserved. Attribution, movement mapping and CC BY/CC BY-SA license links are in [SOURCES](public/music/SOURCES.md).
+
+## Better ensemble playback
+
+Original MIDI instruments is enabled by default. MIDI imports retain each pitched track’s General MIDI program, and playback loads its corresponding sampled instrument. Canon and The Four Seasons now keep their violin, viola and cello voices instead of playing every part as piano. Manual keys still use Sound. Choosing a Sound switches to one instrument for all parts; re-enable Original MIDI instruments to restore the arrangement.
+
+Up to 16 distinct voices load on demand and are cached during the session. Missing or additional voices fall back to the selected sound, with an explicit count in the sound status. Piano program 0 uses the sampled grand. Note durations, velocity, tempo maps and pedal lengths are unchanged. Sample source and catalog: [MusyngKite](https://github.com/gleitz/midi-js-soundfonts), CC BY-SA 3.0.
+
+This improves timbre, not the source performance: notation-generated MIDI can still have rigid timing and limited dynamics. Drum tracks, pitch bend, continuous expression, stereo controller data and within-track program changes are not reproduced. It does not recreate a mastered recording or add automatic humanization. Earlier descriptions of all tracks using one sound now apply only when Original MIDI instruments is off.
