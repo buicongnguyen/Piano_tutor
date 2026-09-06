@@ -349,7 +349,7 @@ function roll(t: number) {
   const c = $<HTMLCanvasElement>("#roll");
   if (c.hidden) return;
   const w = c.clientWidth || 800,
-    h = 260;
+    h = c.clientHeight || 184;
   c.width = w * devicePixelRatio;
   c.height = h * devicePixelRatio;
   const ctx = c.getContext("2d")!;
@@ -358,7 +358,7 @@ function roll(t: number) {
   ctx.fillRect(0, 0, w, h);
   const low = Math.min(...current.notes.map((n) => n.midi)) - 2,
     high = Math.max(...current.notes.map((n) => n.midi)) + 2;
-  const yFor = (m: number) => 230 - ((m - low) / (high - low)) * 200;
+  const yFor = (m: number) => h - 20 - ((m - low) / (high - low)) * (h - 40);
   for (let m = 24; m <= 108; m += 12) {
     if (m < low || m > high) continue;
     const y = yFor(m);
