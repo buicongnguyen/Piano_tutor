@@ -1,7 +1,7 @@
 # Included MIDI editions
 
 Downloaded from the Mutopia Project on 2026-09-06. MIDI bytes are unchanged.
-Both source pages explicitly label these editions Public Domain.
+Each edition’s attribution and license is listed below.
 
 ## Gymnopédie No. 1 — Erik Satie
 - File: `gymnopedie-no-1.mid`
@@ -59,3 +59,53 @@ These are notation-generated MIDI renditions, not recordings or human performanc
 - Edition licensed under [Creative Commons Attribution-ShareAlike 2.5](https://creativecommons.org/licenses/by-sa/2.5/). Extracted MIDI and PDF retain that license. Bytes unchanged; MIDI names changed after archive extraction. The three movements are complete separate selections, not advertised as one continuous rendition.
 
 The CC licenses above apply to the specified music edition files, independently of application code. Source pages, attribution and edition license names are also accessible from each library entry's credits and sheet view.
+
+## Maple Leaf Rag — Scott Joplin
+- Local files: maple-leaf-rag.mid, maple-leaf-rag.pdf
+- Source: https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=23
+- Original MIDI: https://www.mutopiaproject.org/ftp/JoplinS/maple/maple.mid
+- Original PDF: https://www.mutopiaproject.org/ftp/JoplinS/maple/maple-a4.pdf
+- Edition: Mutopia-2011/11/13-23; maintainer/typesetter: Chris Sawer; source: Reproduction of original edition (1899).
+- 2566 notes; 144 seconds of source-file playback.
+- Public domain, as identified by the source page. MIDI/PDF bytes are unchanged; only local filenames differ.
+
+## Arabesque No. 1 (Première Arabesque) — Claude Debussy
+- Local files: arabesque-no-1.mid, arabesque-no-1.pdf
+- Source: https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=1777
+- Original MIDI: https://www.mutopiaproject.org/ftp/DebussyC/L66/debussy_Arabesque_1/debussy_Arabesque_1.mid
+- Original PDF: https://www.mutopiaproject.org/ftp/DebussyC/L66/debussy_Arabesque_1/debussy_Arabesque_1-a4.pdf
+- Edition: Mutopia-2011/10/25-1777; maintainer/typesetter: Keith OHara; source: Durand et Fils (1904).
+- 1448 notes; 176.249718 seconds of source-file playback.
+- Public domain, as identified by the source page. MIDI/PDF bytes are unchanged; only local filenames differ.
+
+## Prelude (2005) — Ramana Kumar
+- Local files: prelude-kumar.mid, prelude-kumar.pdf
+- Source: https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=657
+- Original MIDI: https://www.mutopiaproject.org/ftp/KumarR/ailed/ailed.mid
+- Original PDF: https://www.mutopiaproject.org/ftp/KumarR/ailed/ailed-a4.pdf
+- Edition: Mutopia-2008/01/13-657; maintainer/typesetter: Ramana Kumar; source: Original composition, 2005.
+- 712 notes; 252 seconds of source-file playback.
+- Licensed under [Creative Commons Attribution-ShareAlike 3.0](https://creativecommons.org/licenses/by-sa/3.0/). The composition and edition files retain this license independently of application code. MIDI/PDF bytes are unchanged; only local filenames differ.
+
+## Flat (2007) — Ramana Kumar
+- Local files: flat-kumar.mid, flat-kumar.pdf
+- Source: https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=1004
+- Original MIDI: https://www.mutopiaproject.org/ftp/KumarR/flat/flat.mid
+- Original PDF: https://www.mutopiaproject.org/ftp/KumarR/flat/flat-a4.pdf
+- Edition: Mutopia-2008/01/13-1004; maintainer/typesetter: Ramana Kumar; source: Original composition, 2007.
+- 1670 notes; 662 seconds of source-file playback.
+- Licensed under [Creative Commons Attribution-ShareAlike 3.0](https://creativecommons.org/licenses/by-sa/3.0/). The composition and edition files retain this license independently of application code. MIDI/PDF bytes are unchanged; only local filenames differ.
+
+## Variations d’automne (2007) — Stéphane Magnenat
+- Local files: variations-automne.mid, variations-automne.pdf
+- Source: https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=973
+- Original MIDI: https://www.mutopiaproject.org/ftp/MagnenatS/variations-automne/variations-automne.mid
+- Original PDF: https://www.mutopiaproject.org/ftp/MagnenatS/variations-automne/variations-automne-a4.pdf
+- Edition: Mutopia-2007/05/03-973; maintainer/typesetter: Stéphane Magnenat; source: Own work, 2007.
+- 545 notes; 141.54975375 seconds of source-file playback.
+- Licensed under [Creative Commons Attribution-ShareAlike 3.0](https://creativecommons.org/licenses/by-sa/3.0/). The composition and edition files retain this license independently of application code. MIDI/PDF bytes are unchanged; only local filenames differ.
+
+The three 2000s compositions are contemporary originals, not famous modern pop songs. Variations d’automne has unnamed MIDI tracks; playback preserves their source velocities and does not guess left/right assignments. File durations reflect the published MIDI tempos.
+
+## River Flows in You — Yiruma (not bundled)
+Research on 2026-09-06 did not establish a public redistribution license for a full playable arrangement. The collection offers local MIDI/MusicXML import and a licensed sheet retailer link. Personal purchase or free download access alone does not establish permission to redistribute an edition in this repository. Imported files remain in browser memory until reload and are not uploaded.

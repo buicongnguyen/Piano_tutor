@@ -30,10 +30,17 @@ The digital piano has a wood-sided cabinet, recessed display, speaker grilles, s
 | Moonlight Sonata · I | Ludwig van Beethoven | 4:36 | [Mutopia, CC BY-SA 2.5](https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=276) |
 | Moonlight Sonata · II | Ludwig van Beethoven | 2:59 | Same edition |
 | Moonlight Sonata · III | Ludwig van Beethoven | 13:21 | Same edition |
+| Maple Leaf Rag | Scott Joplin | 2:24 | [Mutopia, public domain](https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=23) |
+| Arabesque No. 1 | Claude Debussy | 2:56 | [Mutopia, public domain](https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=1777) |
+| Prelude (2005) | Ramana Kumar | 4:12 | [Mutopia, CC BY-SA 3.0](https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=657) |
+| Flat (2007) | Ramana Kumar | 11:02 | [Mutopia, CC BY-SA 3.0](https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=1004) |
+| Variations d’automne (2007) | Stéphane Magnenat | 2:21 | [Mutopia, CC BY-SA 3.0](https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=973) |
 | Morning light | Original exercise | 0:22 | Two-hand study |
 | A little room to breathe | Original exercise | 0:13 | Melody study |
 
-Eight complete MIDI selections and six printable PDF scores are bundled locally, totaling about 38 minutes of source-file playback. Use **PDF sheet** or **Download MIDI** for a local copy. See [source provenance and licenses](public/music/SOURCES.md). These are notation-generated renditions, not recordings of a human performance. Moonlight's three movements are separate selections; its source MIDI uses 60 BPM, so durations can be longer than familiar recordings. The speed control changes playback without modifying downloads.
+Thirteen complete MIDI selections and eleven printable PDF scores are bundled locally, totaling about 61 minutes of source-file playback. Use **PDF sheet** or **Download MIDI** for a local copy. See [source provenance and licenses](public/music/SOURCES.md). These are notation-generated renditions, not recordings of a human performance. Moonlight's three movements are separate selections; its source MIDI uses 60 BPM, so durations can be longer than familiar recordings. The speed control changes playback without modifying downloads.
+
+The three 2000s selections are contemporary original piano compositions, not chart hits. Their Creative Commons licenses permit redistribution with attribution and ShareAlike terms; these music files retain their source licenses.
 
 ## Use
 
@@ -41,13 +48,13 @@ Press **Play**: the sampled grand loads automatically before playback begins. Ca
 
 Import uncompressed `.musicxml` / `.xml` or `.mid` / `.midi` files up to 5 MB. Files remain in browser memory until reload and are never uploaded. Select imported scores from the sidebar. Seek to the beginning of a phrase and select Set A, seek to its end and select Set B, enable Loop, then play.
 
-For Yiruma's **River Flows in You**, use the linked online piano or import your own two-hand MusicXML/MIDI arrangement. The composition is not bundled. The online easy letter arrangement is monophonic; a full arrangement is necessary for both hands. PDF/image sheets require conversion to MusicXML with notation/recognition software before playback.
+For Yiruma's **River Flows in You**, use the linked online piano or import your own two-hand MusicXML/MIDI arrangement. No edition with verified public redistribution permission was found, so the composition is not bundled. Buying a personal-use score does not by itself authorize bundling it on this public website. The online easy letter arrangement is monophonic; a full arrangement is necessary for both hands. PDF/image sheets require conversion to MusicXML with notation/recognition software before playback.
 
 ## Musical fidelity
 
 **Hand dynamics:** the default **Melody forward** preset scales identified left-hand velocities to 75% and leaves the right hand at 100%. Separate sliders allow 0–125% of source velocity; **Original dynamics** restores both to 100%. This changes attack strength/sample velocity layers while preserving each hand's relative dynamics. It is an adjustable balance, not an automatically inferred human interpretation. Changes affect newly scheduled notes (up to 120 ms lookahead), not already ringing notes.
 
-Hands come from explicit MIDI track names (treble/up/right, bass/down/left) or a two-staff MusicXML layout. Unassigned notes remain unchanged. No pitch threshold is used, so labeled hands can cross middle C. Sliders for absent/unidentified hands are disabled. The supplied MIDI files have matching hand labels.
+Hands come from explicit MIDI track names (treble/up/right, bass/down/left) or a two-staff MusicXML layout. Unassigned notes remain unchanged. No pitch threshold is used, so labeled hands can cross middle C. Sliders for absent/unidentified hands are disabled. Most bundled MIDI files have matching hand labels; Variations d’automne has unnamed tracks, so hand balance is unavailable for that edition.
 
 - Independent voices, simultaneous chords, rests, MusicXML ties and tempo changes.
 - MIDI key-down timing and velocity are retained. Same-channel CC64 pedal events extend sounding duration separately; the piano roll and key highlights show the original key-down length. Sample release is 120 ms after note/pedal release (previously the sampler default was 500 ms).

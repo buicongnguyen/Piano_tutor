@@ -65,6 +65,47 @@ export const repertoire = [
     sheet: "moonlight-sonata.pdf",
     edition: "Stewart Holmes · Mutopia · CC BY-SA 2.5",
   },
+  {
+    file: "maple-leaf-rag.mid",
+    title: "Maple Leaf Rag",
+    composer: "Scott Joplin",
+    id: 23,
+    sheet: "maple-leaf-rag.pdf",
+    edition: "Chris Sawer · Mutopia · Public domain",
+  },
+  {
+    file: "arabesque-no-1.mid",
+    title: "Arabesque No. 1",
+    composer: "Claude Debussy",
+    id: 1777,
+    sheet: "arabesque-no-1.pdf",
+    edition: "Keith OHara · Mutopia · Public domain",
+  },
+  {
+    file: "prelude-kumar.mid",
+    title: "Prelude (2005)",
+    composer: "Ramana Kumar",
+    id: 657,
+    sheet: "prelude-kumar.pdf",
+    edition: "Ramana Kumar · Contemporary original · Mutopia · CC BY-SA 3.0",
+  },
+  {
+    file: "flat-kumar.mid",
+    title: "Flat (2007)",
+    composer: "Ramana Kumar",
+    id: 1004,
+    sheet: "flat-kumar.pdf",
+    edition: "Ramana Kumar · Contemporary original · Mutopia · CC BY-SA 3.0",
+  },
+  {
+    file: "variations-automne.mid",
+    title: "Variations d’automne (2007)",
+    composer: "Stéphane Magnenat",
+    id: 973,
+    sheet: "variations-automne.pdf",
+    edition:
+      "Stéphane Magnenat · Contemporary original · Mutopia · CC BY-SA 3.0",
+  },
 ];
 export async function loadRepertoire(): Promise<{
   pieces: Piece[];

@@ -7,6 +7,10 @@ import { repertoire } from "./repertoire";
 
 describe("bundled internet editions", () => {
   for (const [file, notes, seconds] of [
+    ["maple-leaf-rag.mid", 2566, 144],
+    ["arabesque-no-1.mid", 1448, 176.249718],
+    ["prelude-kumar.mid", 712, 252],
+    ["flat-kumar.mid", 1670, 662],
     ["clair-de-lune.mid", 1468, 322.5],
     ["the-entertainer.mid", 2621, 252.9166],
     ["nocturne-op9-no2.mid", 1242, 202.2725],
@@ -26,6 +30,19 @@ describe("bundled internet editions", () => {
       expect(piece.notes.every((n) => n.hand)).toBe(true);
     });
   }
+  it("preserves the complete contemporary Variations without guessing hands", () => {
+    const piece = parseMidi(
+      Uint8Array.from(readFileSync("public/music/variations-automne.mid"))
+        .buffer,
+      "Variations",
+    );
+    expect(piece.notes).toHaveLength(545);
+    expect(piece.duration).toBeCloseTo(141.54975375, 3);
+    expect(
+      piece.notes.every((n) => n.duration > 0 && n.midi >= 21 && n.midi <= 108),
+    ).toBe(true);
+    expect(piece.notes.every((n) => n.hand === undefined)).toBe(true);
+  });
   it("ships a real printable PDF for every repertoire entry", () => {
     for (const item of repertoire) {
       const bytes = readFileSync(`public/music/${item.sheet}`);

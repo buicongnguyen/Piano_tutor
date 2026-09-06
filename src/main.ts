@@ -128,7 +128,7 @@ function renderLibrary() {
     title.textContent = "River Flows in You · Yiruma";
     const info = document.createElement("p");
     info.textContent =
-      "Not in your library yet. Import your MIDI or MusicXML arrangement to play.";
+      "Not bundled: no redistribution permission verified. Import a MIDI or MusicXML arrangement you are entitled to use; it stays in this browser session.";
     const button = document.createElement("button");
     button.textContent = "Import River Flows in You";
     button.onclick = () => {
