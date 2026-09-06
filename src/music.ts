@@ -2,6 +2,8 @@ import { Midi } from "@tonejs/midi";
 export type Note = {
   time: number;
   duration: number;
+  // Key-down duration stays separate from the pedal-held sound.
+  soundingDuration?: number;
   midi: number;
   velocity: number;
   hand?: "left" | "right";
@@ -19,7 +21,11 @@ export type Piece = {
 };
 const names = ["C", "C♯", "D", "D♯", "E", "F", "F♯", "G", "G♯", "A", "A♯", "B"];
 export const noteName = (m: number) => names[m % 12] + (Math.floor(m / 12) - 1);
-export function finish(piece: Omit<Piece, "duration">): Piece {
+export const soundDuration = (note: Note) =>
+  note.soundingDuration ?? note.duration;
+export function finish(piece: Omit<Piece, "duration">, timelineEnd = 0): Piece {
+  if (!Number.isFinite(timelineEnd) || timelineEnd < 0)
+    throw Error("Score contains an invalid ending time.");
   if (!piece.notes.length)
     throw Error(
       "No playable notes found. Choose a pitched MusicXML or MIDI score.",
@@ -32,6 +38,8 @@ export function finish(piece: Omit<Piece, "duration">): Piece {
         !Number.isFinite(n.time + n.duration + n.midi + n.velocity) ||
         n.time < 0 ||
         n.duration <= 0 ||
+        !Number.isFinite(soundDuration(n)) ||
+        soundDuration(n) < n.duration ||
         n.midi < 21 ||
         n.midi > 108,
     )
@@ -42,11 +50,21 @@ export function finish(piece: Omit<Piece, "duration">): Piece {
   piece.notes.sort((a, b) => a.time - b.time);
   return {
     ...piece,
-    duration: Math.max(...piece.notes.map((n) => n.time + n.duration)),
+    duration: Math.max(
+      timelineEnd,
+      ...piece.notes.map((n) => n.time + soundDuration(n)),
+    ),
   };
 }
 export function parseMidi(data: ArrayBuffer, title: string): Piece {
   const midi = new Midi(data);
+  const pedals = new Map<number, { time: number; value: number }[]>();
+  for (const track of midi.tracks) {
+    const events = pedals.get(track.channel) ?? [];
+    events.push(...(track.controlChanges[64] || []));
+    pedals.set(track.channel, events);
+  }
+  for (const events of pedals.values()) events.sort((a, b) => a.time - b.time);
   return finish({
     id: crypto.randomUUID(),
     title: midi.name || title,
@@ -56,12 +74,15 @@ export function parseMidi(data: ArrayBuffer, title: string): Piece {
       .flatMap((t) =>
         t.notes.map((n) => ({
           time: n.time,
-          duration:
+          duration: n.duration,
+          soundingDuration: Math.max(
+            n.duration,
             sustainEnd(
-              t.controlChanges[64] || [],
+              pedals.get(t.channel) || [],
               n.time + n.duration,
               midi.duration,
             ) - n.time,
+          ),
           midi: n.midi,
           velocity: n.velocity,
           hand: handFromTrackName(t.name),
@@ -206,7 +227,8 @@ export function parseXml(xml: string, title = "Imported score"): Piece {
           )[step] +
           num(e, "pitch > alter") +
           12 * (num(e, "pitch > octave") + 1);
-        const key = txt(e, "voice", "1") + ":" + pitch;
+        const key =
+          txt(e, "staff", "1") + ":" + txt(e, "voice", "1") + ":" + pitch;
         const stop = !!e.querySelector('tie[type="stop"]');
         const begin = !!e.querySelector('tie[type="start"]');
         const previous = ties.get(key);
@@ -253,28 +275,31 @@ export function parseXml(xml: string, title = "Imported score"): Piece {
     }
     return time + ((beat - prev) * 60) / bpm;
   };
-  return finish({
-    id: crypto.randomUUID(),
-    title: txt(
-      doc.documentElement,
-      "work-title",
-      txt(doc.documentElement, "movement-title", title),
-    ),
-    composer: txt(
-      doc.documentElement,
-      'creator[type="composer"]',
-      "Imported MusicXML",
-    ),
-    xml: new XMLSerializer().serializeToString(doc),
-    beatToSeconds: seconds,
-    notes: raw.map((n) => ({
-      ...n,
-      time: seconds(n.time),
-      duration: seconds(n.time + n.duration) - seconds(n.time),
-    })),
-    warning:
-      "Written-order playback. Tempo, ties and basic dynamics supported; repeats, ornaments, pedal and hairpins require an expressive MIDI export.",
-  });
+  return finish(
+    {
+      id: crypto.randomUUID(),
+      title: txt(
+        doc.documentElement,
+        "work-title",
+        txt(doc.documentElement, "movement-title", title),
+      ),
+      composer: txt(
+        doc.documentElement,
+        'creator[type="composer"]',
+        "Imported MusicXML",
+      ),
+      xml: new XMLSerializer().serializeToString(doc),
+      beatToSeconds: seconds,
+      notes: raw.map((n) => ({
+        ...n,
+        time: seconds(n.time),
+        duration: seconds(n.time + n.duration) - seconds(n.time),
+      })),
+      warning:
+        "Written-order playback. Tempo, ties and basic dynamics supported; repeats, ornaments, pedal and hairpins require an expressive MIDI export.",
+    },
+    seconds(lengths.reduce((sum, length) => sum + length, 0)),
+  );
 }
 export function exercise(title: string, pitches: number[], bpm: number): Piece {
   const note = (m: number) =>

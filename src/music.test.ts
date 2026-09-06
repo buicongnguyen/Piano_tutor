@@ -8,6 +8,53 @@ const wrap = (body: string) =>
 const note = (step: string, duration = 1, extra = "") =>
   `<note>${extra}<pitch><step>${step}</step><octave>4</octave></pitch><duration>${duration}</duration></note>`;
 describe("score import", () => {
+  it("keeps MIDI key release separate from same-channel pedal sustain", () => {
+    const midi = new Midi();
+    const notes = midi.addTrack();
+    notes.channel = 0;
+    notes.addNote({ midi: 60, time: 0, duration: 0.5, velocity: 0.7 });
+    const pedal = midi.addTrack();
+    pedal.channel = 0;
+    pedal.addCC({ number: 64, time: 0, value: 1 });
+    pedal.addCC({ number: 64, time: 2, value: 0 });
+    const other = midi.addTrack();
+    other.channel = 1;
+    other.addNote({ midi: 64, time: 0, duration: 0.5, velocity: 0.7 });
+    const p = parseMidi(midi.toArray().buffer as ArrayBuffer, "pedal");
+    expect(p.notes.map((n) => n.duration)).toEqual([0.5, 0.5]);
+    expect(p.notes.map((n) => n.soundingDuration)).toEqual([2, 0.5]);
+    expect(activeAt(p.notes, 0.5)).toHaveLength(0);
+    expect(p.duration).toBe(2);
+  });
+  it("uses exact divisions for dotted notes and tuplets, including final rests", () => {
+    const p = parseXml(
+      wrap(
+        `<measure><attributes><divisions>6</divisions></attributes><direction><sound tempo="60"/></direction>${note("C", 9, "<type>quarter</type><dot/>")}${note("D", 2, "<type>eighth</type><time-modification><actual-notes>3</actual-notes><normal-notes>2</normal-notes></time-modification>")}<note><rest/><duration>6</duration></note></measure>`,
+      ),
+    );
+    expect(p.notes[0].duration).toBe(1.5);
+    expect(p.notes[1].time).toBe(1.5);
+    expect(p.notes[1].duration).toBeCloseTo(1 / 3, 10);
+    expect(p.duration).toBeCloseTo(17 / 6, 10);
+    expect(activeAt(p.notes, 2)).toHaveLength(0);
+  });
+  it("integrates a tied note across a tempo change", () => {
+    const p = parseXml(
+      wrap(
+        `<measure><direction><sound tempo="60"/></direction>${note("C", 1, '<tie type="start"/>')}</measure><measure><direction><sound tempo="120"/></direction>${note("C", 1, '<tie type="stop"/>')}</measure>`,
+      ),
+    );
+    expect(p.notes).toHaveLength(1);
+    expect(p.notes[0].duration).toBe(1.5);
+  });
+  it("does not merge independent staff ties that share voice and pitch", () => {
+    const p = parseXml(
+      wrap(
+        `<measure>${note("C", 1, '<staff>1</staff><tie type="start"/>')}<backup><duration>1</duration></backup>${note("C", 1, '<staff>2</staff><tie type="start"/>')}</measure><measure>${note("C", 1, '<staff>1</staff><tie type="stop"/>')}<backup><duration>1</duration></backup>${note("C", 1, '<staff>2</staff><tie type="stop"/>')}</measure>`,
+      ),
+    );
+    expect(p.notes.map((n) => n.duration)).toEqual([1, 1]);
+  });
   it("uses two-staff MusicXML hand labels rather than pitch", () => {
     const p = parseXml(
       wrap(

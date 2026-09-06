@@ -391,7 +391,7 @@ function roll(t: number) {
         : n.midi < 60
           ? "#89a7a3"
           : "#2b5a4a";
-    ctx.fillRect(x, y, Math.max(3, (n.duration / span) * w - 2), 7);
+    ctx.fillRect(x, y, Math.max(0.5, (n.duration / span) * w), 7);
   }
   ctx.fillStyle = "#b88647";
   ctx.fillRect(((t - start) / span) * w, 0, 2, h);

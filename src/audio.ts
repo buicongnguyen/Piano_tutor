@@ -1,4 +1,5 @@
 import type { Note, Piece } from "./music";
+import { soundDuration } from "./music";
 import { SplendidGrandPiano } from "smplr";
 export function activeAt(notes: Note[], time: number) {
   return notes.filter((n) => n.time <= time && n.time + n.duration > time);
@@ -53,6 +54,7 @@ export class Player {
       await this.init();
       this.grand ??= SplendidGrandPiano(this.context!, {
         destination: this.gain!,
+        decayTime: 0.12,
       });
       await Promise.race([
         this.grand.ready,
@@ -219,14 +221,14 @@ export class Player {
     this.piece.notes.forEach((n, i) => {
       if (
         this.scheduled.has(i) ||
-        n.time + n.duration <= this.offset ||
+        n.time + soundDuration(n) <= this.offset ||
         n.time >= end
       )
         return;
       if (n.time <= this.position + 0.12 * this.speed) {
         this.scheduled.add(i);
         const duration =
-          (Math.min(n.time + n.duration, end) -
+          (Math.min(n.time + soundDuration(n), end) -
             Math.max(n.time, this.position)) /
           this.speed;
         const velocity = performanceVelocity(n, this.handBalance);

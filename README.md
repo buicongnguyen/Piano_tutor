@@ -38,7 +38,8 @@ For Yiruma's **River Flows in You**, use the linked online piano or import your 
 Hands come from explicit MIDI track names (treble/up/right, bass/down/left) or a two-staff MusicXML layout. Unassigned notes remain unchanged. No pitch threshold is used, so labeled hands can cross middle C. Sliders for absent/unidentified hands are disabled. The supplied MIDI files have matching hand labels.
 
 - Independent voices, simultaneous chords, rests, MusicXML ties and tempo changes.
-- MIDI note timing and velocity retained; CC64 sustain extends notes until release.
+- MIDI key-down timing and velocity are retained. Same-channel CC64 pedal events extend sounding duration separately; the piano roll and key highlights show the original key-down length. Sample release is 120 ms after note/pedal release (previously the sampler default was 500 ms).
+- MusicXML uses exact duration/divisions values for dotted notes and tuplets, integrates durations across tempo changes, merges ties per staff/voice/pitch and retains final rests. Speed changes scale onset and duration together. MIDI reflects its source performance; PDF notation is not automatically compared or used to overwrite MIDI articulation.
 - MusicXML sound tempo, metronome tempo, sound dynamics and common dynamic marks supported.
 - Audio-clock scheduling with 120 ms lookahead and one absolute onset per chord. Each voice preserves its duration and velocity; a gentle master compressor controls dense mixes. Pause, seek and score changes cancel both active voices and queued sample callbacks. Background tabs pause to prevent timer throttling from creating bad rhythm.
 - Splendid Grand sampled Steinway through smplr loads automatically on first Play. Samples download from the smpldsnds host; synth fallback works if unavailable. Sample loading requires internet. Fonts also use Google Fonts with local font fallback.

@@ -5,6 +5,61 @@ import { finish } from "./music";
 vi.mock("smplr", () => ({ SplendidGrandPiano: vi.fn() }));
 afterEach(() => vi.useRealTimers());
 describe("sampled piano mixing and scheduling", () => {
+  it("scales exact sound lengths at different speeds and clips seek/loop boundaries", async () => {
+    vi.useFakeTimers();
+    const start = vi.fn(() => vi.fn());
+    vi.mocked(SplendidGrandPiano).mockReturnValue({
+      ready: Promise.resolve(),
+      start,
+      stop: vi.fn(),
+    } as unknown as ReturnType<typeof SplendidGrandPiano>);
+    const player = new Player();
+    player.init = async () => {
+      player.context = { currentTime: 10 } as AudioContext;
+      player.gain = {} as GainNode;
+    };
+    player.load(
+      finish({
+        id: "lengths",
+        title: "Lengths",
+        composer: "Test",
+        notes: [
+          {
+            midi: 60,
+            time: 0,
+            duration: 0.5,
+            soundingDuration: 2,
+            velocity: 0.7,
+          },
+          { midi: 64, time: 0, duration: 1, velocity: 0.7 },
+        ],
+      }),
+    );
+    player.speed = 2;
+    await player.play();
+    expect(
+      start.mock.calls.map(
+        (args) => (args as unknown as [{ duration: number }])[0].duration,
+      ),
+    ).toEqual([1, 0.5]);
+    expect(SplendidGrandPiano).toHaveBeenCalledWith(
+      player.context,
+      expect.objectContaining({ decayTime: 0.12 }),
+    );
+    player.pause();
+    start.mockClear();
+    player.position = 0.75;
+    player.loop = true;
+    player.a = 0;
+    player.b = 1.5;
+    await player.play();
+    expect(
+      start.mock.calls.map(
+        (args) => (args as unknown as [{ duration: number }])[0].duration,
+      ),
+    ).toEqual([0.375, 0.125]);
+    player.pause();
+  });
   it("preserves expressive differences and original data while balancing hands", () => {
     const quiet = {
       midi: 72,

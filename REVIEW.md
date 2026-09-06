@@ -1,5 +1,12 @@
 # Logic and code review
 
+## Precise note lengths
+
+- Separated MIDI key-down duration from pedal-held sound; CC64 follows its channel even when stored on another track. Keyboard highlights and piano-roll widths follow key release. Removed the fixed two-pixel shortening of every roll note.
+- Reduced the sampler's default 500 ms release to 120 ms. This tail starts after the source note/pedal release; it does not replace the source duration.
+- Retained final MusicXML rests and isolated independent ties by staff/voice/pitch. Exact division durations remain authoritative for dots and tuplets, including tempo changes during tied notes.
+- 30 tests cover channel-specific pedal timing, note release boundaries, dotted/tuplet values, trailing rests, ties across tempo changes, independent staff ties, speed scaling and seek/loop duration clipping. Source PDFs are not automatically audited against MIDI; downloaded source articulation is preserved.
+
 ## Complete downloadable repertoire
 
 - Expanded the library to eight complete MIDI selections from Mutopia, with six local PDF scores. All three Moonlight Sonata movements are individually selectable and share the complete sonata PDF. Downloads are unchanged; source editions, attribution and applicable public-domain / CC BY-SA terms are documented in public/music/SOURCES.md.
