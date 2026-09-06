@@ -5,6 +5,20 @@
   background: #f5f5ef;
   font-synthesis: none;
 }
+@media (min-width: 761px) {
+  #library {
+    max-height: 440px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #afbea3 transparent;
+  }
+  .piece > span:last-child {
+    min-width: 0;
+  }
+  .piece {
+    flex-shrink: 0;
+  }
+}
 .hand-balance {
   display: flex;
   align-items: center;

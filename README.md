@@ -12,10 +12,16 @@ The digital piano has a wood-sided cabinet, recessed display, speaker grilles, s
 | --- | --- | --- | --- |
 | Gymnopédie No. 1 | Erik Satie | 2:21 | [Mutopia, public domain](https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=37) |
 | Für Elise | Ludwig van Beethoven | 2:10 | [Mutopia, public domain](https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=931) |
+| Clair de lune | Claude Debussy | 5:22 | [Mutopia, public domain](https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=1778) |
+| The Entertainer | Scott Joplin | 4:12 | [Mutopia, public domain](https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=263) |
+| Nocturne Op. 9 No. 2 | Frédéric Chopin | 3:22 | [Mutopia, CC BY-SA 3.0](https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=1590) |
+| Moonlight Sonata · I | Ludwig van Beethoven | 4:36 | [Mutopia, CC BY-SA 2.5](https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=276) |
+| Moonlight Sonata · II | Ludwig van Beethoven | 2:59 | Same edition |
+| Moonlight Sonata · III | Ludwig van Beethoven | 13:21 | Same edition |
 | Morning light | Original exercise | 0:22 | Two-hand study |
 | A little room to breathe | Original exercise | 0:13 | Melody study |
 
-The internet-sourced MIDI files are bundled locally, with downloadable originals and links to printable scores. See [source provenance](public/music/SOURCES.md). They are notation-generated renditions, not recordings of a human performance.
+Eight complete MIDI selections and six printable PDF scores are bundled locally, totaling about 38 minutes of source-file playback. Use **PDF sheet** or **Download MIDI** for a local copy. See [source provenance and licenses](public/music/SOURCES.md). These are notation-generated renditions, not recordings of a human performance. Moonlight's three movements are separate selections; its source MIDI uses 60 BPM, so durations can be longer than familiar recordings. The speed control changes playback without modifying downloads.
 
 ## Use
 

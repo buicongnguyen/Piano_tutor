@@ -73,9 +73,9 @@ export function parseMidi(data: ArrayBuffer, title: string): Piece {
 }
 // Use explicit staff/track labels, never a middle-C split: hands can cross.
 export function handFromTrackName(name: string): Note["hand"] {
-  if (/^(right(?: hand)?|rh|treble|up)(?:\b|:)/i.test(name.trim()))
+  if (/^(right(?: hand)?|rh|treble|up(?:per)?)(?:\b|:)/i.test(name.trim()))
     return "right";
-  if (/^(left(?: hand)?|lh|bass|down)(?:\b|:)/i.test(name.trim()))
+  if (/^(left(?: hand)?|lh|bass|down|lower)(?:\b|:)/i.test(name.trim()))
     return "left";
   return undefined;
 }

@@ -89,6 +89,12 @@ async function select(p: Piece) {
   $("#note-count").textContent = String(p.notes.length);
   $("#warning").textContent = p.warning || "";
   const edition = $<HTMLAnchorElement>("#edition-link");
+  const pdf = $<HTMLAnchorElement>("#pdf-download");
+  pdf.hidden = !p.source;
+  if (p.source) {
+    pdf.href = p.source.sheetUrl;
+    pdf.download = p.source.sheetUrl.split("/").at(-1)!;
+  }
   edition.hidden = !p.source;
   if (p.source) {
     edition.href = p.source.url;
@@ -471,7 +477,7 @@ void loadRepertoire().then(async ({ pieces, failures }) => {
   status(
     failures
       ? "Some collection files could not load. Your exercises and local imports are still available."
-      : "Two complete piano pieces, ready to play. Grand piano loads automatically.",
+      : `${pieces.length} complete piano selections, with downloadable PDF scores. Grand piano loads automatically.`,
   );
 });
 frame();

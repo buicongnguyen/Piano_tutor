@@ -6,8 +6,7 @@ export const repertoire = [
     title: "Gymnopédie No. 1",
     composer: "Erik Satie",
     id: 37,
-    sheet:
-      "https://www.mutopiaproject.org/ftp/SatieE/gymnopedie_1/gymnopedie_1-a4.pdf",
+    sheet: "gymnopedie-no-1.pdf",
     edition: "Evin Robertson · Mutopia · Public domain",
   },
   {
@@ -15,9 +14,56 @@ export const repertoire = [
     title: "Für Elise",
     composer: "Ludwig van Beethoven",
     id: 931,
-    sheet:
-      "https://www.mutopiaproject.org/ftp/BeethovenLv/WoO59/fur_Elise_WoO59/fur_Elise_WoO59-a4.pdf",
+    sheet: "fur-elise.pdf",
     edition: "Stelios Samelis · Mutopia · Public domain",
+  },
+  {
+    file: "clair-de-lune.mid",
+    title: "Clair de lune",
+    composer: "Claude Debussy",
+    id: 1778,
+    sheet: "clair-de-lune.pdf",
+    edition: "Keith OHara · Mutopia · Public domain",
+  },
+  {
+    file: "the-entertainer.mid",
+    title: "The Entertainer",
+    composer: "Scott Joplin",
+    id: 263,
+    sheet: "the-entertainer.pdf",
+    edition: "Chris Sawer · Mutopia · Public domain",
+  },
+  {
+    file: "nocturne-op9-no2.mid",
+    title: "Nocturne Op. 9 No. 2",
+    composer: "Frédéric Chopin",
+    id: 1590,
+    sheet: "nocturne-op9-no2.pdf",
+    edition: "Renato Biolcati Rinaldi · Mutopia · CC BY-SA 3.0",
+  },
+  {
+    file: "moonlight-1.mid",
+    title: "Moonlight Sonata · I. Adagio sostenuto",
+    composer: "Ludwig van Beethoven",
+    id: 276,
+    sheet: "moonlight-sonata.pdf",
+    edition: "Stewart Holmes · Mutopia · CC BY-SA 2.5",
+  },
+  {
+    file: "moonlight-2.mid",
+    title: "Moonlight Sonata · II. Allegretto",
+    composer: "Ludwig van Beethoven",
+    id: 276,
+    sheet: "moonlight-sonata.pdf",
+    edition: "Stewart Holmes · Mutopia · CC BY-SA 2.5",
+  },
+  {
+    file: "moonlight-3.mid",
+    title: "Moonlight Sonata · III. Presto agitato",
+    composer: "Ludwig van Beethoven",
+    id: 276,
+    sheet: "moonlight-sonata.pdf",
+    edition: "Stewart Holmes · Mutopia · CC BY-SA 2.5",
   },
 ];
 export async function loadRepertoire(): Promise<{
@@ -38,7 +84,7 @@ export async function loadRepertoire(): Promise<{
           "Complete Mutopia MIDI edition · notation-generated timing, not a live performance.",
         source: {
           url: `https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=${item.id}`,
-          sheetUrl: item.sheet,
+          sheetUrl: `${import.meta.env.BASE_URL}music/${item.sheet}`,
           fileUrl,
           edition: item.edition,
         },

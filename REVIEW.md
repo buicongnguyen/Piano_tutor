@@ -1,5 +1,12 @@
 # Logic and code review
 
+## Complete downloadable repertoire
+
+- Expanded the library to eight complete MIDI selections from Mutopia, with six local PDF scores. All three Moonlight Sonata movements are individually selectable and share the complete sonata PDF. Downloads are unchanged; source editions, attribution and applicable public-domain / CC BY-SA terms are documented in public/music/SOURCES.md.
+- Recognize explicit upper/lower MIDI track names for hand controls. Preserve source timing and dynamics; Moonlight's source uses 60 BPM and is slower than typical performances.
+- All 25 tests and the TypeScript/production build pass. Import tests check exact event counts, durations and both hands for every new MIDI; PDF tests verify file signatures and endings.
+- Local browser verification confirms all ten library entries (eight editions plus two exercises), Clair de lune playback advancing, and Moonlight III's full duration and local printable/download links. This is a functional check, not a full-length listening assessment.
+
 ## Hand dynamics refinement
 
 - Inspected actual source data: Für Elise uses MIDI velocity 62 throughout both tracks; Gymnopédie bass primarily uses 90 while treble varies from 62 to 95. Preserving the source alone does not provide a melody-forward interpretation.
