@@ -9,7 +9,13 @@ import { mountComputerKeyboard } from "./computer-keyboard";
 import "./style.css";
 import { OpenSheetMusicDisplay } from "opensheetmusicdisplay";
 import { exercise, parseXml, parseMidi, noteName, type Piece } from "./music";
-import { Player, activeAt, instruments, type InstrumentId } from "./audio";
+import {
+  Player,
+  activeAt,
+  instruments,
+  instrumentTips,
+  type InstrumentId,
+} from "./audio";
 const $ = <T extends HTMLElement = HTMLElement>(s: string) =>
   document.querySelector<T>(s)!;
 const player = new Player();
@@ -62,6 +68,8 @@ for (const [id, instrument] of Object.entries(instruments)) {
 }
 instrumentSelect.onchange = async () => {
   const id = instrumentSelect.value as InstrumentId;
+  $("#instrument-tip").textContent = instrumentTips[id] ?? "";
+  $("#instrument-tip").hidden = !instrumentTips[id];
   try {
     await player.setInstrument(id);
     if (player.instrument === id)
@@ -411,7 +419,7 @@ $("#sample").onclick = async () => {
   const b = $<HTMLButtonElement>("#sample");
   b.disabled = true;
   $("#sound-label").textContent = "Loading instrument samples…";
-  $("#lcd-voice").textContent = "LOADING GRAND…";
+  $("#lcd-voice").textContent = "LOADING SOUND…";
   try {
     await player.loadGrand();
     $("#sound-label").textContent =

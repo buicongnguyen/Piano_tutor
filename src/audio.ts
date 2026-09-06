@@ -12,8 +12,22 @@ export const instruments = {
   organ: { label: "Church organ", sample: "church_organ" },
   violin: { label: "Violin", sample: "violin" },
   flute: { label: "Flute", sample: "flute" },
+  saw: { label: "Electronic · Saw lead", sample: "lead_2_sawtooth" },
+  square: { label: "Electronic · Square lead", sample: "lead_1_square" },
+  crystal: { label: "Electronic · Crystal synth", sample: "fx_3_crystal" },
+  pad: { label: "Electronic · Warm pad", sample: "pad_2_warm" },
+  bass: { label: "Electronic · Synth bass", sample: "synth_bass_1" },
 } as const;
 export type InstrumentId = keyof typeof instruments;
+export const instrumentTips: Partial<Record<InstrumentId, string>> = {
+  saw: "Bright synth lead for electronic melodies. Try Base C4 or C5 and short notes.",
+  square:
+    "Hollow synth lead for clear hooks. Try Base C4 and release each note cleanly.",
+  crystal:
+    "Bell-like electronic tone for delicate melodies and arpeggios. Try Base C4 or C5.",
+  pad: "Soft synth pad for sustained chords. Try Base C3 or C4 with thumb sustain.",
+  bass: "Synth bass for low rhythmic lines. Try Base C2 or C3 with short notes.",
+};
 export function activeAt(notes: Note[], time: number) {
   return notes.filter((n) => n.time <= time && n.time + n.duration > time);
 }

@@ -1728,3 +1728,10 @@ header p,
   border-color: #38bdf8;
   box-shadow: 0 0 12px #38bdf855;
 }
+
+.instrument-tip {
+  margin: 0 0 6px;
+  font-size: 12px;
+  color: inherit;
+  opacity: 0.85;
+}

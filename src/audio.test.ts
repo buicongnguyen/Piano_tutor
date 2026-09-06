@@ -1,10 +1,54 @@
 import { afterEach, describe, it, expect, vi } from "vitest";
 import { SplendidGrandPiano, Soundfont } from "smplr";
-import { Player, performanceVelocity } from "./audio";
+import { Player, performanceVelocity, instruments } from "./audio";
 import { finish } from "./music";
 vi.mock("smplr", () => ({ SplendidGrandPiano: vi.fn(), Soundfont: vi.fn() }));
 afterEach(() => vi.useRealTimers());
 describe("sampled piano mixing and scheduling", () => {
+  it("loads every electronic voice and preserves timed notes and held-note release", async () => {
+    vi.useFakeTimers();
+    const stop = vi.fn();
+    const start = vi.fn(() => stop);
+    vi.mocked(Soundfont).mockImplementation(
+      () =>
+        ({
+          ready: Promise.resolve(),
+          start,
+          stop: vi.fn(),
+        }) as unknown as ReturnType<typeof Soundfont>,
+    );
+    const player = new Player();
+    player.init = async () => {
+      player.context = { currentTime: 5 } as AudioContext;
+      player.gain = {} as GainNode;
+    };
+    for (const id of ["saw", "square", "crystal", "pad", "bass"] as const) {
+      await player.setInstrument(id);
+      expect(player.soundState).toBe("grand");
+      expect(Soundfont).toHaveBeenLastCalledWith(
+        player.context,
+        expect.objectContaining({ instrument: instruments[id].sample }),
+      );
+      player.tone(69, 0.35, 0.6, 0, 6);
+      expect(start).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          note: 69,
+          time: 6,
+          duration: 0.35,
+          velocity: 76,
+        }),
+      );
+      const release = player.hold(57, 0.5);
+      expect(start).toHaveBeenLastCalledWith(
+        expect.objectContaining({ note: 57, velocity: 64 }),
+      );
+      const before = stop.mock.calls.length;
+      release();
+      expect(stop).toHaveBeenCalledTimes(before + 1);
+    }
+    player.pause();
+    vi.mocked(Soundfont).mockClear();
+  });
   it("notifies manual-key input before silencing playback", () => {
     const player = new Player();
     const cleanup = vi.fn();

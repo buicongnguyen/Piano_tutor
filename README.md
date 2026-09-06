@@ -96,3 +96,11 @@ The default **8-finger home row** layout puts C D E F / G A B C on A S D F / J K
 **Space → Hold sustain** uses a thumb as a pedal. Release note keys while holding Space, then release Space to stop those sustained notes. **Toggle sustain** lets you tap Space on/off and enter chords sequentially without holding many physical keys simultaneously. These sequential attacks are rolled chords, not automatically simultaneous score chords. The visible sustain button also toggles the pedal; Escape or Release all stops manual notes. Space → Play / pause restores the original transport shortcut. Use the onscreen Play button in sustain modes. Focused form controls retain their normal keyboard behavior.
 
 Sustain changes only manual sound, not score timing or score bar lengths. Re-striking a sustained key releases its previous voice. Blur, backgrounding, transport silence, sound changes, layout changes and octave/row changes release manual notes and reset the pedal, including pending audio starts. Computer keyboards still have no touch velocity and hardware rollover varies; toggle sustain reduces simultaneous-key requirements without changing those hardware limits.
+
+## Electronic sounds
+
+Sound now offers Electronic · Saw lead, Square lead, Crystal synth, Warm pad and Synth bass. These are general electronic voices for playing EDM melodies, not Alan Walker’s own presets or recordings. Start with Saw lead at Base C4/C5 for melodies, Crystal synth for bell-like arpeggios, Warm pad with thumb sustain for chords, and Synth bass at Base C2/C3. Tips appear below the sound selector. All note timing, velocities, sustain and existing score previews remain active.
+
+Samples use the existing [MusyngKite soundfont](https://github.com/gleitz/midi-js-soundfonts), distributed under CC BY-SA 3.0, loaded on demand through smplr. Exact identifiers: lead_2_sawtooth, lead_1_square, fx_3_crystal, pad_2_warm, synth_bass_1. Sound changes pause playback and release held notes. Failed loading is explicitly shown as synth-piano fallback.
+
+One selected sound plays all pitched parts. A complete electronic track would additionally need per-track instruments, drums and production effects; selecting these voices does not recreate a commercial recording.
