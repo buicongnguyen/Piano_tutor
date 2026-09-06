@@ -25,6 +25,7 @@ export function performanceVelocity(note: Note, balance: HandBalance) {
   );
 }
 export class Player {
+  readonly onSilence = new Set<() => void>();
   instrument: InstrumentId = "grand";
   private soundGeneration = 0;
   private instrumentCache = new Map<
@@ -35,7 +36,7 @@ export class Player {
     return instruments[this.instrument].label;
   }
   async setInstrument(id: InstrumentId) {
-    if (!(id in instruments) || id === this.instrument) return;
+    if (!Object.hasOwn(instruments, id) || id === this.instrument) return;
     this.pause();
     this.soundGeneration++;
     this.instrument = id;
@@ -230,6 +231,7 @@ export class Player {
     };
   }
   silence() {
+    for (const listener of this.onSilence) listener();
     for (const cancel of this.sampleCancels) cancel();
     this.sampleCancels.clear();
     this.grand?.stop();

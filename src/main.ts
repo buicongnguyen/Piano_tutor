@@ -421,7 +421,9 @@ document.addEventListener("keydown", async (e) => {
     e.metaKey ||
     e.altKey ||
     dialog.open ||
-    ["INPUT", "SELECT", "TEXTAREA"].includes((e.target as HTMLElement).tagName)
+    !(e.target instanceof HTMLElement) ||
+    e.target.isContentEditable ||
+    ["INPUT", "SELECT", "TEXTAREA"].includes(e.target.tagName)
   )
     return;
   if (e.code === "Space") {

@@ -5,6 +5,15 @@ import { finish } from "./music";
 vi.mock("smplr", () => ({ SplendidGrandPiano: vi.fn(), Soundfont: vi.fn() }));
 afterEach(() => vi.useRealTimers());
 describe("sampled piano mixing and scheduling", () => {
+  it("notifies manual-key input before silencing playback", () => {
+    const player = new Player();
+    const cleanup = vi.fn();
+    player.onSilence.add(cleanup);
+    player.pause();
+    expect(cleanup).toHaveBeenCalledOnce();
+    player.seek(0);
+    expect(cleanup).toHaveBeenCalledTimes(2);
+  });
   it("keeps the newest instrument when older samples finish loading later", async () => {
     vi.useFakeTimers();
     let finishGuitar!: () => void;

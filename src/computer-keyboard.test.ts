@@ -16,6 +16,9 @@ describe("computer keyboard", () => {
     expect(computerNote("KeyQ", 4)).toBeUndefined();
     expect(computerNote("Semicolon", 6)).toBe(100);
     expect(computerNote("KeyA", 2)).toBe(36);
+    expect(computerNote("toString", 4)).toBeUndefined();
+    expect(computerNote("KeyA", NaN)).toBeUndefined();
+    expect(computerNote("KeyA", 8)).toBeUndefined();
   });
   it("handles chords, releases on keyup and cancels notes released before audio initializes", async () => {
     document.body.innerHTML =
@@ -23,6 +26,7 @@ describe("computer keyboard", () => {
     let ready!: () => void;
     const stop = vi.fn();
     const player = {
+      onSilence: new Set<() => void>(),
       init: vi.fn(
         () =>
           new Promise<void>((r) => {
@@ -58,5 +62,50 @@ describe("computer keyboard", () => {
     expect(stop).toHaveBeenCalledTimes(1);
     window.dispatchEvent(new Event("blur"));
     expect(stop).toHaveBeenCalledTimes(2);
+    // An old rejection must not release a newer press of the same key.
+    let rejectOld!: (error: Error) => void;
+    player.init.mockImplementationOnce(
+      () =>
+        new Promise<void>((_, reject) => {
+          rejectOld = reject;
+        }),
+    );
+    const down = () =>
+      document.body.dispatchEvent(
+        new KeyboardEvent("keydown", {
+          code: "KeyA",
+          bubbles: true,
+          cancelable: true,
+        }),
+      );
+    const up = () =>
+      document.body.dispatchEvent(
+        new KeyboardEvent("keyup", { code: "KeyA", bubbles: true }),
+      );
+    down();
+    up();
+    down();
+    await Promise.resolve();
+    const releases = stop.mock.calls.length;
+    rejectOld(Error("old request"));
+    await Promise.resolve();
+    expect(stop).toHaveBeenCalledTimes(releases);
+    for (const silence of player.onSilence) silence();
+    expect(stop).toHaveBeenCalledTimes(releases + 1);
+    // A transport cancellation also invalidates keys still awaiting audio.
+    player.init.mockImplementationOnce(
+      () =>
+        new Promise<void>((r) => {
+          ready = r;
+        }),
+    );
+    const starts = player.hold.mock.calls.length;
+    down();
+    for (const silence of player.onSilence) silence();
+    ready();
+    await Promise.resolve();
+    expect(player.hold).toHaveBeenCalledTimes(starts);
+    // Events from non-elements must be harmless.
+    document.dispatchEvent(new KeyboardEvent("keydown", { code: "KeyA" }));
   });
 });

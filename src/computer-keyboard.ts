@@ -20,7 +20,12 @@ export const pcOffsets: Record<string, number> = {
   Semicolon: 16,
 };
 export function computerNote(code: string, octave: number) {
-  return code in pcOffsets ? 12 * (octave + 1) + pcOffsets[code] : undefined;
+  return Object.hasOwn(pcOffsets, code) &&
+    Number.isInteger(octave) &&
+    octave >= 2 &&
+    octave <= 6
+    ? 12 * (octave + 1) + pcOffsets[code]
+    : undefined;
 }
 export function mountComputerKeyboard(player: Player) {
   const root = document.querySelector<HTMLElement>("#computer-keys")!;
@@ -36,6 +41,7 @@ export function mountComputerKeyboard(player: Player) {
   const releaseAll = () => {
     for (const code of held.keys()) release(code);
   };
+  player.onSilence.add(releaseAll);
   const press = async (code: string) => {
     if (held.has(code)) return;
     const midi = computerNote(code, octave);
@@ -46,6 +52,7 @@ export function mountComputerKeyboard(player: Player) {
       await player.init();
       if (held.get(code) === entry) entry.stop = player.hold(midi);
     } catch {
+      if (held.get(code) !== entry) return;
       release(code);
       document.querySelector("#status")!.textContent =
         "Audio could not start. Try the key again.";
@@ -111,13 +118,15 @@ export function mountComputerKeyboard(player: Player) {
     render();
   };
   document.addEventListener("keydown", (event) => {
-    const target = event.target as HTMLElement;
+    const target = event.target;
     if (
       event.repeat ||
       event.defaultPrevented ||
       event.ctrlKey ||
       event.metaKey ||
       event.altKey ||
+      !(target instanceof HTMLElement) ||
+      target.isContentEditable ||
       target.closest(
         'input,select,textarea,[contenteditable="true"],#collection-picker,dialog[open]',
       )
@@ -143,13 +152,16 @@ export function mountComputerKeyboard(player: Player) {
         held.has(code) || (midi !== undefined && active.includes(midi)),
       );
     }
+    const heldLabels = new Set(
+      [...held.values()].map((n) => `Play ${noteName(n.midi)}`),
+    );
     for (const key of document.querySelectorAll<HTMLElement>(
       "#keyboard .key",
     )) {
-      const midi = [...held.values()].find(
-        (n) => key.getAttribute("aria-label") === `Play ${noteName(n.midi)}`,
+      key.classList.toggle(
+        "pc-held",
+        heldLabels.has(key.getAttribute("aria-label") || ""),
       );
-      key.classList.toggle("pc-held", !!midi);
     }
   };
 }

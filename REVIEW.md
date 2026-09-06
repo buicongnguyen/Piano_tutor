@@ -1,5 +1,13 @@
 # Logic and code review
 
+## Follow-up keyboard and transport audit
+
+- Fixed stale computer-key state after pause, seek, song changes or instrument switching. Player silence now notifies the input controller to release held notes and invalidate pending note starts before stopping voices.
+- Fixed an asynchronous failure race: an older rejected audio initialization cannot release a newer press of the same key or overwrite its status.
+- Validate own-property key/instrument identifiers and supported integer octaves. Keyboard handlers ignore non-element event targets and editable content, avoiding errors and accidental musical shortcuts while typing.
+- Reduced repeated held-note label construction in the animation loop.
+- 43 tests and production build pass, including stale rejection, transport cancellation, pending-note invalidation and unsupported key/octave cases. Existing scope limits remain: manual velocity is fixed, full MusicXML expression is not interpreted, and the notation library still produces a large-bundle advisory.
+
 ## Computer keyboard guide
 
 - Added a QWERTY-position guide with 17 semitones, octave selection, blue ripple highlights and playback-following within the chosen range. Input fields and dialogs are excluded from musical shortcuts.
