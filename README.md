@@ -82,3 +82,9 @@ See [PLAN.md](PLAN.md) and [REVIEW.md](REVIEW.md).
 - [smplr](https://github.com/danigb/smplr): sampled instruments, MIT; [Splendid Grand source and sample provenance](https://github.com/sfzinstruments/SplendidGrandPiano). Samples are fetched by the library, not redistributed in this repository.
 - [MusicXML timing specification](https://www.w3.org/2021/06/musicxml40/tutorial/midi-compatible-part/): chord and backup semantics.
 - Both bundled exercises are original material created for this project.
+
+## Pop discovery (import required)
+
+The Collection now includes a separate searchable discovery list for Adele’s Someone Like You and Rolling in the Deep, Maroon 5’s Memories and Girls Like You, and Yiruma’s River Flows in You. Search by artist, title or `pop`. These are retailer links and local-import actions, not bundled playable files; the playable count excludes them. No purchase or download was performed.
+
+Sources checked 2026-09-06: [Someone Like You](https://synthesiagame.com/store/Song/3), [Rolling in the Deep](https://synthesiagame.com/store/Song/37), [Memories](https://www.midi.com.au/maroon-5/memories-midi/), [Girls Like You](https://www.midi.com.au/maroon-5/girls-like-you-midi/). Synthesia lists US-licensed piano arrangements with backing tracks. Hit Trax lists licensed full-band MIDI backing tracks, not solo piano. This app renders pitched tracks with the selected instrument and does not reproduce a General MIDI band. Public redistribution permission was not established for these editions.

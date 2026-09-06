@@ -2,6 +2,7 @@ import { shell } from "./shell";
 import { mountKeyboard } from "./keyboard";
 import { loadRepertoire } from "./repertoire";
 import { musicMatches } from "./collection";
+import { findDiscoverSongs } from "./discover";
 import { mountTheme } from "./theme";
 import { mountWaterfall } from "./waterfall";
 import { mountComputerKeyboard } from "./computer-keyboard";
@@ -117,30 +118,34 @@ function renderLibrary() {
   $("#collection-results").textContent = matches.length
     ? `${matches.length} ${matches.length === 1 ? "piece" : "pieces"} · select, then press Play`
     : "No playable matches. Import a MIDI or MusicXML score.";
-  if (
-    query.trim() &&
-    musicMatches("River Flows in You", "Yiruma", query) &&
-    !library.some((p) => musicMatches(p.title, p.composer, "river flow in you"))
-  ) {
+  const suggestions = findDiscoverSongs(query);
+  if (suggestions.length) {
+    const heading = document.createElement("p");
+    heading.textContent = "Discover songs · import required";
+    el.append(heading);
+  }
+  for (const song of suggestions) {
     const card = document.createElement("div");
     card.className = "collection-unavailable";
     const title = document.createElement("strong");
-    title.textContent = "River Flows in You · Yiruma";
+    title.textContent = song.title + " · " + song.artist;
     const info = document.createElement("p");
-    info.textContent =
-      "Not bundled: no redistribution permission verified. Import a MIDI or MusicXML arrangement you are entitled to use; it stays in this browser session.";
+    info.textContent = song.detail;
     const button = document.createElement("button");
-    button.textContent = "Import River Flows in You";
+    button.textContent = "Import " + song.title;
     button.onclick = () => {
       $<HTMLDetailsElement>("#collection-picker").open = false;
       $("#import").click();
     };
     const link = document.createElement("a");
-    link.textContent = "Find licensed sheet music ↗";
-    link.href = "https://www.virtualsheetmusic.com/score/HL-302236.html";
+    link.textContent = song.sourceLabel + " ↗";
+    link.href = song.url;
     link.target = "_blank";
     link.rel = "noopener";
-    card.append(title, info, button, link);
+    const note = document.createElement("small");
+    note.textContent =
+      "Not bundled. Import your permitted MIDI/MusicXML to play in this browser session.";
+    card.append(title, info, button, link, note);
     el.append(card);
   }
 }
