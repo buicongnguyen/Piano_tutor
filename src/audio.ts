@@ -285,6 +285,7 @@ export class Player {
       start + Math.max(0.02, duration),
     );
     env.gain.exponentialRampToValueAtTime(0.001, start + duration + 0.12);
+    let remaining = 3;
     [1, 2, 3].forEach((harmonic, i) => {
       const osc = ctx.createOscillator(),
         gain = ctx.createGain();
@@ -296,11 +297,11 @@ export class Player {
         this.voices.delete(osc);
         osc.disconnect();
         gain.disconnect();
+        if (--remaining === 0) env.disconnect();
       };
       osc.start(start);
       osc.stop(start + duration + 0.15);
     });
-    setTimeout(() => env.disconnect(), (delay + duration + 0.3) * 1000);
   }
   hold(midi: number, velocity = 0.7): () => void {
     if (!this.context || !this.gain) return () => {};
@@ -351,7 +352,10 @@ export class Player {
     for (const listener of this.onSilence) listener();
     for (const cancel of this.sampleCancels) cancel();
     this.sampleCancels.clear();
-    this.grand?.stop();
+    // Wall-clock cleanup can run while the audio clock is suspended. Stop
+    // each sampler as well as the retained per-note cancellation handles.
+    for (const voice of new Set([this.grand, ...this.ensembleVoices.values()]))
+      voice?.stop();
     for (const v of this.voices) {
       try {
         v.stop();

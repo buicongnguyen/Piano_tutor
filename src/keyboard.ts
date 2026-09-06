@@ -17,8 +17,24 @@ export function keyboardLayout(first: number, last: number) {
 export function mountKeyboard(player: Player) {
   const root = document.querySelector<HTMLElement>("#keyboard")!;
   const keys = new Map<number, HTMLButtonElement>();
+  const held = new Map<HTMLButtonElement, { stop?: () => void }>();
+  const release = (key: HTMLButtonElement) => {
+    const note = held.get(key);
+    held.delete(key);
+    note?.stop?.();
+    key.classList.remove("pressed");
+  };
+  const releaseAll = () => {
+    for (const key of held.keys()) release(key);
+  };
+  player.onSilence.add(releaseAll);
+  window.addEventListener("blur", releaseAll);
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) releaseAll();
+  });
   let full = false;
   const render = () => {
+    releaseAll();
     const layout = keyboardLayout(full ? 21 : 36, full ? 108 : 84);
     keys.clear();
     root.replaceChildren();
@@ -39,17 +55,49 @@ export function mountKeyboard(player: Player) {
         marker.className = "middle-c-dot";
         b.append(marker);
       }
-      // Native click supports mouse, touch, Enter and Space equally.
-      b.onclick = async () => {
+      const press = async () => {
+        if (held.has(b)) return;
+        const note: { stop?: () => void } = {};
+        held.set(b, note);
+        b.classList.add("pressed");
         try {
           await player.init();
-          player.tone(midi, 1.3);
-          b.classList.add("pressed");
-          setTimeout(() => b.classList.remove("pressed"), 220);
+          if (held.get(b) !== note) return;
+          note.stop = player.hold(midi);
         } catch {
+          if (held.get(b) !== note) return;
+          release(b);
           document.querySelector("#status")!.textContent =
             "Audio could not start. Try the key again.";
         }
+      };
+      b.addEventListener("pointerdown", (event) => {
+        if (event.button !== 0) return;
+        event.preventDefault();
+        b.setPointerCapture(event.pointerId);
+        void press();
+      });
+      for (const event of ["pointerup", "pointercancel", "lostpointercapture"])
+        b.addEventListener(event, () => release(b));
+      b.onkeydown = (event) => {
+        if (event.code !== "Space" && event.code !== "Enter") return;
+        event.preventDefault();
+        if (!event.repeat) void press();
+      };
+      b.onkeyup = (event) => {
+        if (event.code !== "Space" && event.code !== "Enter") return;
+        event.preventDefault();
+        release(b);
+      };
+      b.onblur = () => release(b);
+      // Assistive technology may activate a button without pointer/key events.
+      b.onclick = (event) => {
+        if (event.detail !== 0 || held.has(b)) return;
+        void press();
+        const note = held.get(b);
+        setTimeout(() => {
+          if (held.get(b) === note) release(b);
+        }, 250);
       };
       keys.set(midi, b);
       root.append(b);

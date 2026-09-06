@@ -5,6 +5,47 @@ import { finish } from "./music";
 vi.mock("smplr", () => ({ SplendidGrandPiano: vi.fn(), Soundfont: vi.fn() }));
 afterEach(() => vi.useRealTimers());
 describe("sampled piano mixing and scheduling", () => {
+  it("keeps fallback envelopes connected until audio voices actually end", () => {
+    vi.useFakeTimers();
+    const node = () => ({
+      connect: vi.fn().mockReturnThis(),
+      disconnect: vi.fn(),
+      gain: {
+        value: 0,
+        setValueAtTime: vi.fn(),
+        linearRampToValueAtTime: vi.fn(),
+        exponentialRampToValueAtTime: vi.fn(),
+      },
+    });
+    const envelope = node();
+    const oscillators = Array.from({ length: 3 }, () => ({
+      connect: vi.fn().mockReturnThis(),
+      disconnect: vi.fn(),
+      frequency: { value: 0 },
+      start: vi.fn(),
+      stop: vi.fn(),
+      onended: () => {},
+    }));
+    const player = new Player();
+    player.gain = node() as unknown as GainNode;
+    player.context = {
+      currentTime: 10,
+      createGain: vi.fn().mockReturnValue(node()).mockReturnValueOnce(envelope),
+      createOscillator: vi
+        .fn()
+        .mockReturnValueOnce(oscillators[0])
+        .mockReturnValueOnce(oscillators[1])
+        .mockReturnValueOnce(oscillators[2]),
+    } as unknown as AudioContext;
+    player.tone(60, 1, 0.7, 0, 20);
+    vi.advanceTimersByTime(20000);
+    expect(envelope.disconnect).not.toHaveBeenCalled();
+    oscillators[0].onended();
+    oscillators[1].onended();
+    expect(envelope.disconnect).not.toHaveBeenCalled();
+    oscillators[2].onended();
+    expect(envelope.disconnect).toHaveBeenCalledOnce();
+  });
   it("loads every electronic voice and preserves timed notes and held-note release", async () => {
     vi.useFakeTimers();
     const stop = vi.fn();

@@ -45,6 +45,19 @@ function setup(failCello = false, pending?: Promise<void>) {
   return { player, piano, violin, cello };
 }
 describe("original MIDI instruments", () => {
+  it("stops every ensemble sampler even after cleanup timers expire while audio is suspended", async () => {
+    const { player } = setup();
+    await player.play();
+    const voices = vi
+      .mocked(Soundfont)
+      .mock.results.filter((result) => result.type === "return")
+      .map((result) => result.value as ReturnType<typeof Soundfont>);
+    for (const voice of voices) vi.mocked(voice.stop).mockClear();
+    // Wall time passes but currentTime remains at 10 (a suspended context).
+    await vi.advanceTimersByTimeAsync(5000);
+    player.pause();
+    for (const voice of voices) expect(voice.stop).toHaveBeenCalledOnce();
+  });
   it("retains violin, viola and cello programs in the Four Seasons importer", () => {
     const piece = parseMidi(
       Uint8Array.from(readFileSync("public/music/spring-1.mid")).buffer,
