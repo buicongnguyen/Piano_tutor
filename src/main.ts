@@ -2,6 +2,7 @@ import { shell } from "./shell";
 import { mountKeyboard } from "./keyboard";
 import { loadRepertoire } from "./repertoire";
 import { musicMatches } from "./collection";
+import { hasBothHands } from "./practice";
 import { findDiscoverSongs } from "./discover";
 import { mountTheme } from "./theme";
 import { mountWaterfall } from "./waterfall";
@@ -184,10 +185,44 @@ document.addEventListener("click", (event) => {
   if (event.target instanceof Node && !picker.contains(event.target))
     picker.open = false;
 });
+function updatePracticeControls() {
+  const select = $<HTMLSelectElement>("#practice-mode");
+  const supported = hasBothHands(current.notes);
+  for (const option of select.options)
+    option.disabled = option.value !== "listen" && !supported;
+  select.value = player.practiceHand ?? "listen";
+  $<HTMLButtonElement>("#metronome").disabled = !player.beats.length;
+  $("#metronome").setAttribute("aria-pressed", String(player.metronome));
+  $("#practice-info").textContent = !supported
+    ? "Hand practice needs a score with both hands fully identified. No pitch-based guessing is used."
+    : player.practiceHand
+      ? "You play the " +
+        player.practiceHand +
+        " hand; the opposite hand plays automatically. PC bars show your part. Use Speed to slow down. Playback keeps time and does not wait for your notes."
+      : "Listen to both hands, or choose a hand to play yourself. Metronome clicks follow quarter-note beats and score tempo changes.";
+}
+$("#practice-mode").addEventListener("change", () => {
+  const value = $<HTMLSelectElement>("#practice-mode").value;
+  player.setPracticeHand(
+    value === "right" || value === "left" ? value : undefined,
+  );
+  updatePracticeControls();
+  status("Practice mode ready. Press Play to start from this position.");
+});
+$("#metronome").onclick = () => {
+  player.setMetronome(!player.metronome);
+  updatePracticeControls();
+  status(
+    "Metronome " +
+      (player.metronome ? "on" : "off") +
+      ". Press Play to continue.",
+  );
+};
 async function select(p: Piece) {
   const id = ++loadId;
   player.load(p);
   current = p;
+  updatePracticeControls();
   const leftCount = p.notes.filter((n) => n.hand === "left").length,
     rightCount = p.notes.filter((n) => n.hand === "right").length;
   $("#hand-info").textContent =
@@ -548,9 +583,15 @@ function frame() {
         : "▶ <span>Play</span>";
     $("#loop-range").textContent = `${time(player.a)}–${time(player.b)}`;
     const active = player.playing ? activeAt(current.notes, t) : [];
+    const practiceNotes = player.practiceHand
+      ? current.notes.filter((n) => n.hand === player.practiceHand)
+      : current.notes;
     updateComputerKeyboard(
-      active.map((n) => n.midi),
-      current.notes,
+      (player.practiceHand
+        ? active.filter((n) => n.hand === player.practiceHand)
+        : active
+      ).map((n) => n.midi),
+      practiceNotes,
       t,
     );
     for (const [m, b] of keys)

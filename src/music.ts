@@ -69,6 +69,7 @@ export function parseMidi(data: ArrayBuffer, title: string): Piece {
     id: crypto.randomUUID(),
     title: midi.name || title,
     composer: "Imported MIDI",
+    beatToSeconds: (beat) => midi.header.ticksToSeconds(beat * midi.header.ppq),
     notes: midi.tracks
       .filter((t) => !t.instrument.percussion)
       .flatMap((t) =>

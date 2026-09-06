@@ -86,3 +86,9 @@
 - Fixed-duration manual computer keys cannot infer finger pressure. Source score quality determines rhythm and phrasing. The app does not claim an automatically generated human performance.
 - Sustain extension is a note-duration approximation, not a physical pedal/resonance model. Continuous MIDI controllers other than sustain are not synthesized.
 - Browser UI verification establishes playback state and sample loading, not a subjective listening assessment.
+
+## Accompaniment practice and metronome review — 2026-09-06
+
+Reviewed hand isolation, manual-note independence, pending playback cancellation, tempo conversion and seek/loop boundaries. Practice requires complete explicit left/right labels; unknown assignments reset to Listen. Mode and metronome changes pause and clear scheduled voices. PC previews filter to the practice hand, while the full score/piano view retains context. Metronome uses an independent short oscillator routed through the existing master volume; it does not change the selected instrument. Beats are deduplicated and clipped before the loop end and before a seek offset. MIDI tempo maps now expose quarter-note conversion alongside the existing MusicXML conversion.
+
+Validation: 57 tests pass, including opposite-hand scheduling, mode changes, ambiguous assignments, tempo changes, speed scaling, beat deduplication, seek offsets and loop clipping. Production build passes. No automatic rhythm generation, note grading, tempo following of live input, or waiting for the player is claimed.

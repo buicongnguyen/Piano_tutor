@@ -1,5 +1,6 @@
 import type { Note, Piece } from "./music";
 import { soundDuration } from "./music";
+import { hasBothHands, scoreBeats, type PracticeHand } from "./practice";
 import { SplendidGrandPiano, Soundfont } from "smplr";
 export const instruments = {
   grand: { label: "Grand piano", sample: "" },
@@ -71,6 +72,19 @@ export class Player {
   speed = 1;
   volume = 0.65;
   handBalance: HandBalance = { left: 0.75, right: 1 };
+  practiceHand: PracticeHand;
+  metronome = false;
+  beats: number[] = [];
+  private scheduledBeats = new Set<number>();
+  setPracticeHand(hand: PracticeHand) {
+    this.pause();
+    this.practiceHand =
+      this.piece && hasBothHands(this.piece.notes) ? hand : undefined;
+  }
+  setMetronome(enabled: boolean) {
+    this.pause();
+    this.metronome = enabled && this.beats.length > 0;
+  }
   loop = false;
   a = 0;
   b = 0;
@@ -258,10 +272,14 @@ export class Player {
     }
     this.voices.clear();
     this.scheduled.clear();
+    this.scheduledBeats.clear();
   }
   load(piece: Piece) {
     this.pause();
     this.piece = piece;
+    if (!hasBothHands(piece.notes)) this.practiceHand = undefined;
+    this.beats = scoreBeats(piece);
+    if (!this.beats.length) this.metronome = false;
     this.position = 0;
     this.a = 0;
     this.b = piece.duration;
@@ -322,6 +340,24 @@ export class Player {
     this.speed = speed;
     if (playing) void this.play();
   }
+  clickBeat(at: number) {
+    if (!this.context || !this.gain) return;
+    const osc = this.context.createOscillator();
+    const env = this.context.createGain();
+    osc.frequency.value = 1000;
+    env.gain.setValueAtTime(0, at);
+    env.gain.linearRampToValueAtTime(0.18, at + 0.002);
+    env.gain.exponentialRampToValueAtTime(0.001, at + 0.035);
+    osc.connect(env).connect(this.gain);
+    this.voices.add(osc);
+    osc.onended = () => {
+      this.voices.delete(osc);
+      osc.disconnect();
+      env.disconnect();
+    };
+    osc.start(at);
+    osc.stop(at + 0.04);
+  }
   tick() {
     if (!this.playing || !this.piece) return;
     this.position = this.now();
@@ -334,7 +370,25 @@ export class Player {
       }
       return;
     }
+    if (this.metronome)
+      for (const [i, beat] of this.beats.entries()) {
+        if (beat >= end || beat > this.position + 0.12 * this.speed) break;
+        if (
+          beat < this.offset ||
+          beat < this.position - 0.025 * this.speed ||
+          this.scheduledBeats.has(i)
+        )
+          continue;
+        this.scheduledBeats.add(i);
+        this.clickBeat(
+          Math.max(
+            this.context!.currentTime,
+            this.anchor + (beat - this.offset) / this.speed,
+          ),
+        );
+      }
     this.piece.notes.forEach((n, i) => {
+      if (this.practiceHand && n.hand === this.practiceHand) return;
       if (
         this.scheduled.has(i) ||
         n.time + soundDuration(n) <= this.offset ||

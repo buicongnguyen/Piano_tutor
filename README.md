@@ -104,3 +104,11 @@ Sound now offers Electronic · Saw lead, Square lead, Crystal synth, Warm pad an
 Samples use the existing [MusyngKite soundfont](https://github.com/gleitz/midi-js-soundfonts), distributed under CC BY-SA 3.0, loaded on demand through smplr. Exact identifiers: lead_2_sawtooth, lead_1_square, fx_3_crystal, pad_2_warm, synth_bass_1. Sound changes pause playback and release held notes. Failed loading is explicitly shown as synth-piano fallback.
 
 One selected sound plays all pitched parts. A complete electronic track would additionally need per-track instruments, drums and production effects; selecting these voices does not recreate a commercial recording.
+
+## Automatic accompaniment practice
+
+Above the sheet, Practice offers Listen, Play right hand and Play left hand. In a practice mode the score plays only the opposite hand; your physical or onscreen keys still sound normally. The PC falling bars and NEXT KEYS sequence show only your chosen hand. The piano waterfall and score retain both parts for context. Use Play to start, Speed to slow down, and A/B looping to repeat a phrase. Playback keeps time; it does not wait for or grade your input.
+
+Hand practice requires both hands to be explicitly assigned for every note. It is disabled for unnamed or partial track assignments, including Variations d’automne; switching to such a piece resets to Listen. Mode changes pause and release existing voices to prevent doubled melody notes.
+
+Metronome uses quarter-note beats from the MIDI/MusicXML tempo map, including tempo changes. Speed scales accompaniment and clicks together. Clicks stop on pause, follow seek/loop boundaries, and share master volume. The grid starts at score time zero; there is no time-signature accent or count-in. Invalid or excessively large beat grids disable the metronome. No generic bass line or drum beat is generated: accompaniment comes from the actual score’s other hand.
