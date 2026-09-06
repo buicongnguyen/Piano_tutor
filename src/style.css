@@ -22,12 +22,12 @@
 .hand-balance {
   display: flex;
   align-items: center;
-  gap: 24px;
+  gap: 16px;
   border: 1px solid #dce3d4;
   background: #edf1e5;
   border-radius: 12px;
-  padding: 20px 24px;
-  margin-top: 16px;
+  padding: 10px 16px;
+  margin-top: 8px;
 }
 .hand-balance > div:first-child {
   flex: 1;
@@ -44,9 +44,10 @@
   max-width: 280px;
 }
 .hand-sliders {
-  width: 180px;
+  width: 240px;
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(90px, 1fr) minmax(80px, 1fr);
+  align-items: center;
   gap: 8px;
 }
 .hand-sliders label {
@@ -61,7 +62,7 @@
 }
 .hand-sliders input {
   width: 100%;
-  margin: 0 0 6px;
+  margin: 0;
 }
 .balance-presets {
   display: flex;
@@ -130,15 +131,15 @@
   align-items: center;
   justify-content: center;
   gap: 24px;
-  min-height: 112px;
-  padding: 17px 24px 15px;
+  min-height: 82px;
+  padding: 9px 24px;
   background: linear-gradient(175deg, #354038, #242d27 65%, #1c251f);
   border-top: 1px solid #566052;
   border-radius: 9px 9px 0 0;
   box-shadow: inset 0 -2px 3px #101a15;
 }
 .speaker {
-  height: 63px;
+  height: 48px;
   flex: 1;
   max-width: 110px;
   background: radial-gradient(
@@ -162,7 +163,7 @@
   letter-spacing: 3px;
   color: #e0dfcd;
   text-align: center;
-  margin-bottom: 10px;
+  margin-bottom: 5px;
 }
 .instrument-wordmark span {
   color: #929d88;
@@ -253,7 +254,7 @@
 }
 #keyboard {
   position: relative;
-  height: 172px;
+  height: 126px;
   min-width: 790px;
   --white-count: 29;
   isolation: isolate;
@@ -451,14 +452,14 @@
 }
 header h1 {
   font-family: Georgia, serif;
-  font-size: 38px;
+  font-size: 28px;
   font-weight: 400;
   letter-spacing: -1.4px;
 }
 @media (max-width: 1100px) {
   .console {
     gap: 16px;
-    padding: 17px 14px;
+    padding: 9px 14px;
   }
   .speaker {
     max-width: 65px;
@@ -483,8 +484,8 @@ header h1 {
   }
   .console {
     gap: 12px;
-    min-height: 107px;
-    padding: 14px 9px;
+    min-height: 80px;
+    padding: 8px 9px;
   }
   .speaker {
     display: none;
@@ -519,7 +520,7 @@ header h1 {
     gap: 12px;
   }
   #keyboard {
-    height: 160px;
+    height: 120px;
   }
   .score-wrap {
     height: 190px;
@@ -705,20 +706,20 @@ main {
   flex: 1;
   min-width: 0;
   max-width: 1500px;
-  padding: 28px 40px 20px;
+  padding: 16px 32px 12px;
 }
 header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  margin-bottom: 8px;
 }
 h1 {
   font-family: Manrope, sans-serif;
   font-size: 34px;
   font-weight: 500;
   letter-spacing: -1.3px;
-  margin: 10px 0;
+  margin: 4px 0;
 }
 header p {
   color: #7a857b;
@@ -735,7 +736,7 @@ header p {
 #status {
   font-size: 11px;
   color: #6d7c70;
-  margin-bottom: 17px;
+  margin-bottom: 8px;
   min-height: 16px;
 }
 .workspace {
@@ -749,7 +750,7 @@ header p {
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 16px 24px;
+  padding: 10px 20px;
 }
 .piece-icon {
   background: #eef0e6;
@@ -799,7 +800,7 @@ h2 {
 .tabs button {
   border: 0;
   border-radius: 0;
-  padding: 13px 0;
+  padding: 9px 0;
   font-size: 11px;
   color: #85907d;
 }
@@ -836,7 +837,7 @@ h2 {
   font-size: 10px;
 }
 .transport {
-  padding: 15px 25px 20px;
+  padding: 10px 20px;
   background: #fafbf6;
   border-top: 1px solid #e6e9df;
 }
@@ -859,7 +860,7 @@ input[type="range"] {
   display: flex;
   align-items: center;
   gap: 20px;
-  margin-top: 17px;
+  margin-top: 9px;
   font-size: 11px;
 }
 .play-controls {
@@ -917,7 +918,7 @@ button[aria-pressed="true"] {
   width: 65px;
 }
 .keyboard-section {
-  margin: 0 0 16px;
+  margin: 0 0 8px;
 }
 .keyboard-heading {
   display: flex;
@@ -947,7 +948,7 @@ h3 {
 .key-caption {
   display: flex;
   justify-content: space-between;
-  margin-top: 16px;
+  margin-top: 6px;
   font-size: 10px;
   color: #8a9381;
   gap: 15px;
@@ -963,8 +964,8 @@ h3 {
 footer {
   display: flex;
   justify-content: space-between;
-  margin-top: 35px;
-  padding: 18px 0;
+  margin-top: 12px;
+  padding: 10px 0;
   border-top: 1px solid #e0e5d8;
   font-size: 10px;
   color: #8c9784;
@@ -1017,7 +1018,7 @@ dialog > p {
 }
 @media (max-width: 1150px) {
   main {
-    padding: 30px 25px;
+    padding: 16px 20px;
   }
   aside {
     width: 225px;
@@ -1069,7 +1070,7 @@ dialog > p {
     display: none;
   }
   main {
-    padding: 25px 16px;
+    padding: 12px 14px;
   }
   h1 {
     font-size: 26px;
@@ -1092,7 +1093,7 @@ dialog > p {
     padding: 8px 14px;
   }
   .transport {
-    padding: 15px;
+    padding: 10px 14px;
   }
   .controls {
     gap: 12px;
@@ -1111,5 +1112,46 @@ dialog > p {
   }
   .keyboard-heading h3 {
     font-size: 14px;
+  }
+}
+
+/* Keep the practice surface compact; headings and controls share rows. */
+header > div > .eyebrow,
+header p,
+.keyboard-heading .eyebrow,
+.hand-balance .eyebrow {
+  display: none;
+}
+.keyboard-heading h3 {
+  margin: 0;
+}
+.keyboard-heading {
+  margin-bottom: 6px;
+}
+.sound {
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+}
+@media (max-width: 760px) {
+  .sound {
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 3px;
+  }
+  .hand-balance {
+    padding: 10px 12px;
+    gap: 10px;
+  }
+  .hand-sliders {
+    flex-basis: 100%;
+  }
+  .balance-presets {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .key-caption {
+    gap: 4px;
   }
 }
