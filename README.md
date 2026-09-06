@@ -4,6 +4,8 @@ A browser piano studio with a local score library, MusicXML engraving, MIDI pian
 
 Use **Theme** in the header to choose System, Light or Dark. Your choice is saved in this browser; System follows changes to the device appearance. The collection dropdown searches titles and composers, including accent-insensitive matches.
 
+**Falling notes** shows a compact blue waterfall aligned with the scrolling keyboard. Bar length follows key-down duration, and the leading edge reaches the keyboard at note onset. **Effect** offers Water ripples, Flow particles, Sparkles, Soft glow and None. Effects follow score playback; changing them does not change audio. The display and effect preferences are saved locally. Reduced-motion users start with falling notes off, and animated strike particles remain suppressed. The falling-note toggle restores the compact keyboard-only layout.
+
 **[Open the live piano studio](https://buicongnguyen.github.io/Piano_tutor/)**
 
 The digital piano has a wood-sided cabinet, recessed display, speaker grilles, sculpted keys, note-label toggle and an expandable 88-key keyboard.

@@ -3,6 +3,7 @@ import { mountKeyboard } from "./keyboard";
 import { loadRepertoire } from "./repertoire";
 import { musicMatches } from "./collection";
 import { mountTheme } from "./theme";
+import { mountWaterfall } from "./waterfall";
 import "./style.css";
 import { OpenSheetMusicDisplay } from "opensheetmusicdisplay";
 import { exercise, parseXml, parseMidi, noteName, type Piece } from "./music";
@@ -391,6 +392,7 @@ $("#sample").onclick = async () => {
 const keyMap = "awsedftgyhujk",
   pitches = [60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72];
 const keys = mountKeyboard(player);
+const drawWaterfall = mountWaterfall();
 document.addEventListener("keydown", async (e) => {
   if (
     e.defaultPrevented ||
@@ -482,7 +484,8 @@ function roll(t: number) {
 setInterval(() => player.tick(), 25);
 function frame() {
   if (current) {
-    const t = player.position;
+    const t = Math.min(current.duration, player.now());
+    drawWaterfall(current.notes, t, player.playing);
     if (osmd && view === "sheet" && cursorTimes.length) {
       let target = 0;
       while (

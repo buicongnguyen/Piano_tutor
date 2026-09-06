@@ -1385,3 +1385,56 @@ header p,
     padding: 5px;
   }
 }
+
+.key-lanes {
+  min-width: 790px;
+}
+.key-lanes:has(.full-range) {
+  min-width: 1420px;
+}
+#waterfall {
+  display: block;
+  width: 100%;
+  height: 145px;
+  background: #081925;
+}
+#waterfall[hidden] {
+  display: none;
+}
+.key-lanes:not([data-effect="none"]):has(#waterfall:not([hidden]))
+  .white.sounding,
+.key-lanes:not([data-effect="none"]):has(#waterfall:not([hidden]))
+  .white.pressed {
+  background: linear-gradient(#59c9f5, #b3f3ff);
+  box-shadow:
+    inset 0 0 16px #42b7ff,
+    0 0 10px #27baff;
+}
+.key-lanes:not([data-effect="none"]):has(#waterfall:not([hidden]))
+  .black.sounding,
+.key-lanes:not([data-effect="none"]):has(#waterfall:not([hidden]))
+  .black.pressed {
+  background: linear-gradient(#125b89, #38bddd);
+  box-shadow: 0 0 12px #32c5ff;
+}
+@media (max-width: 760px) {
+  #waterfall {
+    height: 120px;
+  }
+}
+.effect-control {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  color: #cadccc;
+  font-size: 9px;
+}
+.effect-control select {
+  max-width: 115px;
+  padding: 4px;
+  font-size: 10px;
+  background: #20312b;
+  color: #d2edec;
+  border-color: #536d60;
+}
