@@ -1,6 +1,7 @@
 import { shell } from "./shell";
 import { mountKeyboard } from "./keyboard";
 import { loadRepertoire } from "./repertoire";
+import { musicMatches } from "./collection";
 import "./style.css";
 import { OpenSheetMusicDisplay } from "opensheetmusicdisplay";
 import { exercise, parseXml, parseMidi, noteName, type Piece } from "./music";
@@ -53,7 +54,12 @@ const status = (s: string) => {
 function renderLibrary() {
   const el = $("#library");
   el.replaceChildren();
+  const query = $<HTMLInputElement>("#collection-search").value;
+  const matches = library.filter((p) =>
+    musicMatches(p.title, p.composer, query),
+  );
   library.forEach((p, i) => {
+    if (!matches.includes(p)) return;
     const b = document.createElement("button");
     b.className = "piece" + (p === current ? " active" : "");
     const n = document.createElement("span");
@@ -66,11 +72,72 @@ function renderLibrary() {
     b.setAttribute("aria-pressed", String(p === current));
     label.append(sub);
     b.append(n, label);
-    b.onclick = () => void select(p);
+    b.onclick = () => {
+      $<HTMLDetailsElement>("#collection-picker").open = false;
+      $("#collection-picker summary").focus();
+      void select(p);
+    };
     el.append(b);
   });
   $("#count").textContent = String(library.length);
+  $("#collection-current").textContent = current?.title || "Choose music";
+  $("#collection-results").textContent = matches.length
+    ? `${matches.length} ${matches.length === 1 ? "piece" : "pieces"} · select, then press Play`
+    : "No playable matches. Import a MIDI or MusicXML score.";
+  if (
+    query.trim() &&
+    musicMatches("River Flows in You", "Yiruma", query) &&
+    !library.some((p) => musicMatches(p.title, p.composer, "river flow in you"))
+  ) {
+    const card = document.createElement("div");
+    card.className = "collection-unavailable";
+    const title = document.createElement("strong");
+    title.textContent = "River Flows in You · Yiruma";
+    const info = document.createElement("p");
+    info.textContent =
+      "Not in your library yet. Import your MIDI or MusicXML arrangement to play.";
+    const button = document.createElement("button");
+    button.textContent = "Import River Flows in You";
+    button.onclick = () => {
+      $<HTMLDetailsElement>("#collection-picker").open = false;
+      $("#import").click();
+    };
+    const link = document.createElement("a");
+    link.textContent = "Find licensed sheet music ↗";
+    link.href = "https://www.virtualsheetmusic.com/score/HL-302236.html";
+    link.target = "_blank";
+    link.rel = "noopener";
+    card.append(title, info, button, link);
+    el.append(card);
+  }
 }
+const picker = $<HTMLDetailsElement>("#collection-picker");
+const search = $<HTMLInputElement>("#collection-search");
+search.addEventListener("input", renderLibrary);
+picker.addEventListener("toggle", () => {
+  if (picker.open) {
+    search.focus();
+    search.select();
+  }
+});
+picker.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") {
+    picker.open = false;
+    $("#collection-picker summary").focus();
+  }
+  if (event.target === search && event.key === "ArrowDown") {
+    event.preventDefault();
+    document.querySelector<HTMLButtonElement>("#library button")?.focus();
+  }
+  if (event.target === search && event.key === "Enter") {
+    event.preventDefault();
+    document.querySelector<HTMLButtonElement>("#library .piece")?.click();
+  }
+});
+document.addEventListener("click", (event) => {
+  if (event.target instanceof Node && !picker.contains(event.target))
+    picker.open = false;
+});
 async function select(p: Piece) {
   const id = ++loadId;
   player.load(p);
@@ -323,6 +390,8 @@ const keyMap = "awsedftgyhujk",
 const keys = mountKeyboard(player);
 document.addEventListener("keydown", async (e) => {
   if (
+    e.defaultPrevented ||
+    picker.contains(e.target as Node) ||
     e.repeat ||
     e.ctrlKey ||
     e.metaKey ||
