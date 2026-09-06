@@ -2,6 +2,8 @@
 
 A browser piano studio with a local score library, MusicXML engraving, MIDI piano roll, polyphonic Web Audio playback, sampled Steinway option, synchronized notation/keys, speed, seek, volume and A/B looping.
 
+The **Sound** selector offers Grand piano, Classical piano, Bright piano, Electric piano, Classical guitar, Steel-string guitar, Harp, Church organ, Violin and Flute. Grand piano uses SplendidGrandPiano; other voices use smplr's MusyngKite soundfonts from [midi-js-soundfonts](https://github.com/gleitz/midi-js-soundfonts). These are independent sample libraries, not Virtual Piano's audio. Changing sounds pauses at the current position while samples load; press Play to continue. Loaded instruments are cached for the session, and failed downloads are explicitly labeled as synth-piano fallback. All pitched tracks and manual keys use the selected instrument; guitar playback retains the score's note timing rather than automatically strumming.
+
 Use **Theme** in the header to choose System, Light or Dark. Your choice is saved in this browser; System follows changes to the device appearance. The collection dropdown searches titles and composers, including accent-insensitive matches.
 
 **Falling notes** shows a compact blue waterfall aligned with the scrolling keyboard. Bar length follows key-down duration, and the leading edge reaches the keyboard at note onset. **Effect** offers Water ripples, Flow particles, Sparkles, Soft glow and None. Effects follow score playback; changing them does not change audio. The display and effect preferences are saved locally. Reduced-motion users start with falling notes off, and animated strike particles remain suppressed. The falling-note toggle restores the compact keyboard-only layout.

@@ -7,7 +7,7 @@ import { mountWaterfall } from "./waterfall";
 import "./style.css";
 import { OpenSheetMusicDisplay } from "opensheetmusicdisplay";
 import { exercise, parseXml, parseMidi, noteName, type Piece } from "./music";
-import { Player, activeAt } from "./audio";
+import { Player, activeAt, instruments, type InstrumentId } from "./audio";
 const $ = <T extends HTMLElement = HTMLElement>(s: string) =>
   document.querySelector<T>(s)!;
 const player = new Player();
@@ -43,6 +43,24 @@ duet = duet.replace(/<\/measure>/g, () => {
 library[0] = parseXml(duet);
 $("#app").innerHTML = shell;
 mountTheme($<HTMLSelectElement>("#theme"));
+const instrumentSelect = $<HTMLSelectElement>("#instrument");
+for (const [id, instrument] of Object.entries(instruments)) {
+  instrumentSelect.add(new Option(instrument.label, id));
+}
+instrumentSelect.onchange = async () => {
+  const id = instrumentSelect.value as InstrumentId;
+  try {
+    await player.setInstrument(id);
+    if (player.instrument === id)
+      status(
+        `${player.instrumentLabel} ready. Press Play to continue from this position.`,
+      );
+  } catch {
+    status(
+      `${player.instrumentLabel} could not load. Synth piano fallback is active; use Load sound to retry.`,
+    );
+  }
+};
 let cursorTimes: number[] = [],
   cursorIndex = 0;
 let current: Piece,
@@ -375,13 +393,14 @@ $("#download").onclick = () => {
 $("#sample").onclick = async () => {
   const b = $<HTMLButtonElement>("#sample");
   b.disabled = true;
-  $("#sound-label").textContent = "Loading piano samples…";
+  $("#sound-label").textContent = "Loading instrument samples…";
   $("#lcd-voice").textContent = "LOADING GRAND…";
   try {
     await player.loadGrand();
-    $("#sound-label").textContent = "Steinway grand · polyphonic";
-    b.textContent = "Grand piano ready";
-    $("#lcd-voice").textContent = "STEINWAY GRAND";
+    $("#sound-label").textContent =
+      `${player.instrumentLabel} · sampled · polyphonic`;
+    b.textContent = "Sound ready";
+    $("#lcd-voice").textContent = player.instrumentLabel.toUpperCase();
   } catch {
     $("#sound-label").textContent =
       "Sample download unavailable · synth active";
@@ -525,15 +544,15 @@ function frame() {
     $("#lcd-time").textContent = time(t);
     $("#lcd-state").textContent = player.playing ? "PLAYING" : "READY";
     const soundLabels = {
-      synth: "Grand piano loads when you press Play",
-      loading: "Loading piano samples…",
-      grand: "Steinway grand · polyphonic",
+      synth: "Selected sound loads when you press Play",
+      loading: "Loading instrument samples…",
+      grand: `${player.instrumentLabel} · sampled · polyphonic`,
       fallback: "Sample download unavailable · synth active",
     };
     $("#sound-label").textContent = soundLabels[player.soundState];
     $("#lcd-voice").textContent =
       player.soundState === "grand"
-        ? "STEINWAY GRAND"
+        ? player.instrumentLabel.toUpperCase()
         : player.soundState === "loading"
           ? "LOADING GRAND…"
           : "SYNTH PIANO";
@@ -542,10 +561,10 @@ function frame() {
       player.soundState === "grand" || player.soundState === "loading";
     sample.textContent =
       player.soundState === "grand"
-        ? "Grand piano ready"
+        ? "Sound ready"
         : player.soundState === "loading"
-          ? "Loading grand…"
-          : "Load grand piano";
+          ? "Loading sound…"
+          : "Load sound";
     roll(t);
   }
   requestAnimationFrame(frame);

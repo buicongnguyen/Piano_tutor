@@ -89,7 +89,7 @@ export function parseMidi(data: ArrayBuffer, title: string): Piece {
         })),
       ),
     warning:
-      "MIDI is shown as a piano roll; all pitched tracks use the piano voice.",
+      "MIDI is shown as a piano roll; all pitched tracks use the selected sound.",
   });
 }
 // Use explicit staff/track labels, never a middle-C split: hands can cross.

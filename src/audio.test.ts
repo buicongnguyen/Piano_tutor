@@ -1,10 +1,53 @@
 import { afterEach, describe, it, expect, vi } from "vitest";
-import { SplendidGrandPiano } from "smplr";
+import { SplendidGrandPiano, Soundfont } from "smplr";
 import { Player, performanceVelocity } from "./audio";
 import { finish } from "./music";
-vi.mock("smplr", () => ({ SplendidGrandPiano: vi.fn() }));
+vi.mock("smplr", () => ({ SplendidGrandPiano: vi.fn(), Soundfont: vi.fn() }));
 afterEach(() => vi.useRealTimers());
 describe("sampled piano mixing and scheduling", () => {
+  it("keeps the newest instrument when older samples finish loading later", async () => {
+    vi.useFakeTimers();
+    let finishGuitar!: () => void;
+    const guitarStart = vi.fn(() => vi.fn()),
+      fluteStart = vi.fn(() => vi.fn());
+    vi.mocked(Soundfont).mockImplementation(
+      (_ctx, options) =>
+        ({
+          ready:
+            options?.instrument === "acoustic_guitar_nylon"
+              ? new Promise<void>((resolve) => {
+                  finishGuitar = resolve;
+                })
+              : Promise.resolve(),
+          start:
+            options?.instrument === "acoustic_guitar_nylon"
+              ? guitarStart
+              : fluteStart,
+          stop: vi.fn(),
+        }) as unknown as ReturnType<typeof Soundfont>,
+    );
+    const player = new Player();
+    player.init = async () => {
+      player.context = { currentTime: 0 } as AudioContext;
+      player.gain = {} as GainNode;
+    };
+    player.position = 1.25;
+    const guitar = player.setInstrument("guitar");
+    await Promise.resolve();
+    await player.setInstrument("flute");
+    finishGuitar();
+    await guitar;
+    player.tone(60, 0.5);
+    expect(fluteStart).toHaveBeenCalledOnce();
+    expect(guitarStart).not.toHaveBeenCalled();
+    expect(player.instrument).toBe("flute");
+    expect(player.position).toBe(1.25);
+    expect(player.playing).toBe(false);
+    await player.setInstrument("guitar");
+    player.tone(60, 0.5);
+    expect(guitarStart).toHaveBeenCalledOnce();
+    expect(Soundfont).toHaveBeenCalledTimes(2);
+  });
   it("ignores invalid transport values without corrupting playback state", () => {
     const player = new Player();
     player.position = 0.5;

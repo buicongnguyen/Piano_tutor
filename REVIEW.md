@@ -1,5 +1,12 @@
 # Logic and code review
 
+## Selectable sampled instruments
+
+- Added ten instrument choices using the existing smplr package: Splendid grand plus nine MusyngKite soundfonts. Sample libraries are independent of Virtual Piano.
+- Switching pauses and cancels scheduled voices, preserves position, and loads the selected instrument. Sound-load generations prevent a slower previous request from replacing the current voice; tests cover this race and reuse of cached instruments.
+- Failed sample loads remove the failed cache entry and expose a synth-piano fallback with retry. Instrument choice is session-local.
+- 40 tests pass and the production build succeeds. Browser confirmed classical-guitar sample readiness and playback initiation. Soundfont timbre and natural decay depend on the source samples; this does not simulate physical guitar strumming or bow technique.
+
 ## Dark mode and follow-up review
 
 - Fixed a stale asynchronous MusicXML error handler: an older failed load now returns before changing the current score view or status.

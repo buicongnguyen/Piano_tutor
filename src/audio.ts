@@ -1,6 +1,19 @@
 import type { Note, Piece } from "./music";
 import { soundDuration } from "./music";
-import { SplendidGrandPiano } from "smplr";
+import { SplendidGrandPiano, Soundfont } from "smplr";
+export const instruments = {
+  grand: { label: "Grand piano", sample: "" },
+  classical: { label: "Classical piano", sample: "acoustic_grand_piano" },
+  bright: { label: "Bright piano", sample: "bright_acoustic_piano" },
+  electric: { label: "Electric piano", sample: "electric_piano_1" },
+  guitar: { label: "Classical guitar", sample: "acoustic_guitar_nylon" },
+  steel: { label: "Steel-string guitar", sample: "acoustic_guitar_steel" },
+  harp: { label: "Harp", sample: "orchestral_harp" },
+  organ: { label: "Church organ", sample: "church_organ" },
+  violin: { label: "Violin", sample: "violin" },
+  flute: { label: "Flute", sample: "flute" },
+} as const;
+export type InstrumentId = keyof typeof instruments;
 export function activeAt(notes: Note[], time: number) {
   return notes.filter((n) => n.time <= time && n.time + n.duration > time);
 }
@@ -12,6 +25,27 @@ export function performanceVelocity(note: Note, balance: HandBalance) {
   );
 }
 export class Player {
+  instrument: InstrumentId = "grand";
+  private soundGeneration = 0;
+  private instrumentCache = new Map<
+    InstrumentId,
+    ReturnType<typeof SplendidGrandPiano>
+  >();
+  get instrumentLabel() {
+    return instruments[this.instrument].label;
+  }
+  async setInstrument(id: InstrumentId) {
+    if (!(id in instruments) || id === this.instrument) return;
+    this.pause();
+    this.soundGeneration++;
+    this.instrument = id;
+    this.grand = undefined;
+    this.grandReady = false;
+    this.sampleAttempted = false;
+    this.pendingGrand = undefined;
+    this.soundState = "synth";
+    await this.loadGrand();
+  }
   context?: AudioContext;
   gain?: GainNode;
   piece?: Piece;
@@ -39,32 +73,51 @@ export class Player {
   async loadGrand() {
     if (this.grandReady) return;
     if (this.pendingGrand) return this.pendingGrand;
-    this.pendingGrand = this.prepareGrand();
+    const pending = this.prepareGrand();
+    this.pendingGrand = pending;
     try {
       await this.pendingGrand;
     } finally {
-      this.pendingGrand = undefined;
+      if (this.pendingGrand === pending) this.pendingGrand = undefined;
     }
   }
   private async prepareGrand() {
+    const generation = this.soundGeneration;
+    const instrument = this.instrument;
     this.sampleAttempted = true;
     this.soundState = "loading";
     let timer: ReturnType<typeof setTimeout> | undefined;
     try {
       await this.init();
-      this.grand ??= SplendidGrandPiano(this.context!, {
-        destination: this.gain!,
-        decayTime: 0.12,
-      });
+      if (generation !== this.soundGeneration) return;
+      let voice = this.instrumentCache.get(instrument);
+      if (!voice) {
+        voice =
+          instrument === "grand"
+            ? SplendidGrandPiano(this.context!, {
+                destination: this.gain!,
+                decayTime: 0.12,
+              })
+            : Soundfont(this.context!, {
+                destination: this.gain!,
+                kit: "MusyngKite",
+                instrument: instruments[instrument].sample,
+              });
+        this.instrumentCache.set(instrument, voice);
+      }
       await Promise.race([
-        this.grand.ready,
+        voice.ready,
         new Promise((_, reject) => {
           timer = setTimeout(() => reject(Error("Sample timeout")), 20000);
         }),
       ]);
+      if (generation !== this.soundGeneration) return;
+      this.grand = voice;
       this.grandReady = true;
       this.soundState = "grand";
     } catch (error) {
+      if (generation !== this.soundGeneration) return;
+      this.instrumentCache.delete(instrument);
       this.soundState = "fallback";
       throw error;
     } finally {
