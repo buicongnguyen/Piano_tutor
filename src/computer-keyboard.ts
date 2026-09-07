@@ -301,6 +301,8 @@ export function mountComputerKeyboard(player: Player) {
   updateHint();
   render();
   return (active: number[], notes: Note[] = [], time = 0) => {
+    const panel = root.closest<HTMLElement>(".computer-keyboard");
+    if (panel && !panel.getClientRects().length) return;
     const visible = new Map<number, Note[]>();
     for (const note of notes) {
       if (note.time > time + 4) break;

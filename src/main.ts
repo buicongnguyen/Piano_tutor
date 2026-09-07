@@ -132,9 +132,6 @@ function renderLibrary() {
   });
   $("#count").textContent = String(library.length);
   $("#collection-current").textContent = current?.title || "Choose music";
-  $("#collection-results").textContent = matches.length
-    ? `${matches.length} ${matches.length === 1 ? "piece" : "pieces"} · select, then press Play`
-    : "No playable matches. Import a MIDI or MusicXML score.";
   const suggestions = findDiscoverSongs(query);
   const requested = document.createDocumentFragment();
   if (suggestions.length) {
@@ -143,10 +140,11 @@ function renderLibrary() {
     requested.append(heading);
   }
   for (const song of suggestions) {
-    const card = document.createElement("div");
+    const card = document.createElement("details");
     card.className = "collection-unavailable";
-    const title = document.createElement("strong");
+    const title = document.createElement("summary");
     title.textContent = song.title + " · " + song.artist;
+    card.open = !!query.trim() && suggestions.length === 1;
     const info = document.createElement("p");
     info.textContent = song.detail;
     const button = document.createElement("button");
@@ -192,7 +190,9 @@ picker.addEventListener("keydown", (event) => {
   }
   if (event.target === search && event.key === "ArrowDown") {
     event.preventDefault();
-    document.querySelector<HTMLButtonElement>("#library button")?.focus();
+    document
+      .querySelector<HTMLElement>("#library summary, #library .piece")
+      ?.focus();
   }
   if (event.target === search && event.key === "Enter") {
     event.preventDefault();

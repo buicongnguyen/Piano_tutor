@@ -1806,3 +1806,11 @@ header p,
   .brand { margin-bottom: 8px; }
   .piano-cabinet { padding-left: 6px; padding-right: 6px; }
 }
+
+/* Keep collection choices compact and playback beside the instrument. */
+.collection-unavailable { margin-bottom: 5px; }
+.collection-unavailable summary { cursor: pointer; font-weight: 600; line-height: 1.5; padding: 4px 0; }
+.collection-unavailable[open] summary { margin-bottom: 8px; }
+.keyboard-section > .transport { margin-top: 10px; border: 1px solid #648272; border-radius: 10px; }
+.generated-sheet-controls { position: sticky; top: 0; z-index: 2; background: #fffef8; padding: 6px 0; }
+.generated-sheet-controls { color: #263d34; }

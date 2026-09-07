@@ -41,8 +41,10 @@ export function mountGeneratedSheet(root: HTMLElement, piece: Piece) {
       });
       await instance.load(score.xml(page));
       if (generation !== id || !canvas.isConnected) return;
-      instance.render();
       renderer = instance;
+      // Loading may finish after switching to Piano roll. Keep the renderer
+      // ready, but wait for a visible container before measuring its width.
+      if (root.getClientRects().length) instance.render();
       label.textContent = `Page ${page + 1} / ${score.pages}`;
     } catch {
       if (generation !== id) return;
@@ -75,5 +77,13 @@ export function mountGeneratedSheet(root: HTMLElement, piece: Piece) {
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
   void render();
-  return () => renderer?.render();
+  return () => {
+    if (!root.isConnected || !root.getClientRects().length) return;
+    try {
+      renderer?.render();
+    } catch {
+      label.textContent =
+        "Unable to redraw this page. Piano roll remains available.";
+    }
+  };
 }
