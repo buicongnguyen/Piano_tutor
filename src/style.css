@@ -1814,3 +1814,22 @@ header p,
 .keyboard-section > .transport { margin-top: 10px; border: 1px solid #648272; border-radius: 10px; }
 .generated-sheet-controls { position: sticky; top: 0; z-index: 2; background: #fffef8; padding: 6px 0; }
 .generated-sheet-controls { color: #263d34; }
+
+/* Playback is built into the piano's upper console. */
+.piano-cabinet .console { display: grid; grid-template-columns: 1fr minmax(0, 270px) 1fr; gap: 8px 16px; height: auto; }
+.console > .speaker { width: 100%; justify-self: center; }
+.console > .console-center { width: 100%; }
+.console > .transport { grid-column: 1 / -1; padding: 8px 0 0; background: transparent; border: 0; border-top: 1px solid #5c6d5c; color: #e0e8db; }
+.console .controls { flex-wrap: wrap; gap: 8px 12px; margin-top: 6px; }
+.console .controls label, .console .seek-row, .console .loop-controls small { color: #d0dbc8; }
+.console .controls button, .console .controls select { background: #23372c; color: #e6edde; border: 1px solid #65765e; padding: 6px 9px; }
+.console .controls .play, .console .controls button[aria-pressed="true"] { background: #b3cc93; color: #203324; }
+.console .play-controls { order: -1; gap: 5px; }
+.console input[type="range"] { accent-color: #b3cc93; }
+@media (max-width: 760px) {
+  .piano-cabinet .console { grid-template-columns: minmax(0, 1fr); padding: 8px; gap: 6px; }
+  .console > .console-center { max-width: none; }
+  .console .controls { gap: 6px 8px; }
+  .console .controls button, .console .controls select { min-height: 44px; }
+  .console .volume { margin-left: 0; }
+}
