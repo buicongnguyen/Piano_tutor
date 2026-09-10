@@ -17,7 +17,12 @@ export function mountCrystalEffects() {
   window.addEventListener("scroll", clear, true);
   window.addEventListener("resize", clear);
   return () => {
-    if (selector.value !== "crystal" || reduced.matches || document.hidden) {
+    const effect = selector.value;
+    if (
+      !["crystal", "concert", "rings3d", "orbs3d"].includes(effect) ||
+      reduced.matches ||
+      document.hidden
+    ) {
       if (previous.size || layer.childElementCount) clear();
       return;
     }
@@ -42,9 +47,17 @@ export function mountCrystalEffects() {
         continue;
       for (let i = 0; i < 4 && layer.childElementCount < 64; i++) {
         const sprite = document.createElement("img");
-        sprite.src = `${import.meta.env.BASE_URL}art/note-crystal.png`;
+        const kind =
+          effect === "rings3d"
+            ? "ring"
+            : effect === "orbs3d"
+              ? "orb"
+              : effect === "concert"
+                ? ["ring", "crystal", "orb", "crystal"][i]
+                : "crystal";
+        sprite.src = `${import.meta.env.BASE_URL}art/note-${kind}.png`;
         sprite.alt = "";
-        sprite.className = "note-crystal";
+        sprite.className = `note-crystal burst-${kind}`;
         sprite.style.left = `${x}px`;
         sprite.style.top = `${y}px`;
         sprite.style.setProperty("--dx", `${(i - 1.5) * 24}px`);

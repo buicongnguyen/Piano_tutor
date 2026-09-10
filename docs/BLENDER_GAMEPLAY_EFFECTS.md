@@ -1,5 +1,14 @@
 # Blender gameplay effects
 
+## Expanded default
+
+3D concert combines cyan crystals, expanding aqua rings, and floating purple
+pearl orbs. Each is also selectable separately. The meshes and transparent renders
+are rebuilt with `scripts/render-note-crystal.py`. All remain animated 3D renders,
+not real-time meshes. The new versioned preference defaults to Concert once;
+previously selecting None is respected, and subsequent choices are saved.
+Motion suppression and the 64-sprite limit apply to every new style.
+
 The previous Blender scene improved the background. This change puts Blender
 art directly at the keys during play.
 

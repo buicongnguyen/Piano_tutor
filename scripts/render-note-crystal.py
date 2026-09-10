@@ -34,3 +34,23 @@ scene.render.filepath=str(root/'public/art/note-crystal.png')
 bpy.context.preferences.filepaths.save_version=0
 bpy.ops.wm.save_as_mainfile(filepath=str(root/'art/note-crystal.blend'))
 bpy.ops.render.render(write_still=True)
+
+# Reuse the studio lighting for two additional original gameplay meshes.
+bpy.data.objects.remove(crystal, do_unlink=True)
+bpy.ops.mesh.primitive_torus_add(major_radius=.85, minor_radius=.15, major_segments=48, minor_segments=12)
+ring=bpy.context.object; ring.name='Aqua shockwave'; ring.data.materials.append(mat)
+ring.rotation_euler=(.3,.2,0)
+for face in ring.data.polygons: face.use_smooth=True
+scene.render.filepath=str(root/'public/art/note-ring.png')
+bpy.ops.wm.save_as_mainfile(filepath=str(root/'art/note-ring.blend'))
+bpy.ops.render.render(write_still=True)
+bpy.data.objects.remove(ring, do_unlink=True)
+bpy.ops.mesh.primitive_uv_sphere_add(segments=32, ring_count=16)
+orb=bpy.context.object; orb.name='Pearlescent note orb'; orb.data.materials.append(mat)
+for face in orb.data.polygons: face.use_smooth=True
+p.inputs['Base Color'].default_value=(.45,.13,.8,1)
+p.inputs['Metallic'].default_value=.8
+p.inputs['Roughness'].default_value=.15
+scene.render.filepath=str(root/'public/art/note-orb.png')
+bpy.ops.wm.save_as_mainfile(filepath=str(root/'art/note-orb.blend'))
+bpy.ops.render.render(write_still=True)

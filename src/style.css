@@ -2275,3 +2275,41 @@ header p,
     display: none;
   }
 }
+.burst-ring {
+  animation-name: crystal-ring;
+  width: 44px;
+  height: 44px;
+}
+.burst-orb {
+  animation-name: crystal-orb;
+  filter: drop-shadow(0 0 6px #ad78ff);
+}
+@keyframes crystal-ring {
+  0% {
+    opacity: 0.9;
+    transform: translate(-50%, -50%) scale(0.25);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -70%) scale(2.3);
+  }
+}
+@keyframes crystal-orb {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.3);
+  }
+  20% {
+    opacity: 0.95;
+  }
+  65% {
+    opacity: 0.65;
+    transform: translate(calc(-50% + var(--dx)), calc(-50% - var(--rise)))
+      scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% - var(--dx)), calc(-70% - var(--rise)))
+      scale(0.4);
+  }
+}

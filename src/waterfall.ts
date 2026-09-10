@@ -1,6 +1,9 @@
 import type { Note } from "./music";
 import { keyboardLayout } from "./keyboard";
 export const effects = [
+  "concert",
+  "rings3d",
+  "orbs3d",
   "crystal",
   "flow",
   "ripple",
@@ -11,7 +14,7 @@ export const effects = [
   "none",
 ] as const;
 export function validEffect(value: string | null) {
-  return effects.find((effect) => effect === value) ?? "flow";
+  return effects.find((effect) => effect === value) ?? "concert";
 }
 
 export function fallingBar(
@@ -37,7 +40,11 @@ export function mountWaterfall() {
   let effect = validEffect(null);
   let enabled = !reduced.matches;
   try {
-    effect = validEffect(localStorage.getItem("stillnote-effect"));
+    // Introduce the new default once; keep an explicit previous opt-out.
+    effect = validEffect(
+      localStorage.getItem("stillnote-effect-v2") ??
+        (localStorage.getItem("stillnote-effect") === "none" ? "none" : null),
+    );
     const saved = localStorage.getItem("stillnote-waterfall");
     if (saved !== null) enabled = saved === "true";
   } catch {
@@ -46,7 +53,7 @@ export function mountWaterfall() {
   selector.value = effect;
   const remember = () => {
     try {
-      localStorage.setItem("stillnote-effect", effect);
+      localStorage.setItem("stillnote-effect-v2", effect);
       localStorage.setItem("stillnote-waterfall", String(enabled));
     } catch {
       /* Switching works without storage. */

@@ -28,6 +28,13 @@ it("bursts once per press, expires particles and clears when disabled", () => {
   update();
   expect(document.querySelectorAll(".note-crystal")).toHaveLength(4);
   const select = document.querySelector("select")!;
+  select.add(new Option("Concert", "concert"));
+  select.value = "concert";
+  select.dispatchEvent(new Event("change"));
+  update();
+  expect(document.querySelectorAll(".burst-ring")).toHaveLength(1);
+  expect(document.querySelectorAll(".burst-orb")).toHaveLength(1);
+  expect(document.querySelectorAll(".burst-crystal")).toHaveLength(2);
   select.value = "none";
   select.dispatchEvent(new Event("change"));
   update();

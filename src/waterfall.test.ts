@@ -15,6 +15,10 @@ describe("falling note timing", () => {
   });
   it("validates saved effects including the off option", () => {
     for (const effect of [
+      "concert",
+      "rings3d",
+      "orbs3d",
+      "crystal",
       "flow",
       "none",
       "ripple",
@@ -24,7 +28,7 @@ describe("falling note timing", () => {
       "glow",
     ])
       expect(validEffect(effect)).toBe(effect);
-    expect(validEffect("bad")).toBe("flow");
-    expect(validEffect(null)).toBe("flow");
+    expect(validEffect("bad")).toBe("concert");
+    expect(validEffect(null)).toBe("concert");
   });
 });
