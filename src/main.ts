@@ -133,7 +133,7 @@ function renderLibrary() {
     el.append(b);
   });
   $("#count").textContent = String(library.length);
-  $("#collection-current").textContent = current?.title || "Choose music";
+  $("#collection-current").textContent = "Browse & search";
   const suggestions = findDiscoverSongs(query);
   const requested = document.createDocumentFragment();
   if (suggestions.length) {
@@ -665,7 +665,7 @@ function frame() {
       : "Ready when you are";
     $("#lcd-notes").textContent = active.length
       ? active.map((n) => noteName(n.midi)).join(" · ")
-      : current.title;
+      : "Ready to play";
     $("#lcd-time").textContent = time(t);
     $("#lcd-state").textContent = player.playing ? "PLAYING" : "READY";
     const soundLabels = {
