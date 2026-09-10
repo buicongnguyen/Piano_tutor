@@ -2240,3 +2240,38 @@ header p,
     margin-left: 0;
   }
 }
+/* Transparent Blender crystals appear over keys without intercepting input. */
+.crystal-effects {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 40;
+  overflow: hidden;
+}
+.note-crystal {
+  position: absolute;
+  width: var(--size);
+  height: var(--size);
+  object-fit: contain;
+  filter: drop-shadow(0 0 5px #25cfff);
+  animation: crystal-burst 850ms ease-out forwards;
+}
+@keyframes crystal-burst {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.35);
+  }
+  15% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--dx)), calc(-50% - var(--rise)))
+      rotate(var(--spin)) scale(0.6);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .crystal-effects {
+    display: none;
+  }
+}

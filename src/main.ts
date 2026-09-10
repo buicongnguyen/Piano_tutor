@@ -9,6 +9,7 @@ import { hasBothHands } from "./practice";
 import { findDiscoverSongs } from "./discover";
 import { mountTheme } from "./theme";
 import { mountWaterfall } from "./waterfall";
+import { mountCrystalEffects } from "./crystal-effects";
 import { mountComputerKeyboard } from "./computer-keyboard";
 import "./style.css";
 import { OpenSheetMusicDisplay } from "opensheetmusicdisplay";
@@ -381,7 +382,7 @@ $("#sheet-tab").onclick = () => setView("sheet");
 $("#roll-tab").onclick = () => setView("roll");
 const dialog = $<HTMLDialogElement>("#import-dialog");
 const chooseScore = () => {
-  journey.cancel('Challenge stopped to import a score.');
+  journey.cancel("Challenge stopped to import a score.");
   player.pause();
   try {
     openScorePicker($<HTMLInputElement>("#file"));
@@ -523,6 +524,7 @@ const keys = mountKeyboard(player);
 const updateComputerKeyboard = mountComputerKeyboard(player);
 const journey = mountJourney(player, library, select);
 const drawWaterfall = mountWaterfall();
+const updateCrystalEffects = mountCrystalEffects();
 document.addEventListener("keydown", async (e) => {
   if (
     e.defaultPrevented ||
@@ -699,6 +701,7 @@ function frame() {
           : "Load sound";
     roll(t);
   }
+  updateCrystalEffects();
   requestAnimationFrame(frame);
 }
 void select(library[0]);

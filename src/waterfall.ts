@@ -1,6 +1,7 @@
 import type { Note } from "./music";
 import { keyboardLayout } from "./keyboard";
 export const effects = [
+  "crystal",
   "flow",
   "ripple",
   "aurora",
