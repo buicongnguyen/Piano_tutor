@@ -41,6 +41,11 @@ export function performanceVelocity(note: Note, balance: HandBalance) {
   );
 }
 export class Player {
+  readonly onManual = new Set<(midi: number, down: boolean) => void>();
+  manual(midi: number, down: boolean) {
+    for (const listener of this.onManual) listener(midi, down);
+  }
+  playbackEnd?: number;
   readonly onSilence = new Set<() => void>();
   instrument: InstrumentId = "grand";
   originalInstruments = true;
@@ -369,6 +374,7 @@ export class Player {
   }
   load(piece: Piece) {
     this.pause();
+    this.playbackEnd = undefined;
     this.piece = piece;
     this.ensembleVoices.clear();
     this.ensembleStatus =
@@ -466,12 +472,12 @@ export class Player {
   tick() {
     if (!this.playing || !this.piece) return;
     this.position = this.now();
-    const end = this.loop ? this.b : this.piece.duration;
+    const end = this.playbackEnd ?? (this.loop ? this.b : this.piece.duration);
     if (this.position >= end) {
       if (this.loop) this.seek(this.a);
       else {
         this.pause();
-        this.position = this.piece.duration;
+        this.position = end;
       }
       return;
     }

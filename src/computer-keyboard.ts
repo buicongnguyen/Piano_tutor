@@ -117,6 +117,7 @@ export function mountComputerKeyboard(player: Player) {
   let sequenceSignature = "";
   const release = (code: string, force = false) => {
     const entry = held.get(code);
+    if (entry?.down) player.manual?.(entry.midi, false);
     if (entry) entry.down = false;
     if (sustain && !force) return;
     entry?.stop?.();
@@ -151,6 +152,7 @@ export function mountComputerKeyboard(player: Player) {
       stop?: () => void;
     };
     held.set(code, entry);
+    player.manual?.(midi, true);
     try {
       await player.init();
       if (held.get(code) === entry) entry.stop = player.hold(midi);

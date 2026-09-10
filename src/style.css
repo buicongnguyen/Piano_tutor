@@ -5,6 +5,195 @@
   background: #f5f5ef;
   font-synthesis: none;
 }
+.journey {
+  border: 1px solid #a4c3bf;
+  border-radius: 18px;
+  padding: 16px 20px;
+  margin: 12px 0;
+  background: linear-gradient(120deg, #e9f5f2, #f5f5ef);
+}
+.journey-top,
+.journey-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.journey h2 {
+  font-size: 21px;
+  margin: 4px 0 10px;
+}
+.journey nav {
+  display: flex;
+  gap: 5px;
+}
+.journey nav button[aria-pressed="true"] {
+  background: #146e80;
+  color: white;
+  border-color: #146e80;
+}
+.journey-row {
+  justify-content: flex-start;
+  margin-top: 8px;
+}
+.journey-row label {
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+#journey-route {
+  max-width: 240px;
+}
+.journey p {
+  font-size: 13px;
+  line-height: 1.5;
+  margin: 10px 0 4px;
+}
+#journey-feedback {
+  font-weight: 600;
+  color: #146e80;
+  min-height: 20px;
+}
+#journey-progress {
+  font-size: 12px;
+  opacity: 0.8;
+}
+#journey-result {
+  margin-top: 12px;
+  border-top: 1px solid #a4c3bf;
+  padding-top: 8px;
+}
+#journey-result h3 {
+  margin: 4px 0;
+  font-size: 17px;
+}
+#journey-result button {
+  margin: 8px 6px 0 0;
+}
+.river-scene {
+  height: 72px;
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px;
+  background: linear-gradient(#102c48, #215467);
+}
+.river-moon {
+  position: absolute;
+  top: 9px;
+  right: 9%;
+  height: 17px;
+  width: 17px;
+  border-radius: 50%;
+  background: #e7f4d8;
+  box-shadow: 0 0 24px #e7f4d866;
+}
+.river-water {
+  position: absolute;
+  inset: 30px -10% -70px;
+  border-radius: 50%;
+  transform: rotate(-4deg);
+  border-top: 4px solid #71dfe3;
+  background: linear-gradient(120deg, #154965, #32a8b6, #185167);
+}
+.river-lanterns {
+  position: absolute;
+  inset: 24px 5% 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  gap: 4px;
+}
+.river-lanterns i {
+  display: block;
+  width: 12px;
+  height: 17px;
+  border-radius: 4px;
+  background: #496574;
+  border: 1px solid #91b2bf;
+  transition:
+    background 0.3s,
+    box-shadow 0.3s;
+}
+.river-lanterns .lit {
+  background: #ffe8a0;
+  border-color: #fff5d1;
+  box-shadow: 0 0 14px 5px #eace8480;
+}
+.hide-pc-guide .computer-keyboard {
+  display: none;
+}
+.studio-settings {
+  position: relative;
+  max-width: 100%;
+}
+.studio-settings > summary {
+  cursor: pointer;
+  font-size: 13px;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid #b7c9c2;
+}
+.studio-settings[open] > .sound {
+  display: flex;
+  flex-wrap: wrap;
+  margin-top: 10px;
+  padding: 10px;
+  border-radius: 12px;
+}
+.challenge-active .studio-settings,
+.challenge-active .loop-controls {
+  display: none;
+}
+:root[data-theme="dark"] .journey {
+  background: linear-gradient(120deg, #142f36, #1b2835);
+  border-color: #385b65;
+  color: #e7f0ef;
+}
+:root[data-theme="dark"] #journey-feedback {
+  color: #7ee2ee;
+}
+@media (max-width: 760px) {
+  .journey {
+    padding: 12px;
+    margin: 8px 0;
+  }
+  .journey h2 {
+    font-size: 17px;
+  }
+  .journey-top {
+    gap: 4px;
+  }
+  .journey nav button,
+  .journey-row button {
+    min-height: 44px;
+  }
+  .journey-row label {
+    width: 100%;
+  }
+  .journey-row select {
+    flex: 1;
+    min-width: 0;
+    max-width: 100% !important;
+  }
+  #journey-guide {
+    display: none;
+  }
+  .river-scene {
+    height: 52px;
+  }
+}
+@media (hover: none) and (max-width: 1100px) {
+  #journey-guide {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .river-lanterns i {
+    transition: none;
+  }
+}
 .generated-sheet-controls {
   display: flex;
   flex-wrap: wrap;
@@ -1781,55 +1970,190 @@ header p,
 }
 
 /* Touch layouts keep the instrument usable without a computer keyboard. */
-.mobile-piano-controls { display: none; }
-#keyboard .key { touch-action: none; -webkit-touch-callout: none; }
+.mobile-piano-controls {
+  display: none;
+}
+#keyboard .key {
+  touch-action: none;
+  -webkit-touch-callout: none;
+}
 @media (max-width: 760px), (hover: none) and (max-width: 1100px) {
-  .computer-keyboard, .key-caption > span:last-child { display: none; }
-  .mobile-piano-controls { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
-  .mobile-piano-controls span { flex: 1; font-size: 11px; text-align: center; }
-  .mobile-piano-controls button { min-height: 44px; padding: 8px 12px; }
-  .piano-options-menu { left: 0; right: auto; }
-  .piano-options summary, .sound button, .controls button, .tabs button { min-height: 44px; }
-  .sound { justify-content: flex-start; width: 100%; }
-  .sound #sound-label { max-width: none; text-align: left; }
-  .keyboard-heading { gap: 8px; }
-  .controls { flex-wrap: wrap; }
-  .score-caption { flex-wrap: wrap; overflow-wrap: anywhere; }
-  .header-actions { justify-content: flex-start; }
-  input, select, #collection-search { font-size: 16px; }
+  .computer-keyboard,
+  .key-caption > span:last-child {
+    display: none;
+  }
+  .mobile-piano-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .mobile-piano-controls span {
+    flex: 1;
+    font-size: 11px;
+    text-align: center;
+  }
+  .mobile-piano-controls button {
+    min-height: 44px;
+    padding: 8px 12px;
+  }
+  .piano-options-menu {
+    left: 0;
+    right: auto;
+  }
+  .piano-options summary,
+  .sound button,
+  .controls button,
+  .tabs button {
+    min-height: 44px;
+  }
+  .sound {
+    justify-content: flex-start;
+    width: 100%;
+  }
+  .sound #sound-label {
+    max-width: none;
+    text-align: left;
+  }
+  .keyboard-heading {
+    gap: 8px;
+  }
+  .controls {
+    flex-wrap: wrap;
+  }
+  .score-caption {
+    flex-wrap: wrap;
+    overflow-wrap: anywhere;
+  }
+  .header-actions {
+    justify-content: flex-start;
+  }
+  input,
+  select,
+  #collection-search {
+    font-size: 16px;
+  }
 }
 @media (max-width: 480px) {
-  header { flex-direction: column; align-items: flex-start; }
-  header h1 { font-size: 22px; }
-  header p { display: none; }
-  aside { padding: 12px 14px; }
-  .brand { margin-bottom: 8px; }
-  .piano-cabinet { padding-left: 6px; padding-right: 6px; }
+  header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  header h1 {
+    font-size: 22px;
+  }
+  header p {
+    display: none;
+  }
+  aside {
+    padding: 12px 14px;
+  }
+  .brand {
+    margin-bottom: 8px;
+  }
+  .piano-cabinet {
+    padding-left: 6px;
+    padding-right: 6px;
+  }
 }
 
 /* Keep collection choices compact and playback beside the instrument. */
-.collection-unavailable { margin-bottom: 5px; }
-.collection-unavailable summary { cursor: pointer; font-weight: 600; line-height: 1.5; padding: 4px 0; }
-.collection-unavailable[open] summary { margin-bottom: 8px; }
-.keyboard-section > .transport { margin-top: 10px; border: 1px solid #648272; border-radius: 10px; }
-.generated-sheet-controls { position: sticky; top: 0; z-index: 2; background: #fffef8; padding: 6px 0; }
-.generated-sheet-controls { color: #263d34; }
+.collection-unavailable {
+  margin-bottom: 5px;
+}
+.collection-unavailable summary {
+  cursor: pointer;
+  font-weight: 600;
+  line-height: 1.5;
+  padding: 4px 0;
+}
+.collection-unavailable[open] summary {
+  margin-bottom: 8px;
+}
+.keyboard-section > .transport {
+  margin-top: 10px;
+  border: 1px solid #648272;
+  border-radius: 10px;
+}
+.generated-sheet-controls {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #fffef8;
+  padding: 6px 0;
+}
+.generated-sheet-controls {
+  color: #263d34;
+}
 
 /* Playback is built into the piano's upper console. */
-.piano-cabinet .console { display: grid; grid-template-columns: 1fr minmax(0, 270px) 1fr; gap: 8px 16px; height: auto; }
-.console > .speaker { width: 100%; justify-self: center; }
-.console > .console-center { width: 100%; }
-.console > .transport { grid-column: 1 / -1; padding: 8px 0 0; background: transparent; border: 0; border-top: 1px solid #5c6d5c; color: #e0e8db; }
-.console .controls { flex-wrap: wrap; gap: 8px 12px; margin-top: 6px; }
-.console .controls label, .console .seek-row, .console .loop-controls small { color: #d0dbc8; }
-.console .controls button, .console .controls select { background: #23372c; color: #e6edde; border: 1px solid #65765e; padding: 6px 9px; }
-.console .controls .play, .console .controls button[aria-pressed="true"] { background: #b3cc93; color: #203324; }
-.console .play-controls { order: -1; gap: 5px; }
-.console input[type="range"] { accent-color: #b3cc93; }
+.piano-cabinet .console {
+  display: grid;
+  grid-template-columns: 1fr minmax(0, 270px) 1fr;
+  gap: 8px 16px;
+  height: auto;
+}
+.console > .speaker {
+  width: 100%;
+  justify-self: center;
+}
+.console > .console-center {
+  width: 100%;
+}
+.console > .transport {
+  grid-column: 1 / -1;
+  padding: 8px 0 0;
+  background: transparent;
+  border: 0;
+  border-top: 1px solid #5c6d5c;
+  color: #e0e8db;
+}
+.console .controls {
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin-top: 6px;
+}
+.console .controls label,
+.console .seek-row,
+.console .loop-controls small {
+  color: #d0dbc8;
+}
+.console .controls button,
+.console .controls select {
+  background: #23372c;
+  color: #e6edde;
+  border: 1px solid #65765e;
+  padding: 6px 9px;
+}
+.console .controls .play,
+.console .controls button[aria-pressed="true"] {
+  background: #b3cc93;
+  color: #203324;
+}
+.console .play-controls {
+  order: -1;
+  gap: 5px;
+}
+.console input[type="range"] {
+  accent-color: #b3cc93;
+}
 @media (max-width: 760px) {
-  .piano-cabinet .console { grid-template-columns: minmax(0, 1fr); padding: 8px; gap: 6px; }
-  .console > .console-center { max-width: none; }
-  .console .controls { gap: 6px 8px; }
-  .console .controls button, .console .controls select { min-height: 44px; }
-  .console .volume { margin-left: 0; }
+  .piano-cabinet .console {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 8px;
+    gap: 6px;
+  }
+  .console > .console-center {
+    max-width: none;
+  }
+  .console .controls {
+    gap: 6px 8px;
+  }
+  .console .controls button,
+  .console .controls select {
+    min-height: 44px;
+  }
+  .console .volume {
+    margin-left: 0;
+  }
 }

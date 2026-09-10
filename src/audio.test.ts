@@ -5,6 +5,24 @@ import { finish } from "./music";
 vi.mock("smplr", () => ({ SplendidGrandPiano: vi.fn(), Soundfont: vi.fn() }));
 afterEach(() => vi.useRealTimers());
 describe("sampled piano mixing and scheduling", () => {
+  it("stops a phrase at its endpoint and clears the endpoint for the next song", () => {
+    const player = new Player();
+    const piece = finish({
+      id: "phrase",
+      title: "Phrase",
+      composer: "Test",
+      notes: [{ midi: 60, time: 0, duration: 10, velocity: 0.7 }],
+    });
+    player.load(piece);
+    player.context = { currentTime: 2 } as AudioContext;
+    player.playbackEnd = 1;
+    player.playing = true;
+    player.tick();
+    expect(player.playing).toBe(false);
+    expect(player.position).toBe(1);
+    player.load(piece);
+    expect(player.playbackEnd).toBeUndefined();
+  });
   it("keeps fallback envelopes connected until audio voices actually end", () => {
     vi.useFakeTimers();
     const node = () => ({

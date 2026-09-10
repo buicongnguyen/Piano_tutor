@@ -1,4 +1,5 @@
 import { shell } from "./shell";
+import { mountJourney } from "./journey-ui";
 import { mountGeneratedSheet } from "./generated-sheet";
 import { mountKeyboard } from "./keyboard";
 import { loadRepertoire } from "./repertoire";
@@ -237,9 +238,11 @@ $("#metronome").onclick = () => {
   );
 };
 async function select(p: Piece) {
+  journey?.cancel();
   const id = ++loadId;
   player.load(p);
   current = p;
+  journey?.setPiece(p);
   updatePracticeControls();
   const leftCount = p.notes.filter((n) => n.hand === "left").length,
     rightCount = p.notes.filter((n) => n.hand === "right").length;
@@ -378,6 +381,7 @@ $("#sheet-tab").onclick = () => setView("sheet");
 $("#roll-tab").onclick = () => setView("roll");
 const dialog = $<HTMLDialogElement>("#import-dialog");
 const chooseScore = () => {
+  journey.cancel('Challenge stopped to import a score.');
   player.pause();
   try {
     openScorePicker($<HTMLInputElement>("#file"));
@@ -517,6 +521,7 @@ $("#sample").onclick = async () => {
 };
 const keys = mountKeyboard(player);
 const updateComputerKeyboard = mountComputerKeyboard(player);
+const journey = mountJourney(player, library, select);
 const drawWaterfall = mountWaterfall();
 document.addEventListener("keydown", async (e) => {
   if (
@@ -602,9 +607,14 @@ function roll(t: number) {
 }
 setInterval(() => player.tick(), 25);
 function frame() {
+  journey.frame();
   if (current) {
     const t = Math.min(current.duration, player.now());
-    drawWaterfall(current.notes, t, player.playing);
+    drawWaterfall(
+      journey.active ? journey.targets : current.notes,
+      t,
+      player.playing || journey.active,
+    );
     if (osmd && view === "sheet" && cursorTimes.length) {
       let target = 0;
       while (
@@ -630,9 +640,11 @@ function frame() {
         : "▶ <span>Play</span>";
     $("#loop-range").textContent = `${time(player.a)}–${time(player.b)}`;
     const active = player.playing ? activeAt(current.notes, t) : [];
-    const practiceNotes = player.practiceHand
-      ? current.notes.filter((n) => n.hand === player.practiceHand)
-      : current.notes;
+    const practiceNotes = journey.active
+      ? journey.targets
+      : player.practiceHand
+        ? current.notes.filter((n) => n.hand === player.practiceHand)
+        : current.notes;
     updateComputerKeyboard(
       (player.practiceHand
         ? active.filter((n) => n.hand === player.practiceHand)
@@ -695,10 +707,15 @@ void loadRepertoire().then(async ({ pieces, failures }) => {
     loadId === 1 &&
     !player.playing &&
     !player.preparing &&
+    !journey.busy &&
     player.position === 0;
   library.unshift(...pieces);
+  journey.refreshRoutes();
   renderLibrary();
-  if (untouched && pieces.length) await select(pieces[0]);
+  if (untouched && pieces.length)
+    await select(
+      pieces.find((p) => p.title.startsWith("Arirang")) ?? pieces[0],
+    );
   status(
     failures
       ? "Some collection files could not load. Your exercises and local imports are still available."

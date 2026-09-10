@@ -20,6 +20,7 @@ export function mountKeyboard(player: Player) {
   const held = new Map<HTMLButtonElement, { stop?: () => void }>();
   const release = (key: HTMLButtonElement) => {
     const note = held.get(key);
+    if (note) player.manual?.(Number(key.dataset.midi), false);
     held.delete(key);
     note?.stop?.();
     key.classList.remove("pressed");
@@ -43,6 +44,7 @@ export function mountKeyboard(player: Player) {
     for (const { midi, black, left } of layout.keys) {
       const b = document.createElement("button");
       b.className = `key ${black ? "black" : "white"}`;
+      b.dataset.midi = String(midi);
       b.style.left = `${left}%`;
       b.setAttribute("aria-label", `Play ${noteName(midi)}`);
       const label = document.createElement("span");
@@ -59,6 +61,7 @@ export function mountKeyboard(player: Player) {
         if (held.has(b)) return;
         const note: { stop?: () => void } = {};
         held.set(b, note);
+        player.manual?.(midi, true);
         b.classList.add("pressed");
         try {
           await player.init();
