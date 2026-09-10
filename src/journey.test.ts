@@ -22,6 +22,29 @@ const piece = (notes: Note[]): Piece => ({
   notes,
 });
 describe("Light the River", () => {
+  it("orders identified melody notes before building phrases", () => {
+    const p = piece(
+      [note(21), note(0), note(1)].map((n) => ({
+        ...n,
+        hand: "right" as const,
+      })),
+    );
+    expect(phrasesFor(p).map((p) => p.start)).toEqual([0, 21]);
+    expect(
+      new Performance({ start: 0, end: 0, targets: [] }, 1).result().score,
+    ).toBe(0);
+  });
+  it("requires one physical press for layered duplicates of a melody note", () => {
+    const p = piece(
+      [note(0, 60, 0.5), note(0, 60, 1), note(1, 62)].map((n) => ({
+        ...n,
+        hand: "right" as const,
+      })),
+    );
+    const targets = challengeNotes(p);
+    expect(targets).toHaveLength(2);
+    expect(targets[0]).toBe(p.notes[1]);
+  });
   it("accepts melodies or identified hands, rejects guessed ensemble hands", () => {
     expect(challengeNotes(piece([note(0), note(1)]))).toHaveLength(2);
     expect(challengeNotes(piece([note(0), note(0, 64)]))).toHaveLength(0);

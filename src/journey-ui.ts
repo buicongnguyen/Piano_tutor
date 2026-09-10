@@ -49,9 +49,11 @@ export function mountJourney(
   const learned = new Set<number>(),
     held = new Map<number, number>();
   let progress: Progress = {};
+  let persistent = true;
   try {
     progress = readProgress(localStorage);
   } catch {
+    persistent = false;
     /* Private storage can be unavailable. */
   }
   let saved:
@@ -102,7 +104,7 @@ export function mountJourney(
       (p) => progress[progressKey(piece, p)]?.learned,
     ).length;
     $("#journey-progress").textContent =
-      `${count} / ${phrases.length} lanterns lit · progress saved on this device`;
+      `${count} / ${phrases.length} lanterns lit · ${persistent ? "progress stored on this device when available" : "progress kept for this session"}`;
     const lanterns = $(".river-lanterns");
     lanterns.replaceChildren();
     for (const p of phrases.slice(0, 24)) {
@@ -155,14 +157,14 @@ export function mountJourney(
     const n = phrase.targets[gate];
     player.position = n.time;
     const group = phrase.targets.filter(
-      (t, i) => i >= gate && Math.abs(t.time - n.time) < 0.025,
+      (t, i) =>
+        i >= gate && !learned.has(i) && Math.abs(t.time - n.time) < 0.025,
     );
     feedback(
-      `Next: ${group.map((t) => noteName(t.midi)).join(" + ")} · hold about ${(n.duration / player.speed).toFixed(1)} seconds, then release.`,
+      `Next: ${group.map((t) => `${noteName(t.midi)} (${(t.duration / player.speed).toFixed(1)}s)`).join(" + ")} · release all these keys to continue.`,
     );
   }
   function finish() {
-    if (run) for (const midi of [...run.held.keys()]) run.up(midi, phrase.end);
     phase = "idle";
     generation++;
     const result = run?.result();
@@ -185,6 +187,7 @@ export function mountJourney(
     } catch {
       /* Keep this session's progress. */
     }
+    persistent = stored;
     $("#journey-result").hidden = false;
     $("#journey-result p").textContent = result
       ? `${result.score}/100 · ${result.matched}/${result.total} notes · ${result.extras} extra presses · timing ${result.timing}% · holds ${result.hold}%. Best ${progress[key].best}/100. ${earned ? "Lantern lit!" : "Match 70% of the notes to light this lantern. Try Learn or a slower speed."}`
@@ -248,12 +251,17 @@ export function mountJourney(
         const targets = new Set(phrase.targets);
         player.piece = {
           ...piece,
-          notes: piece.notes.map((n) =>
-            targets.has(n) ? { ...n, hand: "right" } : n,
-          ),
+          notes: piece.notes
+            .filter((n) => n.time < phrase.end)
+            .map((n) => (targets.has(n) ? { ...n, hand: "right" } : n)),
         };
         player.practiceHand = "right";
-        player.playbackEnd = phrase.end;
+        // Keep the clock running for late final presses/releases; never auto-score a release.
+        player.piece.duration = Math.max(
+          piece.duration,
+          phrase.end + player.speed,
+        );
+        player.playbackEnd = phrase.end + player.speed;
         player.position = phrase.start;
         run = new Performance(phrase, player.speed);
         phase = "countdown";
@@ -261,7 +269,7 @@ export function mountJourney(
         lastCountdown = -1;
       }
     } catch {
-      cancel("Audio could not start. Try again.");
+      if (token === generation) cancel("Audio could not start. Try again.");
     }
   }
   player.onManual.add((midi, down) => {
@@ -304,9 +312,16 @@ export function mountJourney(
       if (i === undefined) return;
       held.delete(midi);
       learned.add(i);
-      while (learned.has(gate)) gate++;
-      if (gate === phrase.targets.length) finish();
-      else if (!held.size) nextPrompt();
+      if (!held.size) {
+        const at = phrase.targets[gate].time;
+        const groupDone = phrase.targets.every(
+          (n, j) =>
+            j < gate || Math.abs(n.time - at) >= 0.025 || learned.has(j),
+        );
+        if (groupDone) while (learned.has(gate)) gate++;
+        if (gate === phrase.targets.length) finish();
+        else nextPrompt();
+      }
     }
   });
   function frame() {
@@ -330,12 +345,15 @@ export function mountJourney(
             phase = "playing";
             feedback("Go — follow the falling notes.");
           })
-          .catch(() => cancel("Playback could not start. Try again."));
+          .catch(() => {
+            if (token === generation)
+              cancel("Playback could not start. Try again.");
+          });
       }
     } else if (
       phase === "playing" &&
       mode === "perform" &&
-      player.now() >= phrase.end
+      player.now() >= phrase.end + 0.35 * player.speed
     )
       finish();
   }

@@ -71,6 +71,79 @@ beforeEach(() => {
     '<section class="keyboard-section"><div class="sound"><button>Sound</button></div><div class="transport"><button id="play">Play</button></div></section>';
 });
 describe("journey interaction lifecycle", () => {
+  it("keeps a Learn chord at its gate until every key has been released", async () => {
+    const { game, player, emit } = setup();
+    game.setPiece({
+      ...piece,
+      notes: [
+        { time: 0, duration: 1, midi: 60, velocity: 0.7, hand: "right" },
+        { time: 0, duration: 1, midi: 64, velocity: 0.7, hand: "right" },
+        { time: 1, duration: 1, midi: 67, velocity: 0.7, hand: "right" },
+      ],
+    });
+    click('[data-mode="learn"]');
+    click("#journey-start");
+    await flush();
+    emit(60, true);
+    emit(64, true);
+    emit(60, false);
+    emit(67, true);
+    emit(67, false);
+    expect(player.position).toBe(0);
+    emit(64, false);
+    expect(player.position).toBe(1);
+    expect(game.active).toBe(true);
+    emit(67, true);
+    emit(67, false);
+    expect(game.active).toBe(false);
+  });
+  it("Perform grants a final release window but gives no hold credit to unreleased keys", async () => {
+    const clock = vi.spyOn(performance, "now").mockReturnValue(0);
+    const { game, player, emit } = setup();
+    click('[data-mode="perform"]');
+    click("#journey-start");
+    await flush();
+    clock.mockReturnValue(2100);
+    game.frame();
+    await flush();
+    emit(60, true);
+    player.position = 1;
+    emit(60, false);
+    emit(62, true);
+    player.position = 2;
+    game.frame();
+    expect(game.active).toBe(true);
+    player.position = 2.36;
+    game.frame();
+    expect(game.active).toBe(false);
+    expect(document.querySelector("#journey-result p")!.textContent).toContain(
+      "holds 50%",
+    );
+    expect(player.piece).toBe(piece);
+    clock.mockRestore();
+  });
+  it("ignores a stale playback rejection after a new Learn challenge starts", async () => {
+    const clock = vi.spyOn(performance, "now").mockReturnValue(0);
+    const { game, player } = setup();
+    let reject!: (reason: Error) => void;
+    player.play = () =>
+      new Promise<void>((_, r) => {
+        reject = r;
+      });
+    click('[data-mode="perform"]');
+    click("#journey-start");
+    await flush();
+    clock.mockReturnValue(2100);
+    game.frame();
+    click('[data-mode="learn"]');
+    click("#journey-start");
+    await flush();
+    reject(new Error("old request"));
+    await flush();
+    expect(game.active).toBe(true);
+    game.cancel();
+    clock.mockRestore();
+  });
   it("requires all Learn notes and releases, saves completion, restores controls", async () => {
     const { game, player, emit } = setup();
     click('[data-mode="learn"]');

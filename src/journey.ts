@@ -2,8 +2,19 @@ import type { Note, Piece } from "./music";
 
 export type Phrase = { start: number; end: number; targets: Note[] };
 export function challengeNotes(piece: Piece): Note[] {
-  const right = piece.notes.filter((n) => n.hand === "right");
-  if (right.length && piece.notes.every((n) => n.hand)) return right;
+  const right = piece.notes
+    .filter((n) => n.hand === "right")
+    .sort((a, b) => a.time - b.time);
+  if (right.length && piece.notes.every((n) => n.hand)) {
+    // MIDI layers can duplicate a pitch at one onset; one physical key must suffice.
+    const unique = new Map<string, Note>();
+    for (const n of right) {
+      const key = `${n.time}:${n.midi}`;
+      const prior = unique.get(key);
+      if (!prior || n.duration > prior.duration) unique.set(key, n);
+    }
+    return [...unique.values()];
+  }
   const notes = [...piece.notes].sort((a, b) => a.time - b.time);
   if (
     notes.every(
@@ -93,6 +104,15 @@ export class Performance {
   }
   result() {
     const total = this.phrase.targets.length;
+    if (!total)
+      return {
+        matched: 0,
+        total: 0,
+        extras: this.extras,
+        timing: 0,
+        hold: 0,
+        score: 0,
+      };
     const sum = [...this.matched.values()];
     const timing = sum.reduce((s, n) => s + n.onset, 0) / total;
     const hold = sum.reduce((s, n) => s + (n.hold ?? 0), 0) / total;
