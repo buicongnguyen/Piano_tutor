@@ -1,4 +1,5 @@
 /** Blender-rendered sprites; uses the existing display loop, never the audio clock. */
+import { fireworkSpark, fireworkStyles } from "./fireworks";
 export function mountCrystalEffects() {
   const selector = document.querySelector<HTMLSelectElement>("#note-effect")!;
   const reduced = matchMedia("(prefers-reduced-motion: reduce)");
@@ -19,7 +20,9 @@ export function mountCrystalEffects() {
   return () => {
     const effect = selector.value;
     if (
-      !["crystal", "concert", "rings3d", "orbs3d"].includes(effect) ||
+      !["crystal", "concert", "rings3d", "orbs3d", ...fireworkStyles].includes(
+        effect,
+      ) ||
       reduced.matches ||
       document.hidden
     ) {
@@ -45,10 +48,15 @@ export function mountCrystalEffects() {
         y > innerHeight
       )
         continue;
-      for (let i = 0; i < 4 && layer.childElementCount < 64; i++) {
+      const fireworks = fireworkStyles.includes(effect);
+      const count = fireworks ? 12 : 4;
+      const seed =
+        Number((key as HTMLElement).dataset.midi) || Math.round(x / 20);
+      for (let i = 0; i < count && layer.childElementCount < 64; i++) {
         const sprite = document.createElement("img");
-        const kind =
-          effect === "rings3d"
+        const kind = fireworks
+          ? "orb"
+          : effect === "rings3d"
             ? "ring"
             : effect === "orbs3d"
               ? "orb"
@@ -64,12 +72,22 @@ export function mountCrystalEffects() {
         sprite.style.setProperty("--rise", `${48 + (i % 2) * 28}px`);
         sprite.style.setProperty("--spin", `${(i - 1.5) * 85}deg`);
         sprite.style.setProperty("--size", `${18 + i * 5}px`);
+        if (fireworks) {
+          const spark = fireworkSpark(effect, i, count, seed);
+          sprite.className = `note-crystal firework-spark ${effect}`;
+          sprite.style.setProperty("--dx", `${spark.dx}px`);
+          sprite.style.setProperty("--dy", `${spark.dy}px`);
+          sprite.style.setProperty("--fall", `${spark.fall}px`);
+          sprite.style.setProperty("--size", `${spark.size}px`);
+          sprite.style.setProperty("--hue", `${spark.hue}deg`);
+          sprite.style.setProperty("--twist", `${spark.twist}deg`);
+        }
         layer.append(sprite);
         sprite.addEventListener("animationend", () => sprite.remove(), {
           once: true,
         });
         // Also expire if animations are suppressed by user styles.
-        setTimeout(() => sprite.remove(), 950);
+        setTimeout(() => sprite.remove(), fireworks ? 1450 : 950);
       }
     }
     previous = active;

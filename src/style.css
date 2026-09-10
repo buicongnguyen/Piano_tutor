@@ -2313,8 +2313,78 @@ header p,
       scale(0.4);
   }
 }
-.keyboard-heading .piano-piece { min-width: 0; }
-.piano-piece #title { font-size: clamp(18px, 2vw, 25px); margin: 0; overflow-wrap: anywhere; }
-.piano-piece #composer { margin: 3px 0 0; font-size: 12px; color: var(--muted, #829080); }
-.workspace .piece-header { min-height: 32px; box-sizing: border-box; padding: 6px 16px; gap: 12px; }
-.stand-count { margin-left: auto; font-size: 10px; color: #829080; white-space: nowrap; }
+.keyboard-heading .piano-piece {
+  min-width: 0;
+}
+.piano-piece #title {
+  font-size: clamp(18px, 2vw, 25px);
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.piano-piece #composer {
+  margin: 3px 0 0;
+  font-size: 12px;
+  color: var(--muted, #829080);
+}
+.workspace .piece-header {
+  min-height: 32px;
+  box-sizing: border-box;
+  padding: 6px 16px;
+  gap: 12px;
+}
+.stand-count {
+  margin-left: auto;
+  font-size: 10px;
+  color: #829080;
+  white-space: nowrap;
+}
+.note-crystal.firework-spark {
+  animation: firework-burst 1300ms ease-out forwards;
+  filter: hue-rotate(var(--hue)) saturate(2) brightness(1.4)
+    drop-shadow(0 0 3px #cfbbff);
+}
+@keyframes firework-burst {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.2);
+  }
+  15% {
+    opacity: 0.9;
+    transform: translate(-50%, -38px) scale(0.45);
+  }
+  55% {
+    opacity: 0.85;
+    transform: translate(calc(-50% + var(--dx)), var(--dy)) rotate(var(--twist))
+      scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--dx)), calc(var(--dy) + var(--fall)))
+      rotate(var(--twist)) scale(0.25);
+  }
+}
+.note-crystal.firework-willow {
+  height: calc(var(--size) * 2);
+}
+.note-crystal.firework-spiral {
+  animation-name: firework-spiral;
+}
+@keyframes firework-spiral {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.2);
+  }
+  20% {
+    opacity: 0.9;
+    transform: translate(-50%, -38px) scale(0.5);
+  }
+  60% {
+    opacity: 0.8;
+    transform: translate(calc(-50% + var(--dx)), var(--dy)) rotate(90deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% - var(--dx)), calc(var(--dy) - 24px))
+      rotate(180deg) scale(0.2);
+  }
+}

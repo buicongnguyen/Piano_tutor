@@ -1,6 +1,9 @@
 import type { Note } from "./music";
 import { keyboardLayout } from "./keyboard";
 export const effects = [
+  "firework-bloom",
+  "firework-willow",
+  "firework-spiral",
   "concert",
   "rings3d",
   "orbs3d",
