@@ -1,6 +1,105 @@
 import { parseMidi, type Piece } from "./music";
 
-export const repertoire = [
+type Edition = {
+  file: string;
+  title: string;
+  composer: string;
+  edition: string;
+  id?: number;
+  url?: string;
+  sheet?: string;
+  tags?: string;
+  warning?: string;
+  ensemble?: boolean;
+};
+export const repertoire: Edition[] = [
+  {
+    file: "silent-night.mid",
+    title: "Silent Night · Stille Nacht",
+    composer: "Franz Xaver Gruber",
+    id: 521,
+    sheet: "silent-night.pdf",
+    tags: "Christmas holiday carol Noel Giáng sinh 크리스마스",
+    edition: "D. Widyanto · Mutopia · CC BY-SA 2.0",
+    warning:
+      "Complete guitar arrangement, one stanza · original MIDI timing and guitar voice retained.",
+  },
+  {
+    file: "o-come-all-ye-faithful.mid",
+    title: "O Come, All Ye Faithful · Adeste Fideles",
+    composer: "John Francis Wade",
+    id: 367,
+    sheet: "o-come-all-ye-faithful.pdf",
+    tags: "Christmas holiday carol Noel Giáng sinh 크리스마스",
+    edition: "Matt Corks · Mutopia · Public domain",
+    warning:
+      "Complete SATB hymn setting, one stanza · enable Original MIDI instruments for choir voices.",
+  },
+  {
+    file: "arirang.mid",
+    title: "Arirang · 아리랑",
+    composer: "Korean traditional",
+    url: "https://en.wikipedia.org/wiki/Arirang",
+    tags: "Korea Korean folk traditional 한국 민요",
+    edition:
+      "Wikipedia score contributors · Stillnote melody transcription · CC BY-SA 4.0",
+    warning:
+      "Traditional melody, one complete 16-bar verse in 9/8. Generated sheet is an approximate 4/4 guide; source has original notation.",
+  },
+  {
+    file: "tien-quan-ca.mid",
+    title: "Tiến quân ca · Vietnam anthem",
+    composer: "Văn Cao",
+    url: "https://nationalanthems.info/vn.htm",
+    sheet: "tien-quan-ca.gif",
+    tags: "Vietnam Vietnamese Việt Nam national anthem quốc ca",
+    edition:
+      "nationalanthems.info · Stillnote melody transcription · CC BY 4.0",
+    warning:
+      "Melody-only transcription with the written repeat and both endings. Source sheet includes accompaniment; this edition plays the upper melody.",
+  },
+  {
+    file: "star-spangled-banner.mid",
+    title: "The Star-Spangled Banner · US anthem",
+    composer: "John Stafford Smith",
+    url: "https://commons.wikimedia.org/wiki/File:2_Star_Spangled_Banner.mid",
+    tags: "USA US United States American national anthem Mỹ",
+    edition: "Hyacinth · Wikimedia Commons · Public domain",
+    warning:
+      "Complete one-verse melody MIDI · original timing retained; generated sheet is an approximate practice guide.",
+  },
+  {
+    file: "aegukga.mid",
+    title: "Aegukga · 애국가 · South Korea anthem",
+    composer: "Ahn Eak-tae",
+    url: "https://nationalanthems.info/kr.htm",
+    sheet: "aegukga.gif",
+    tags: "Korea Korean national anthem 한국 대한민국 국가",
+    edition:
+      "nationalanthems.info · Stillnote melody transcription · CC BY 4.0",
+    warning:
+      "Melody-only transcription, one verse and chorus at 88 BPM. Piano introduction and accompaniment omitted; original sheet available.",
+  },
+  {
+    file: "katana-a1_listen_first.mid",
+    title: "A1 Listen First · Independent original",
+    composer: "Katana",
+    url: "https://opengameart.org/content/action-music-collection",
+    tags: "pop rock synth electronic modern CC0",
+    edition: "Katana · OpenGameArt action music collection · CC0 1.0",
+    warning:
+      "Full source MIDI from a pop/rock/synth collection. Pitched parts play with Original MIDI instruments; drum-channel parts are not rendered by this piano app. Hand practice unavailable.",
+  },
+  {
+    file: "katana-action_title.mid",
+    title: "Action Title · Independent original",
+    composer: "Katana",
+    url: "https://opengameart.org/content/action-music-collection",
+    tags: "pop rock synth electronic modern CC0",
+    edition: "Katana · OpenGameArt action music collection · CC0 1.0",
+    warning:
+      "Short original theme from a pop/rock/synth collection. Pitched parts play with Original MIDI instruments; drum-channel parts are not rendered by this piano app. Hand practice unavailable.",
+  },
   {
     file: "gymnopedie-no-1.mid",
     title: "Gymnopédie No. 1",
@@ -238,13 +337,19 @@ export async function loadRepertoire(): Promise<{
         ...piece,
         title: item.title,
         composer: item.composer,
+        tags: item.tags,
         warning:
-          "ensemble" in item && item.ensemble
+          item.warning ??
+          (item.ensemble
             ? "Ensemble score: enable Original MIDI instruments for the written voices. Not a two-hand piano arrangement; hand practice unavailable. Source MIDI timing retained."
-            : "Complete Mutopia MIDI edition · notation-generated timing, not a live performance.",
+            : "Complete Mutopia MIDI edition · notation-generated timing, not a live performance."),
         source: {
-          url: `https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=${item.id}`,
-          sheetUrl: `${import.meta.env.BASE_URL}music/${item.sheet}`,
+          url:
+            item.url ??
+            `https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=${item.id}`,
+          sheetUrl: item.sheet
+            ? `${import.meta.env.BASE_URL}music/${item.sheet}`
+            : undefined,
           fileUrl,
           edition: item.edition,
         },

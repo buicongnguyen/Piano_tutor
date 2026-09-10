@@ -107,7 +107,7 @@ function renderLibrary() {
   el.replaceChildren();
   const query = $<HTMLInputElement>("#collection-search").value;
   const matches = library.filter((p) =>
-    musicMatches(p.title, p.composer, query),
+    musicMatches(p.title, p.composer, query, p.tags),
   );
   library.forEach((p, i) => {
     if (!matches.includes(p)) return;
@@ -256,10 +256,13 @@ async function select(p: Piece) {
   $("#warning").textContent = p.warning || "";
   const edition = $<HTMLAnchorElement>("#edition-link");
   const pdf = $<HTMLAnchorElement>("#pdf-download");
-  pdf.hidden = !p.source;
-  if (p.source) {
+  pdf.hidden = !p.source?.sheetUrl;
+  if (p.source?.sheetUrl) {
     pdf.href = p.source.sheetUrl;
     pdf.download = p.source.sheetUrl.split("/").at(-1)!;
+    pdf.textContent = p.source.sheetUrl.endsWith(".pdf")
+      ? "PDF score ↓"
+      : "Original sheet ↓";
   }
   edition.hidden = !p.source;
   if (p.source) {
@@ -339,11 +342,11 @@ function setView(v: string) {
     const title = document.createElement("h3");
     title.textContent = "The original score, beside your piano.";
     const description = document.createElement("p");
-    description.textContent = current.source
+    description.textContent = current.source?.sheetUrl
       ? "This edition plays from MIDI. Follow its notes in Piano roll, or open the original printable sheet music."
       : "MIDI contains performance notes. Choose Piano roll to see every note, or import MusicXML for engraved notation.";
     empty.append(title, description);
-    if (current.source) {
+    if (current.source?.sheetUrl) {
       const link = document.createElement("a");
       link.href = current.source.sheetUrl;
       link.target = "_blank";
@@ -699,7 +702,7 @@ void loadRepertoire().then(async ({ pieces, failures }) => {
   status(
     failures
       ? "Some collection files could not load. Your exercises and local imports are still available."
-      : `${pieces.length} complete MIDI selections, with downloadable PDF scores. Grand piano loads automatically.`,
+      : `${pieces.length} MIDI selections. Search Christmas, Korean, pop, or anthem. Original sheets where available; generated notation for MIDI.`,
   );
 });
 frame();

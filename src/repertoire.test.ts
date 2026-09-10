@@ -4,6 +4,7 @@ import { describe, it, expect } from "vitest";
 import { parseMidi } from "./music";
 import { keyboardLayout } from "./keyboard";
 import { repertoire } from "./repertoire";
+import { musicMatches } from "./collection";
 
 describe("bundled internet editions", () => {
   for (const [file, notes, duration] of [
@@ -69,13 +70,70 @@ describe("bundled internet editions", () => {
     ).toBe(true);
     expect(piece.notes.every((n) => n.hand === undefined)).toBe(true);
   });
-  it("ships a real printable PDF for every repertoire entry", () => {
+  it("ships the advertised PDF or image sheet and a playable MIDI for every entry", () => {
     for (const item of repertoire) {
+      const midi = readFileSync(`public/music/${item.file}`);
+      expect(midi.subarray(0, 4).toString()).toBe("MThd");
+      const piece = parseMidi(Uint8Array.from(midi).buffer, item.title);
+      expect(piece.notes.length).toBeGreaterThan(0);
+      expect(piece.duration).toBeGreaterThan(20);
+      expect(item.url || item.id).toBeTruthy();
+      if (!item.sheet) continue;
       const bytes = readFileSync(`public/music/${item.sheet}`);
+      if (item.sheet.endsWith(".gif")) {
+        expect(bytes.subarray(0, 3).toString()).toBe("GIF");
+        expect(bytes.length).toBeGreaterThan(1000);
+        continue;
+      }
       expect(bytes.subarray(0, 5).toString()).toBe("%PDF-");
       expect(bytes.length).toBeGreaterThan(10000);
       expect(bytes.subarray(-100).toString()).toContain("%%EOF");
     }
+  });
+  it("finds the requested categories and native-language titles", () => {
+    for (const [query, file] of [
+      ["Christmas", "silent-night.mid"],
+      ["Christmas", "o-come-all-ye-faithful.mid"],
+      ["아리랑", "arirang.mid"],
+      ["Korean", "arirang.mid"],
+      ["Vietnam national", "tien-quan-ca.mid"],
+      ["tien quan ca", "tien-quan-ca.mid"],
+      ["US anthem", "star-spangled-banner.mid"],
+      ["애국가", "aegukga.mid"],
+      ["pop", "katana-a1_listen_first.mid"],
+      ["pop", "katana-action_title.mid"],
+    ]) {
+      const found = repertoire.filter((p) =>
+        musicMatches(p.title, p.composer, query, p.tags),
+      );
+      expect(found.map((p) => p.file)).toContain(file);
+    }
+    expect(
+      repertoire.filter((p) =>
+        musicMatches(p.title, p.composer, "national anthem", p.tags),
+      ),
+    ).toHaveLength(3);
+  });
+  it("preserves melody ties and complete verse endings in the transcriptions", () => {
+    const load = (file: string) =>
+      parseMidi(
+        Uint8Array.from(readFileSync(`public/music/${file}.mid`)).buffer,
+        file,
+      );
+    const vn = load("tien-quan-ca");
+    expect(vn.notes).toHaveLength(146);
+    expect(vn.duration).toBeCloseTo((164 * 60) / 104, 3);
+    expect(vn.notes.at(-1)?.midi).toBe(70);
+    expect(
+      vn.notes.find((n) => Math.abs(n.time - (66 * 60) / 104) < 0.001)
+        ?.duration,
+    ).toBeCloseTo((3 * 60) / 104, 3);
+    expect(load("aegukga").notes).toHaveLength(57);
+    expect(load("aegukga").notes.at(-1)?.midi).toBe(67);
+    const arirang = load("arirang");
+    expect(arirang.notes).toHaveLength(59);
+    expect(arirang.notes[0].duration).toBeCloseTo((2.5 * 60) / 140, 3);
+    expect(arirang.notes.every((n) => n.hand === "right")).toBe(true);
   });
   for (const [file, minNotes, seconds] of [
     ["gymnopedie-no-1.mid", 282, 141],

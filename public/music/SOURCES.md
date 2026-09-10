@@ -1,5 +1,35 @@
 # Included MIDI editions
 
+## Christmas, Korean, anthem and independent additions (2026-09-10)
+
+These eight selections are bundled and playable. Licenses below apply to the music
+assets independently of the application code. Source downloads were checked on
+2026-09-10. No lyrics are included in the generated MIDI transcriptions.
+
+| Local files | Work / edition | Source and license | Changes / scope |
+| --- | --- | --- | --- |
+| silent-night.mid, silent-night.pdf | Silent Night (Stille Nacht), Franz Xaver Gruber; guitar arrangement by D. Widyanto | [Mutopia 521](https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=521), [CC BY-SA 2.0](https://creativecommons.org/licenses/by-sa/2.0/) | Unchanged MIDI and A4 PDF, renamed. Complete one-stanza guitar arrangement. |
+| o-come-all-ye-faithful.mid, o-come-all-ye-faithful.pdf | Adeste Fideles, John Francis Wade; typeset Matt Corks | [Mutopia 367](https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=367), public domain | Unchanged MIDI and A4 PDF, renamed. Complete one-stanza SATB setting. |
+| star-spangled-banner.mid | The Star-Spangled Banner, John Stafford Smith; MIDI by Hyacinth | [Commons file page](https://commons.wikimedia.org/wiki/File:2_Star_Spangled_Banner.mid), marked public domain | Unchanged [original MIDI](https://upload.wikimedia.org/wikipedia/commons/e/ec/2_Star_Spangled_Banner.mid), renamed. One verse, 101 notes. |
+| arirang.mid | Arirang, traditional Korean melody; Wikipedia score contributors | [Source notation and contributor history](https://en.wikipedia.org/w/index.php?title=Arirang&action=history), [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | New Stillnote MIDI transcription of the article's 16-bar LilyPond melody, F major, 9/8, quarter = 140. Written ties retained; no added accompaniment. This adaptation is CC BY-SA 4.0. |
+| tien-quan-ca.mid, tien-quan-ca.gif | Tiến quân ca, Văn Cao; nationalanthems.info sheet | [Vietnam source](https://nationalanthems.info/vn.htm), [original sheet](https://nationalanthems.info/vn~.gif), [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) per [site reuse policy](https://nationalanthems.info/faq.html) | Sheet unchanged. New Stillnote MIDI melody reduction, quarter = 104, written repeat and both endings, ties joined. Accompaniment omitted; upper voice followed where the source has chords. |
+| aegukga.mid, aegukga.gif | Aegukga, Ahn Eak-tae; nationalanthems.info sheet | [South Korea source](https://nationalanthems.info/kr.htm), [original sheet](https://nationalanthems.info/kr~.gif), [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) per [site reuse policy](https://nationalanthems.info/faq.html) | Sheet unchanged. New Stillnote MIDI melody reduction, one verse and chorus. Piano introduction and accompaniment/fills omitted. Editorial tempo quarter = 88 (source describes slow and solemn). |
+| katana-a1_listen_first.mid, katana-action_title.mid | A1 Listen First; Action Title — Katana | [Creator's action music collection](https://opengameart.org/content/action-music-collection), [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/) | Unchanged MIDS/A1_LISTEN_FIRST.mid and MIDS/ACTION_TITLE.mid from [MIDS.zip](https://opengameart.org/sites/default/files/MIDS.zip), renamed. Independent originals from a collection tagged pop/rock/synth. The app plays pitched parts only, omitting MIDI drum channels at import; downloadable files retain all tracks. |
+
+The two anthem melody adaptations and their transcription data in
+`scripts/build-folk-melodies.mjs` retain CC BY 4.0 attribution to nationalanthems.info.
+Arirang transcription data retains CC BY-SA 4.0. The script checks bar lengths and
+recreates the three melody MIDI files. Generated on-screen MIDI notation is an
+approximate practice guide, not a replacement for the source's meter and engraving.
+
+Direct Christmas assets:
+- https://www.mutopiaproject.org/ftp/GruberFX/stille-nacht/stille-nacht.mid
+- https://www.mutopiaproject.org/ftp/GruberFX/stille-nacht/stille-nacht-a4.pdf
+- https://www.mutopiaproject.org/ftp/WadeJF/adeste/adeste.mid
+- https://www.mutopiaproject.org/ftp/WadeJF/adeste/adeste-a4.pdf
+
+## Earlier Mutopia editions
+
 Downloaded from the Mutopia Project on 2026-09-06. MIDI bytes are unchanged.
 Each edition’s attribution and license is listed below.
 

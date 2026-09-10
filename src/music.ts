@@ -13,12 +13,13 @@ export type Piece = {
   id: string;
   title: string;
   composer: string;
+  tags?: string;
   notes: Note[];
   duration: number;
   xml?: string;
   warning?: string;
   beatToSeconds?: (beat: number) => number;
-  source?: { url: string; sheetUrl: string; fileUrl: string; edition: string };
+  source?: { url: string; sheetUrl?: string; fileUrl: string; edition: string };
 };
 const names = ["C", "C♯", "D", "D♯", "E", "F", "F♯", "G", "G♯", "A", "A♯", "B"];
 export const noteName = (m: number) => names[m % 12] + (Math.floor(m / 12) - 1);
@@ -59,6 +60,9 @@ export function finish(piece: Omit<Piece, "duration">, timelineEnd = 0): Piece {
 }
 export function parseMidi(data: ArrayBuffer, title: string): Piece {
   const midi = new Midi(data);
+  // The library scans every track when calculating duration. Compute it once,
+  // rather than rescanning the whole score for every imported note.
+  const midiDuration = midi.duration;
   const pedals = new Map<number, { time: number; value: number }[]>();
   for (const track of midi.tracks) {
     const events = pedals.get(track.channel) ?? [];
@@ -82,7 +86,7 @@ export function parseMidi(data: ArrayBuffer, title: string): Piece {
             sustainEnd(
               pedals.get(t.channel) || [],
               n.time + n.duration,
-              midi.duration,
+              midiDuration,
             ) - n.time,
           ),
           midi: n.midi,
