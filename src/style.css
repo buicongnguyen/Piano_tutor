@@ -73,11 +73,88 @@
   margin: 8px 6px 0 0;
 }
 .river-scene {
-  height: 72px;
+  height: 160px;
   position: relative;
   overflow: hidden;
   border-radius: 12px;
   background: linear-gradient(#102c48, #215467);
+}
+.stage-art {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+.stage-art[hidden] {
+  display: none;
+}
+.stage-art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 100%;
+  display: block;
+}
+.river-scene.art-loaded:not([data-stage="off"]) :is(.river-moon, .river-water) {
+  display: none;
+}
+.river-scene::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 1px #7ae9ec30;
+  transition: box-shadow 0.4s;
+}
+.river-scene.stage-hit::after {
+  box-shadow:
+    inset 0 -25px 45px -25px #71eeff,
+    inset 0 0 0 1px #a5ffff;
+}
+.river-scene.stage-complete::after {
+  box-shadow:
+    inset 0 0 45px #edc96385,
+    inset 0 0 0 2px #ffe4a9;
+}
+.river-scene .river-lanterns {
+  inset: auto 5% 9px;
+  justify-content: flex-start;
+  padding: 6px 10px;
+  width: fit-content;
+  max-width: 90%;
+  border-radius: 12px;
+  background: #0a1826a8;
+  gap: 10px;
+}
+.river-scene[data-stage="off"] {
+  height: 46px;
+}
+.river-scene[data-stage="off"] :is(.river-water, .river-moon) {
+  display: none;
+}
+.river-scene[data-stage="cinematic"] .river-lanterns .lit {
+  animation: lantern-breathe 4s ease-in-out infinite alternate;
+}
+@keyframes lantern-breathe {
+  to {
+    box-shadow: 0 0 18px 7px #eace8455;
+  }
+}
+body[data-stage="cinematic"] .piano-cabinet {
+  box-shadow:
+    0 18px 38px #04171f35,
+    0 0 0 1px #72e5ed55;
+}
+body[data-stage="cinematic"] .piano-front {
+  border-top: 1px solid #76dce5;
+}
+@media (prefers-reduced-motion: reduce) {
+  .river-scene::after {
+    transition: none;
+  }
+  .river-scene .river-lanterns .lit {
+    animation: none !important;
+  }
 }
 .river-moon {
   position: absolute;
@@ -177,11 +254,17 @@
     min-width: 0;
     max-width: 100% !important;
   }
+  .journey-row label:has(#stage-mode) {
+    width: auto;
+  }
+  .journey-row #stage-mode {
+    min-width: 110px;
+  }
   #journey-guide {
     display: none;
   }
   .river-scene {
-    height: 52px;
+    height: 110px;
   }
 }
 @media (hover: none) and (max-width: 1100px) {

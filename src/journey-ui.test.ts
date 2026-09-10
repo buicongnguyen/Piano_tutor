@@ -53,6 +53,10 @@ const flush = async () => {
   await Promise.resolve();
 };
 beforeEach(() => {
+  vi.stubGlobal("matchMedia", () => ({
+    matches: false,
+    addEventListener: vi.fn(),
+  }));
   const data = new Map<string, string>();
   vi.stubGlobal("localStorage", {
     getItem: (key: string) => data.get(key) ?? null,

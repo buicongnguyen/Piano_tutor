@@ -1,4 +1,5 @@
 import type { Player } from "./audio";
+import { mountStudioStage } from "./studio-stage";
 import { noteName, type Piece } from "./music";
 import {
   phrasesFor,
@@ -20,6 +21,10 @@ export function mountJourney(
   root.setAttribute("aria-label", "Light the River learning journey");
   root.innerHTML = `<div class="journey-top"><div><span class="eyebrow">LIGHT THE RIVER</span><h2>A little music. A brighter river.</h2></div><nav aria-label="Studio mode"><button data-mode="listen" aria-pressed="true">Listen</button><button data-mode="learn" aria-pressed="false">Learn</button><button data-mode="perform" aria-pressed="false">Perform</button></nav></div><div class="river-scene" aria-hidden="true"><div class="river-moon"></div><div class="river-water"></div><div class="river-lanterns"></div></div><div class="journey-row"><label>Destination <select id="journey-route"></select></label><label>Phrase <select id="journey-phrase"></select></label><button id="journey-start" class="primary">Start phrase</button><button id="journey-stop" hidden>Stop challenge</button><button id="journey-guide" aria-pressed="true">PC guide</button></div><p id="journey-description"></p><p id="journey-feedback" role="status" aria-live="polite">Choose Learn to light your first lantern.</p><div id="journey-progress"></div><div id="journey-result" hidden><h3>Another bend in the river.</h3><p></p><button id="journey-retry">Retry phrase</button><button id="journey-next">Next phrase →</button></div>`;
   document.querySelector(".keyboard-section")!.before(root);
+  const stage = mountStudioStage(
+    root.querySelector(".river-scene")!,
+    root.querySelector(".journey-row")!,
+  );
   const sound = document.querySelector<HTMLElement>(".sound")!;
   const advanced = document.createElement("details");
   advanced.className = "studio-settings";
@@ -169,6 +174,7 @@ export function mountJourney(
     const earned =
       mode === "learn" ||
       (result !== undefined && result.matched / result.total >= 0.7);
+    if (earned) stage.pulse(true);
     progress[key] = {
       learned: old.learned || earned,
       best: Math.max(old.best, result?.score ?? 0),
@@ -261,13 +267,15 @@ export function mountJourney(
   player.onManual.add((midi, down) => {
     if (phase !== "playing") return;
     if (mode === "perform") {
-      if (down)
+      if (down) {
+        const correct = run!.down(midi, player.now());
+        if (correct) stage.pulse();
         feedback(
-          run!.down(midi, player.now())
+          correct
             ? "Good note — keep flowing."
             : "Listen for the next pitch and try to land with the bar.",
         );
-      else run!.up(midi, player.now());
+      } else run!.up(midi, player.now());
       return;
     }
     if (down) {
@@ -287,6 +295,7 @@ export function mountJourney(
         return;
       }
       held.set(midi, i);
+      stage.pulse();
       feedback(
         `Playing ${noteName(midi)}. Release when you’re ready to continue.`,
       );
