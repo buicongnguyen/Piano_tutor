@@ -1,24 +1,35 @@
 {
-  "name": "piano-tutor",
-  "version": "1.0.0",
+  "name": "stillnote-encore",
+  "version": "2.0.0",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1",
     "build": "tsc && vite build",
-    "test": "vitest run"
+    "preview": "vite preview --host 127.0.0.1 --port 58231 --strictPort",
+    "test": "vitest run",
+    "test:e2e": "node tests/e2e.mjs",
+    "capture": "node scripts/capture.mjs",
+    "assets": "npm run assets:stage && npm run assets:world && npm run assets:characters",
+    "assets:stage": "node scripts/blender.mjs -b --factory-startup --python art/encore/build_stage.py",
+    "assets:world": "node scripts/blender.mjs -b --factory-startup --python art/encore/build_world.py",
+    "assets:characters": "node scripts/blender.mjs -b --factory-startup --python art/encore/build_characters.py && node scripts/blender.mjs -b --factory-startup --python art/encore/render_portraits.py"
   },
   "dependencies": {
     "@tonejs/midi": "^2.0.28",
     "opensheetmusicdisplay": "^1.9.2",
-    "smplr": "^1.0.0"
+    "smplr": "^1.0.0",
+    "three": "^0.180.0"
   },
   "devDependencies": {
     "@types/node": "^26.4.1",
+    "@types/three": "^0.180.0",
     "jsdom": "^26.1.0",
+    "playwright": "^1.61.1",
     "prettier": "^3.9.6",
     "typescript": "~5.9.3",
     "vite": "^7.1.0",
     "vitest": "^3.2.4"
-  }
+  },
+  "description": "Stillnote Encore: a 3D piano rhythm adventure (plus the classic Stillnote piano studio)."
 }

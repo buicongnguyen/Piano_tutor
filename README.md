@@ -1,136 +1,120 @@
-# Stillnote · Piano Tutor
+# Stillnote Encore
 
-A browser piano studio with a local score library, MusicXML engraving, MIDI piano roll, polyphonic Web Audio playback, sampled Steinway option, synchronized notation/keys, speed, seek, volume and A/B looping.
+**A 3D piano rhythm adventure. Play the Silent Isles back to life.**
 
-The optional **Classic chromatic** computer keyboard layout uses physical QWERTY positions: A S D F G H J K L ; for natural notes, W E T Y U O P for sharps/flats. The default range is C4–E5; the Octave selector shifts the 17-note range from C2–E3 through C6–E7. Hold a key for its duration, release to stop, and hold multiple keys for chords. The guide lights up for score notes in the selected octave and for your own presses. Blur, backgrounding and octave changes release held keys. Keyboard rollover limits depend on your laptop/keyboard hardware; the guide does not infer touch velocity. Other keyboard languages use the same physical QWERTY positions.
+**[▶ Play in your browser](https://buicongnguyen.github.io/Piano_tutor/)** · [Classic piano studio](https://buicongnguyen.github.io/Piano_tutor/studio.html)
 
-Thin blue bars preview four seconds of upcoming notes above each computer-key row, ending directly at the matching button. Length represents key-down duration. **NEXT KEYS** shows up to ten note/chord groups in the next eight seconds: `[A D]` means press together, and `C2↕` means that pitch is outside the chosen octave. Both previews follow seeking, speed changes and octave selection. Reduced-motion mode keeps the text sequence while hiding the falling lanes.
+![Ragtime Pier: the Piano Road through a seaside carnival](docs/screenshots/gameplay.jpg)
 
-**Rows** selects 2, 3 or 4 compact physical keyboard rows. Two rows preserve the original mapping; three adds ten lower semitones on Z through /, and four adds ten upper semitones on 1 through 0. The Octave selector sets the base C for A; keys outside the 88-key range are disabled. Changing rows releases held notes and updates prediction labels. Predictive lanes are now 28 px high instead of 72 px. **Display options**, above the piano beside Sound, contains note labels, visual effects, falling notes and full 88-key mode.
+The Hush, a huge sleepy cloud, has gathered every song in the Sky Isles into
+silent crystals. You captain the **Encore**, a flying grand piano, with Coda, the last
+note still singing. Each song you play frees its notes, relights an island's
+beacon and pours the colour back into the world.
 
-The **Sound** selector offers Grand piano, Classical piano, Bright piano, Electric piano, Classical guitar, Steel-string guitar, Harp, Church organ, Violin and Flute. Grand piano uses SplendidGrandPiano; other voices use smplr's MusyngKite soundfonts from [midi-js-soundfonts](https://github.com/gleitz/midi-js-soundfonts). These are independent sample libraries, not Virtual Piano's audio. Changing sounds pauses at the current position while samples load; press Play to continue. Loaded instruments are cached for the session, and failed downloads are explicitly labeled as synth-piano fallback. All pitched tracks and manual keys use the selected instrument; guitar playback retains the score's note timing rather than automatically strumming.
+- **43 real pieces across 9 islands:** Beethoven, Debussy, Chopin, Satie, Joplin,
+  all twelve movements of Vivaldi's *Four Seasons*, Pachelbel's Canon, carols,
+  anthems, folk songs and two originals.
+- **Lanes or real piano.** Arcade lanes follow the shape of the melody (4 lanes on
+  Easy, 6 on Normal and Hard). **Real piano** turns the road into an actual
+  keyboard, so every key is the true note.
+- **Keyboard, touch or MIDI.** Laptop keys, phones and tablets, or a USB or
+  Bluetooth MIDI keyboard (Chrome and Edge).
+- **Practice mode** stops the road at every note until you play it, at 50–100% speed.
+- **Rhythm-game depth:** Perfect/Great/Good timing, combo multiplier up to ×4,
+  hold notes, golden phrases that charge **Encore** (double points, a golden road),
+  a Harmony meter that repaints the world, stars, ranks and full-combo crowns.
+- **Import your own MIDI or MusicXML** and it is charted automatically for every
+  difficulty.
 
-Use **Theme** in the header to choose System, Light or Dark. Your choice is saved in this browser; System follows changes to the device appearance. The collection dropdown searches titles and composers, including accent-insensitive matches.
+| | | |
+| --- | --- | --- |
+| ![Title](docs/screenshots/title.jpg) | ![World map](docs/screenshots/map.jpg) | ![Results](docs/screenshots/results.jpg) |
+| ![Starlight Snow Village at night](docs/screenshots/night.jpg) | ![Neon Reef](docs/screenshots/neon.jpg) | ![Real piano mode in Glasshouse Gardens](docs/screenshots/piano.jpg) |
 
-**Falling notes** shows a compact blue waterfall aligned with the scrolling keyboard. Bar length follows key-down duration, and the leading edge reaches the keyboard at note onset. **Effect** offers Water ripples, Flow particles, Sparkles, Soft glow and None. Effects follow score playback; changing them does not change audio. The display and effect preferences are saved locally. Reduced-motion users start with falling notes off, and animated strike particles remain suppressed. The falling-note toggle restores the compact keyboard-only layout.
+## How to play
 
-**[Open the live piano studio](https://buicongnguyen.github.io/Piano_tutor/)**
+| | Lanes | Real piano |
+| --- | --- | --- |
+| Laptop | Easy: **D F J K** · Normal/Hard: **S D F J K L** | Chromatic **A W S E D F T G Y H U J K O L P ;** (or home row), placed for each song |
+| Touch | Tap the lane | Tap the key |
+| MIDI keyboard | White keys C D E F G A | Any key |
+| Encore | **Space** or the gold button | same |
+| Pause | **Esc** / **P** / ❚❚ | same |
 
-The digital piano has a wood-sided cabinet, recessed display, speaker grilles, sculpted keys, note-label toggle and an expandable 88-key keyboard.
+Notes land on your keys at the glowing hit line. Hold a note for as long as its
+ribbon lasts. Notes a lighter difficulty leaves out are played for you, so every
+difficulty still sounds like the whole piece. If your speakers or Bluetooth
+headphones lag, use **Settings → Calibrate timing**.
 
-## Ready-to-play collection
+## The Sky Isles
 
-| Piece | Composer | Duration | Edition |
+| # | Island | Songs | Opens at |
 | --- | --- | --- | --- |
-| Gymnopédie No. 1 | Erik Satie | 2:21 | [Mutopia, public domain](https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=37) |
-| Für Elise | Ludwig van Beethoven | 2:10 | [Mutopia, public domain](https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=931) |
-| Clair de lune | Claude Debussy | 5:22 | [Mutopia, public domain](https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=1778) |
-| The Entertainer | Scott Joplin | 4:12 | [Mutopia, public domain](https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=263) |
-| Nocturne Op. 9 No. 2 | Frédéric Chopin | 3:22 | [Mutopia, CC BY-SA 3.0](https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=1590) |
-| Moonlight Sonata · I | Ludwig van Beethoven | 4:36 | [Mutopia, CC BY-SA 2.5](https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=276) |
-| Moonlight Sonata · II | Ludwig van Beethoven | 2:59 | Same edition |
-| Moonlight Sonata · III | Ludwig van Beethoven | 13:21 | Same edition |
-| Maple Leaf Rag | Scott Joplin | 2:24 | [Mutopia, public domain](https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=23) |
-| Arabesque No. 1 | Claude Debussy | 2:56 | [Mutopia, public domain](https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=1777) |
-| Prelude (2005) | Ramana Kumar | 4:12 | [Mutopia, CC BY-SA 3.0](https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=657) |
-| Flat (2007) | Ramana Kumar | 11:02 | [Mutopia, CC BY-SA 3.0](https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=1004) |
-| Variations d’automne (2007) | Stéphane Magnenat | 2:21 | [Mutopia, CC BY-SA 3.0](https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=973) |
-| Morning light | Original exercise | 0:22 | Two-hand study |
-| A little room to breathe | Original exercise | 0:13 | Melody study |
+| 1 | Dawn Meadow | Morning Light, A Little Room to Breathe, Arirang | start |
+| 2 | Starlight Snow Village | Silent Night, O Come All Ye Faithful | 4 ★ |
+| 3 | Festival Hills | Aegukga, Tiến quân ca, The Star-Spangled Banner | 8 ★ |
+| 4 | Ragtime Pier | The Entertainer, Maple Leaf Rag | 13 ★ |
+| 5 | Glasshouse Gardens | Für Elise, Arabesque No. 1, Gymnopédie No. 1, Prelude, Variations d'automne, Flat | 18 ★ |
+| 6 | Neon Reef | A1 Listen First, Action Title | 26 ★ |
+| 7 | Moonlit Harbour | Moonlight Sonata I–III, Clair de lune, Nocturne Op. 9 No. 2 | 32 ★ |
+| 8 | Season Wheel | Vivaldi, The Four Seasons (12 movements) | 40 ★ |
+| 9 | Carillon Crown | Canon in D (the finale) | 60 ★ |
 
-Twenty-six complete MIDI selections and sixteen printable PDF scores are bundled locally. Use **PDF sheet** or **Download MIDI** for a local copy. See [source provenance and licenses](public/music/SOURCES.md). These are notation-generated renditions, not recordings of a human performance. Moonlight's three movements are separate selections; its source MIDI uses 60 BPM, so durations can be longer than familiar recordings. The speed control changes playback without modifying downloads.
-
-The three 2000s selections are contemporary original piano compositions, not chart hits. Their Creative Commons licenses permit redistribution with attribution and ShareAlike terms; these music files retain their source licenses.
-
-## Use
-
-Press **Play**: the sampled grand loads automatically before playback begins. Cancel loading if needed; unavailable samples fall back to a clearly labeled synth. **Load grand piano** can preload or retry the samples. The original **Morning light** exercise has a right-hand melody and sustained left-hand chords, demonstrating simultaneous notes. Click piano keys or use A W S E D F T G Y H U J K (C4–C5).
-
-Import uncompressed `.musicxml` / `.xml` or `.mid` / `.midi` files up to 5 MB. Files remain in browser memory until reload and are never uploaded. Select imported scores from the sidebar. Seek to the beginning of a phrase and select Set A, seek to its end and select Set B, enable Loop, then play.
-
-For Yiruma's **River Flows in You**, use the linked online piano or import your own two-hand MusicXML/MIDI arrangement. No edition with verified public redistribution permission was found, so the composition is not bundled. Buying a personal-use score does not by itself authorize bundling it on this public website. The online easy letter arrangement is monophonic; a full arrangement is necessary for both hands. PDF/image sheets require conversion to MusicXML with notation/recognition software before playback.
-
-## Musical fidelity
-
-**Hand dynamics:** the default **Melody forward** preset scales identified left-hand velocities to 75% and leaves the right hand at 100%. Separate sliders allow 0–125% of source velocity; **Original dynamics** restores both to 100%. This changes attack strength/sample velocity layers while preserving each hand's relative dynamics. It is an adjustable balance, not an automatically inferred human interpretation. Changes affect newly scheduled notes (up to 120 ms lookahead), not already ringing notes.
-
-Hands come from explicit MIDI track names (treble/up/right, bass/down/left) or a two-staff MusicXML layout. Unassigned notes remain unchanged. No pitch threshold is used, so labeled hands can cross middle C. Sliders for absent/unidentified hands are disabled. Most bundled MIDI files have matching hand labels; Variations d’automne has unnamed tracks, so hand balance is unavailable for that edition.
-
-- Independent voices, simultaneous chords, rests, MusicXML ties and tempo changes.
-- MIDI key-down timing and velocity are retained. Same-channel CC64 pedal events extend sounding duration separately; the piano roll and key highlights show the original key-down length. Sample release is 120 ms after note/pedal release (previously the sampler default was 500 ms).
-- MusicXML uses exact duration/divisions values for dotted notes and tuplets, integrates durations across tempo changes, merges ties per staff/voice/pitch and retains final rests. Speed changes scale onset and duration together. MIDI reflects its source performance; PDF notation is not automatically compared or used to overwrite MIDI articulation.
-- MusicXML sound tempo, metronome tempo, sound dynamics and common dynamic marks supported.
-- Audio-clock scheduling with 120 ms lookahead and one absolute onset per chord. Each voice preserves its duration and velocity; a gentle master compressor controls dense mixes. Pause, seek and score changes cancel both active voices and queued sample callbacks. Background tabs pause to prevent timer throttling from creating bad rhythm.
-- Splendid Grand sampled Steinway through smplr loads automatically on first Play. Samples download from the smpldsnds host; synth fallback works if unavailable. Sample loading requires internet. Fonts also use Google Fonts with local font fallback.
-- MusicXML plays in written order: repeats, navigation jumps, grace ornaments, pedal and hairpin expression are not interpreted. Export expressive MIDI for those performance details. Transposing scores must be exported in concert pitch. MIDI tracks all use piano, excluding percussion.
-- Piano keyboard displays C2–C6 in compact mode; **Full 88 keys** expands to A0–C8 with horizontal scrolling. Playback supports the full 88-key range. All sounding pitches appear in the display even outside the visible keyboard. Piano roll adapts to each score's pitch range.
-- Manual keys currently use a fixed 1.3-second duration. This is a score player/practice keyboard, not a replacement for a velocity-sensitive MIDI controller.
+**Settings → Open all islands** turns on free play. Songs longer than about two and a
+half minutes play as an excerpt that ends at a natural breath.
 
 ## Development
 
-Node 22+: `npm ci`, `npm test`, `npm run build`, `npm run dev`.
+Node 22 or newer.
 
-GitHub Actions tests and builds on main, then deploys `dist` to GitHub Pages. Vite uses relative assets for the repository subpath. Deployment remote uses SSH.
+```sh
+npm ci
+npm run dev          # http://127.0.0.1:5173 (game) and /studio.html (classic studio)
+npm test             # unit tests (charting, judging, campaign, saves, clock, input)
+npm run build        # type-check + production build to dist/
+npm run test:e2e     # browser suite (Playwright + real GPU; add -- --swiftshader for CI boxes)
+npm run capture      # screenshots of title, map, gameplay and results in artifacts/captures
+```
 
-See [PLAN.md](PLAN.md) and [REVIEW.md](REVIEW.md).
+Pushing to `main` runs the tests, builds and deploys to GitHub Pages.
 
-## References and credits
+### How it's built
 
-- [Virtual Piano reference](https://virtualpiano.net/?song-post-14075): studied library → loaded score → autoplay/keyboard flow; no site code or song arrangement copied.
-- [OpenSheetMusicDisplay](https://github.com/opensheetmusicdisplay/opensheetmusicdisplay): MusicXML engraving, BSD-3-Clause.
-- [ToneJS MIDI](https://github.com/Tonejs/Midi): MIDI decoding, MIT.
-- [smplr](https://github.com/danigb/smplr): sampled instruments, MIT; [Splendid Grand source and sample provenance](https://github.com/sfzinstruments/SplendidGrandPiano). Samples are fetched by the library, not redistributed in this repository.
-- [MusicXML timing specification](https://www.w3.org/2021/06/musicxml40/tutorial/midi-compatible-part/): chord and backup semantics.
-- Both bundled exercises are original material created for this project.
+- **Vite + TypeScript + three.js.** `index.html` is the game (`src/game/`) and
+  `studio.html` is the original studio (`src/main.ts`).
+- **Pure, tested game logic.** `chart.ts` finds the melody, thins it by
+  difficulty, makes holds and golden phrases, and cuts excerpts. `lanes.ts` maps the
+  melody contour to lanes. `judge.ts` handles timing windows, combo, Harmony, Encore and
+  results. `campaign.ts` and `save.ts` hold progression and validated local saves.
+- **Audio.** `sound.ts` plays a sampled Splendid Grand plus General MIDI voices for
+  ensemble accompaniment, with a synth fallback. `conductor.ts` keeps song time on the
+  audio clock, compensates for output latency, looks ahead 150 ms and runs the
+  practice gate.
+- **Rendering.** Quality tiers, bloom with a NaN guard, neutral tone mapping, instanced
+  notes, adaptive resolution and reduced-motion support. `world.ts` drains each island
+  to grey with a shared "Hush" shader uniform and restores it as you play.
+- **Art.** Every model is generated by headless Blender scripts in
+  [`art/encore/`](art/encore/): the stage kit (keys, gems, arches), the world kit
+  (islands, houses, landmarks) and the characters (Coda, the Hush and the Encore). No
+  image textures are used. [`CONTRACTS.md`](art/encore/CONTRACTS.md) lists the node and material
+  names the game relies on. Rebuild with `node scripts/blender.mjs -b --factory-startup --python art/encore/build_stage.py`
+  (and `build_world.py`, `build_characters.py`, `render_portraits.py`).
 
-## Pop discovery (import required)
+Design notes: [docs/ENCORE_DESIGN.md](docs/ENCORE_DESIGN.md). Classic studio
+documentation: [docs/CLASSIC_STUDIO.md](docs/CLASSIC_STUDIO.md).
 
-The Collection now includes a separate searchable discovery list for Adele’s Someone Like You and Rolling in the Deep, Maroon 5’s Memories and Girls Like You, and Yiruma’s River Flows in You. Search by artist, title or `pop`. These are retailer links and local-import actions, not bundled playable files; the playable count excludes them. No purchase or download was performed.
+## Credits and licences
 
-Sources checked 2026-09-06: [Someone Like You](https://synthesiagame.com/store/Song/3), [Rolling in the Deep](https://synthesiagame.com/store/Song/37), [Memories](https://www.midi.com.au/maroon-5/memories-midi/), [Girls Like You](https://www.midi.com.au/maroon-5/girls-like-you-midi/). Synthesia lists US-licensed piano arrangements with backing tracks. Hit Trax lists licensed full-band MIDI backing tracks, not solo piano. This app renders pitched tracks with the selected instrument and does not reproduce a General MIDI band. Public redistribution permission was not established for these editions.
-
-## Laptop and eight-finger playing
-
-The default **8-finger home row** layout puts C D E F / G A B C on A S D F / J K L ;. Sharps use W E T I O. G and H are left unassigned to keep the two hands in their usual typing positions. Octave and 2/3/4-row options still work; falling bars and the upcoming key sequence use the selected mapping. Choose Classic chromatic to restore the previous mapping. These are physical QWERTY positions.
-
-**Space → Hold sustain** uses a thumb as a pedal. Release note keys while holding Space, then release Space to stop those sustained notes. **Toggle sustain** lets you tap Space on/off and enter chords sequentially without holding many physical keys simultaneously. These sequential attacks are rolled chords, not automatically simultaneous score chords. The visible sustain button also toggles the pedal; Escape or Release all stops manual notes. Space → Play / pause restores the original transport shortcut. Use the onscreen Play button in sustain modes. Focused form controls retain their normal keyboard behavior.
-
-Sustain changes only manual sound, not score timing or score bar lengths. Re-striking a sustained key releases its previous voice. Blur, backgrounding, transport silence, sound changes, layout changes and octave/row changes release manual notes and reset the pedal, including pending audio starts. Computer keyboards still have no touch velocity and hardware rollover varies; toggle sustain reduces simultaneous-key requirements without changing those hardware limits.
-
-## Electronic sounds
-
-Sound now offers Electronic · Saw lead, Square lead, Crystal synth, Warm pad and Synth bass. These are general electronic voices for playing EDM melodies, not Alan Walker’s own presets or recordings. Start with Saw lead at Base C4/C5 for melodies, Crystal synth for bell-like arpeggios, Warm pad with thumb sustain for chords, and Synth bass at Base C2/C3. Tips appear below the sound selector. All note timing, velocities, sustain and existing score previews remain active.
-
-Samples use the existing [MusyngKite soundfont](https://github.com/gleitz/midi-js-soundfonts), distributed under CC BY-SA 3.0, loaded on demand through smplr. Exact identifiers: lead_2_sawtooth, lead_1_square, fx_3_crystal, pad_2_warm, synth_bass_1. Sound changes pause playback and release held notes. Failed loading is explicitly shown as synth-piano fallback.
-
-One selected sound plays all pitched parts. A complete electronic track would additionally need per-track instruments, drums and production effects; selecting these voices does not recreate a commercial recording.
-
-## Automatic accompaniment practice
-
-Above the sheet, Practice offers Listen, Play right hand and Play left hand. In a practice mode the score plays only the opposite hand; your physical or onscreen keys still sound normally. The PC falling bars and NEXT KEYS sequence show only your chosen hand. The piano waterfall and score retain both parts for context. Use Play to start, Speed to slow down, and A/B looping to repeat a phrase. Playback keeps time; it does not wait for or grade your input.
-
-Hand practice requires both hands to be explicitly assigned for every note. It is disabled for unnamed or partial track assignments, including Variations d’automne; switching to such a piece resets to Listen. Mode changes pause and release existing voices to prevent doubled melody notes.
-
-Metronome uses quarter-note beats from the MIDI/MusicXML tempo map, including tempo changes. Speed scales accompaniment and clicks together. Clicks stop on pause, follow seek/loop boundaries, and share master volume. The grid starts at score time zero; there is no time-signature accent or count-in. Invalid or excessively large beat grids disable the metronome. No generic bass line or drum beat is generated: accompaniment comes from the actual score’s other hand.
-
-Import file now opens the device file chooser directly from the header, sidebar and song discovery entries. Select a local MIDI or uncompressed MusicXML file; it is read, added to the collection and selected. The old information dialog is only a fallback if opening the picker throws. Same-file re-import is supported. Song discovery import buttons select local files; they do not automatically buy or download retailer files.
-
-Flow particles is now the default visual effect for browsers without a saved effect preference (and for invalid saved values). Existing saved selections remain in effect. Display options → Effect also includes Aurora ribbons (blue/violet rising trails) and Bubbles (floating cyan rings). Both are deterministic, bounded canvas effects driven by score time, stop while paused and respect reduced motion. They do not affect note timing or audio.
-
-## Canon and The Four Seasons
-
-The collection includes Canon in D (full ensemble score) and all twelve movements of Vivaldi’s The Four Seasons: Spring, Summer, Autumn and Winter. Search `canon`, `four seasons`, or a season name. Each entry plays immediately and includes a downloadable MIDI plus its complete ensemble PDF score. These are ensemble editions rendered with the selected sound; they are not two-hand piano reductions, so hand practice is unavailable. All source note timings are preserved. Attribution, movement mapping and CC BY/CC BY-SA license links are in [SOURCES](public/music/SOURCES.md).
-
-## Better ensemble playback
-
-Original MIDI instruments is enabled by default. MIDI imports retain each pitched track’s General MIDI program, and playback loads its corresponding sampled instrument. Canon and The Four Seasons now keep their violin, viola and cello voices instead of playing every part as piano. Manual keys still use Sound. Choosing a Sound switches to one instrument for all parts; re-enable Original MIDI instruments to restore the arrangement.
-
-Up to 16 distinct voices load on demand and are cached during the session. Missing or additional voices fall back to the selected sound, with an explicit count in the sound status. Piano program 0 uses the sampled grand. Note durations, velocity, tempo maps and pedal lengths are unchanged. Sample source and catalog: [MusyngKite](https://github.com/gleitz/midi-js-soundfonts), CC BY-SA 3.0.
-
-This improves timbre, not the source performance: notation-generated MIDI can still have rigid timing and limited dynamics. Drum tracks, pitch bend, continuous expression, stereo controller data and within-track program changes are not reproduced. It does not recreate a mastered recording or add automatic humanization. Earlier descriptions of all tracks using one sound now apply only when Original MIDI instruments is off.
-
-## Generated MIDI sheet music
-
-Choose Sheet music on a MIDI piece to generate a display-only piano reduction. The full note sequence is available in pages of 16 bars, with Previous/Next controls and a MusicXML download for the displayed page. Existing MusicXML notation and original PDF links remain available.
-
-This is approximate notation: MIDI tempo maps recover beat positions, notes snap to a sixteenth-note grid, and bars use 4/4 with sharp pitch spelling. Explicit hands determine staves when available; other notes use a visual middle-C split without changing practice-hand assignments. Chords, overlapping durations, rests, and bar-line ties are retained. Original MIDI timing, velocities, pedal and instruments are unchanged. Generated pages do not automatically follow playback. Meter, key signatures, triplets, articulation and original engraving are not reconstructed.
+- Music: public-domain and Creative Commons editions from the Mutopia Project,
+  Wikimedia Commons, nationalanthems.info and OpenGameArt. Each file keeps its
+  source licence; see [public/music/SOURCES.md](public/music/SOURCES.md).
+- Piano: [Splendid Grand](https://github.com/sfzinstruments/SplendidGrandPiano) via
+  [smplr](https://github.com/danigb/smplr) (MIT). Other instruments:
+  [MusyngKite](https://github.com/gleitz/midi-js-soundfonts) (CC BY-SA 3.0). Samples
+  are fetched at runtime, not redistributed.
+- Libraries: three.js (MIT), @tonejs/midi (MIT), OpenSheetMusicDisplay (BSD-3, studio).
+- Game design references: Rock Band 3 Pro Keys (lane vs real-key tiers), Deemo
+  (songs grow the world), Hi-Fi Rush (the world on the beat), Synthesia (wait
+  mode), and "Juice it or lose it" (Jonasson & Purho, GDC 2012). They served as
+  inspiration only; no assets or code were copied.
+- All story, characters, 3D art and the menu theme are original to Stillnote Encore.

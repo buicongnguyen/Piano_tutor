@@ -8,6 +8,7 @@ export type Note = {
   velocity: number;
   hand?: "left" | "right";
   program?: number; // General MIDI program for this pitched track (zero-based).
+  track?: number; // Source MIDI track index, used to find a melody line.
 };
 export type Piece = {
   id: string;
@@ -19,6 +20,7 @@ export type Piece = {
   xml?: string;
   warning?: string;
   beatToSeconds?: (beat: number) => number;
+  meter?: number; // Beats per bar from the first time signature (MIDI only).
   source?: { url: string; sheetUrl?: string; fileUrl: string; edition: string };
 };
 const names = ["C", "C♯", "D", "D♯", "E", "F", "F♯", "G", "G♯", "A", "A♯", "B"];
@@ -75,9 +77,11 @@ export function parseMidi(data: ArrayBuffer, title: string): Piece {
     title: midi.name || title,
     composer: "Imported MIDI",
     beatToSeconds: (beat) => midi.header.ticksToSeconds(beat * midi.header.ppq),
+    meter: meterOf(midi.header.timeSignatures[0]?.timeSignature),
     notes: midi.tracks
-      .filter((t) => !t.instrument.percussion)
-      .flatMap((t) =>
+      .map((t, track) => ({ t, track }))
+      .filter(({ t }) => !t.instrument.percussion)
+      .flatMap(({ t, track }) =>
         t.notes.map((n) => ({
           time: n.time,
           duration: n.duration,
@@ -93,11 +97,19 @@ export function parseMidi(data: ArrayBuffer, title: string): Piece {
           velocity: n.velocity,
           hand: handFromTrackName(t.name),
           program: t.instrument.number,
+          track,
         })),
       ),
     warning:
       "MIDI playback preserves pitched track voices; drums are not imported. Sheet music offers an approximate generated transcription.",
   });
+}
+// Quarter-note beats per bar; compound meters such as 6/8 count their eighths as half beats.
+export function meterOf(signature?: number[]) {
+  if (!signature || signature.length < 2) return undefined;
+  const [top, bottom] = signature;
+  const beats = (top * 4) / bottom;
+  return Number.isFinite(beats) && beats > 0 && beats <= 16 ? beats : undefined;
 }
 // Use explicit staff/track labels, never a middle-C split: hands can cross.
 export function handFromTrackName(name: string): Note["hand"] {

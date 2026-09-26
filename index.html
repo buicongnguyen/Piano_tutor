@@ -2,12 +2,28 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-    <meta name="theme-color" content="#213e37" />
-    <title>Stillnote — Piano studio</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover" />
+    <meta name="theme-color" content="#1a1f5c" />
+    <title>Stillnote Encore</title>
+    <meta name="description" content="A 3D piano rhythm adventure: play the Silent Isles back to life, one song at a time." />
+    <meta property="og:title" content="Stillnote Encore" />
+    <meta property="og:description" content="A 3D piano rhythm adventure: play the Silent Isles back to life." />
+    <meta property="og:image" content="art/keyart.jpg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet" />
   </head>
   <body>
-    <div id="app"></div>
-    <script type="module" src="/src/main.ts"></script>
+    <div id="game">
+      <canvas id="scene" tabindex="0" aria-label="Stillnote Encore — 3D game view"></canvas>
+      <div id="ui"></div>
+      <div id="boot" role="status">
+        <div class="boot-logo"><span>STILLNOTE</span><b>Encore</b></div>
+        <div class="boot-bar"><i></i></div>
+        <p>Loading…</p>
+      </div>
+    </div>
+    <noscript>Stillnote Encore needs JavaScript and WebGL. The <a href="studio.html">classic studio</a> also needs JavaScript.</noscript>
+    <script type="module" src="/src/game/main.ts"></script>
   </body>
 </html>

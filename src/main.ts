@@ -13,7 +13,8 @@ import { mountCrystalEffects } from "./crystal-effects";
 import { mountComputerKeyboard } from "./computer-keyboard";
 import "./style.css";
 import { OpenSheetMusicDisplay } from "opensheetmusicdisplay";
-import { exercise, parseXml, parseMidi, noteName, type Piece } from "./music";
+import { parseXml, parseMidi, noteName, type Piece } from "./music";
+import { morningLight, roomToBreathe } from "./exercises";
 import {
   Player,
   activeAt,
@@ -24,36 +25,7 @@ import {
 const $ = <T extends HTMLElement = HTMLElement>(s: string) =>
   document.querySelector<T>(s)!;
 const player = new Player();
-const library = [
-  exercise(
-    "Morning light",
-    [
-      60, 64, 67, 72, 71, 67, 64, 62, 60, 65, 69, 72, 74, 69, 65, 62, 59, 62,
-      67, 71, 74, 71, 67, 62, 60, 64, 67, 72, 67, 64, 62, 60,
-    ],
-    84,
-  ),
-  exercise(
-    "A little room to breathe",
-    [64, 67, 69, 67, 62, 65, 69, 65, 60, 64, 67, 64, 59, 62, 67, 62],
-    72,
-  ),
-];
-// Two independent staves: sustained left-hand chords under the right-hand melody.
-let duet = library[0].xml!.replace("<staves>2</staves>", "");
-duet = duet
-  .replace("<clef>", '<staves>2</staves><clef number="1">')
-  .replace(
-    "</clef>",
-    '</clef><clef number="2"><sign>F</sign><line>4</line></clef>',
-  );
-let measure = 0;
-duet = duet.replace(/<\/measure>/g, () => {
-  const roots = [48, 53, 43, 48, 48, 53, 43, 48];
-  const root = roots[measure++];
-  return `<backup><duration>4</duration></backup>${[root, root + 7].map((m, i) => `<note>${i ? "<chord/>" : ""}<pitch><step>${["C", "C", "D", "D", "E", "F", "F", "G", "G", "A", "A", "B"][m % 12]}</step><octave>${Math.floor(m / 12) - 1}</octave></pitch><duration>4</duration><voice>2</voice><type>whole</type><staff>2</staff></note>`).join("")}</measure>`;
-});
-library[0] = parseXml(duet);
+const library = [morningLight(), roomToBreathe()];
 $("#app").innerHTML = shell;
 mountTheme($<HTMLSelectElement>("#theme"));
 const pianoOptions = $<HTMLDetailsElement>("#piano-options");
