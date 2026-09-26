@@ -234,7 +234,7 @@ export const THEMES: Record<ThemeId, Theme> = {
 
 // Lane colours match art/encore/palette.py (coral → violet).
 export const LANE_COLORS = ["#ff4f4f", "#ff9416", "#ffd02a", "#5fd84a", "#2fb2ff", "#8f5bff"];
-export const LANE_SETS: Record<number, number[]> = { 4: [0, 2, 3, 4], 6: [0, 1, 2, 3, 4, 5] };
+export const LANE_SETS: Record<number, number[]> = { 2: [0, 4], 4: [0, 2, 3, 4], 6: [0, 1, 2, 3, 4, 5] };
 
 /** Pitch-class colours for real-piano mode (a Boomwhacker-like rainbow). */
 export const PITCH_COLORS = [

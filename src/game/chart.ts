@@ -8,7 +8,9 @@ import { contourLanes } from "./lanes";
 import { assignWords, hashText, letterIndex, type Word } from "./words";
 
 export type Difficulty = "easy" | "normal" | "hard";
-export type KeyMode = "lanes" | "piano" | "words";
+export type KeyMode = "lanes" | "piano" | "words" | "tap";
+/** Modes whose lanes are arcade lanes (not piano keys or letters). */
+export const isArcade = (mode: KeyMode) => mode === "lanes" || mode === "tap";
 
 export type ChartNote = {
   id: number;
@@ -46,6 +48,8 @@ export const LANES: Record<Difficulty, number> = { easy: 4, normal: 6, hard: 6 }
 const MIN_GAP: Record<Difficulty, number> = { easy: 0.42, normal: 0.19, hard: 0.1 };
 // Typing letters is slower than tapping lanes: about 22, 37 and 60 words per minute.
 const WORD_GAP: Record<Difficulty, number> = { easy: 0.55, normal: 0.32, hard: 0.2 };
+// Two-thumb phone play: relaxed spacing, since both lanes share one thumb each.
+const TAP_GAP: Record<Difficulty, number> = { easy: 0.5, normal: 0.27, hard: 0.17 };
 const HOLD_MIN: Record<Difficulty, number> = { easy: 0.85, normal: 0.6, hard: 0.5 };
 const ONSET = 0.03; // notes closer than this share an onset
 
@@ -176,7 +180,7 @@ export function buildChart(piece: Piece, options: ChartOptions): Chart {
   const inWindow = groupsAll.filter((g) => g[0].time >= window.start && g[0].time < window.end - 0.05);
 
   // Greedy thinning in real time, preferring stronger beats when two onsets crowd.
-  const gap = (mode === "words" ? WORD_GAP : MIN_GAP)[difficulty] * speed;
+  const gap = (mode === "words" ? WORD_GAP : mode === "tap" ? TAP_GAP : MIN_GAP)[difficulty] * speed;
   const kept: { g: Note[]; s: number }[] = [];
   for (const g of inWindow) {
     const s = strength(g[0].time, beats, bars);
@@ -187,13 +191,13 @@ export function buildChart(piece: Piece, options: ChartOptions): Chart {
       if (!before || g[0].time - before.g[0].time >= gap) kept[kept.length - 1] = { g, s };
     }
   }
-  const chordSize = mode === "words" ? 1 : difficulty === "hard" ? (mode === "piano" ? 3 : 2) : 1;
+  const chordSize = mode === "words" ? 1 : difficulty === "hard" ? (mode === "piano" ? 3 : 2) : 1; // tap Hard: both sides
   const chosen: Note[][] = kept.map(({ g }) =>
     g.filter((n, i) => i === 0 || (i < chordSize && g[i - 1].midi - n.midi >= 3)).slice(0, chordSize),
   );
   const used = new Set(chosen.flat());
 
-  const laneCount = mode === "lanes" ? LANES[difficulty] : 0;
+  const laneCount = mode === "lanes" ? LANES[difficulty] : mode === "tap" ? 2 : 0;
   // Words mode: letters spell words; the lane is the letter (0 = a … 25 = z).
   const words =
     mode === "words"
@@ -207,7 +211,7 @@ export function buildChart(piece: Piece, options: ChartOptions): Chart {
   const letters: number[] = [];
   for (const w of words ?? []) for (const ch of w.text) letters.push(letterIndex(ch));
   const laneOf =
-    mode === "lanes"
+    isArcade(mode)
       ? contourLanes(
           chosen.map((g) => ({ pitches: g.map((n) => n.midi) })),
           laneCount,

@@ -28,6 +28,14 @@ describe("input mapping", () => {
     expect(laneForMidi(60, words)).toBeUndefined();
   });
 
+  it("maps tap mode to left and right from either hand or the arrows", () => {
+    const tap = { kind: "tap" as const };
+    expect(["KeyF", "KeyD", "ArrowLeft"].map((k) => laneForKey(k, tap))).toEqual([0, 0, 0]);
+    expect(["KeyJ", "KeyK", "ArrowRight"].map((k) => laneForKey(k, tap))).toEqual([1, 1, 1]);
+    expect(laneForKey("KeyA", tap)).toBeUndefined();
+    expect([laneForMidi(48, tap), laneForMidi(72, tap)]).toEqual([0, 1]);
+  });
+
   it("maps the chromatic laptop layout from the chosen base C", () => {
     const mode = { kind: "piano" as const, base: 60, layout: "chromatic" as const };
     expect(laneForKey("KeyA", mode)).toBe(60);

@@ -59,6 +59,7 @@ export class Hud {
       <div class="hud-count" data-el="count"></div>
       <div class="hud-banner" data-el="banner"></div>
       <div class="hud-hint" data-el="hint"></div>
+      <div class="hud-tap" data-el="tap" hidden><i data-lane="0"><b>◀</b><span>TAP</span></i><i data-lane="1"><span>TAP</span><b>▶</b></i></div>
       <div class="hud-words" data-el="words" hidden><div class="hud-word" data-el="word"></div><div class="hud-next" data-el="nextWords"></div></div>
       <button class="hud-encore-btn" data-el="encoreBtn">ENCORE!</button>`;
     parent.append(this.root);
@@ -74,20 +75,22 @@ export class Hud {
     }
   }
 
-  begin(info: { title: string; difficulty: string; mode: string; practice: boolean; lanes: number; notes: number; excerpt: boolean; assisted: number; keepMelody?: boolean }) {
+  begin(info: { title: string; difficulty: string; mode: string; practice: boolean; lanes: number; notes: number; excerpt: boolean; assisted: number; keepMelody?: boolean; touch?: boolean }) {
     this.root.hidden = false;
     this.shownScore = 0;
     this.last = {};
     this.el.title.textContent = info.title;
     const bits = [
       info.practice ? "Practice" : info.difficulty[0].toUpperCase() + info.difficulty.slice(1),
-      info.mode === "lanes" ? `${info.lanes} lanes` : info.mode === "words" ? "Words" : "Real piano",
+      info.mode === "lanes" ? `${info.lanes} lanes` : info.mode === "words" ? "Words" : info.mode === "tap" ? "Tap left & right" : "Real piano",
       `${info.notes} notes`,
     ];
     if (info.excerpt) bits.push("Excerpt");
     if (info.assisted) bits.push(`${info.assisted} assisted`);
     if (info.keepMelody) bits.push("Song keeps playing");
     this.el.words.hidden = info.mode !== "words";
+    // Big left/right touch zones in Tap mode (phones and tablets).
+    this.el.tap.hidden = info.mode !== "tap" || !info.touch;
     this.el.word.innerHTML = "";
     this.el.nextWords.textContent = "";
     this.el.badges.textContent = bits.join(" · ");
@@ -157,6 +160,11 @@ export class Hud {
       .join("");
     this.el.nextWords.textContent = next.map((w) => w.toUpperCase()).join("  ·  ");
     this.bump(this.el.word);
+  }
+
+  /** Light up the touched half of the screen in Tap mode. */
+  tapZone(lane: number, down: boolean) {
+    this.el.tap.querySelector(`[data-lane="${lane}"]`)?.classList.toggle("on", down);
   }
 
   countdown(text: string) {

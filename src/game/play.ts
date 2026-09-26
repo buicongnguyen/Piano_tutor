@@ -91,7 +91,14 @@ export class PlaySession {
         });
       }
     }
-    this.judge = new Judge(this.chart, { speed, lenient: difficulty === "easy", practice, skip: this.assist });
+    this.judge = new Judge(this.chart, {
+      speed,
+      lenient: difficulty === "easy",
+      // Touch screens add latency: Tap mode forgives a little more.
+      windowScale: mode === "tap" ? (difficulty === "easy" ? 1.5 : 1.35) : undefined,
+      practice,
+      skip: this.assist,
+    });
     const approach = approachFor(setup.noteSpeed);
     this.conductor = new Conductor(bank, this.chart, {
       speed,
@@ -107,7 +114,14 @@ export class PlaySession {
       approach,
       speed,
       labels: setup.labels,
-      laneLabels: mode === "lanes" ? laneLabels(this.chart.lanes, setup.laneKeys) : undefined,
+      laneLabels:
+        mode === "lanes"
+          ? laneLabels(this.chart.lanes, setup.laneKeys)
+          : mode === "tap"
+            ? setup.touch
+              ? ["◀", "▶"]
+              : ["F", "J"]
+            : undefined,
       laptopKeys,
       touch: setup.touch,
       reducedMotion: setup.reducedMotion,
@@ -122,10 +136,19 @@ export class PlaySession {
         ? { kind: "lanes", lanes: this.chart.lanes, preset: setup.laneKeys }
         : mode === "words"
           ? { kind: "words" }
-          : { kind: "piano", base, layout: setup.laptop },
+          : mode === "tap"
+            ? { kind: "tap" }
+            : { kind: "piano", base, layout: setup.laptop },
     );
     input.onLane = (e) => this.lane(e);
-    input.pointerLane = (x, y) => stage.laneAt(x, y, input.surface.getBoundingClientRect());
+    // Tap mode: the whole screen is two big buttons, left half and right half.
+    input.pointerLane =
+      mode === "tap"
+        ? (x) => {
+            const r = input.surface.getBoundingClientRect();
+            return x < r.left + r.width / 2 ? 0 : 1;
+          }
+        : (x, y) => stage.laneAt(x, y, input.surface.getBoundingClientRect());
     hud.begin({
       title: setup.title,
       difficulty,
@@ -136,6 +159,7 @@ export class PlaySession {
       excerpt: this.chart.excerpt,
       assisted: this.assist.size,
       keepMelody: setup.keepMelody,
+      touch: setup.touch,
     });
   }
 
@@ -185,6 +209,7 @@ export class PlaySession {
   private pressLane(lane: number, down: boolean, t: number) {
     const e = { lane, down };
     this.stage.press(e.lane, e.down);
+    if (this.chart.mode === "tap") this.hud.tapZone(lane, down);
     if (e.down) {
       const events = this.judge.press(e.lane, t);
       this.apply(events);
@@ -260,6 +285,10 @@ export class PlaySession {
         ? noteName(n.midi)
         : this.chart.mode === "words"
           ? `“${letterOf(n.lane).toUpperCase()}”`
+          : this.chart.mode === "tap"
+            ? n.lane === 0
+              ? "◀ Left"
+              : "Right ▶"
           : laneLabels(this.chart.lanes, this.setup.laneKeys)[n.lane] ?? String(n.lane + 1),
     );
     return `Next: ${names.join(" + ")}`;

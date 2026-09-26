@@ -42,7 +42,8 @@ export type SaveData = {
 
 export const KEY = "stillnote-encore-v1";
 
-export const defaultSettings = (): Settings => ({
+/** `touch`: phones and tablets start in two-thumb Tap mode. */
+export const defaultSettings = (touch = false): Settings => ({
   noteSpeed: 5,
   offsetMs: 0,
   music: 0.8,
@@ -53,20 +54,20 @@ export const defaultSettings = (): Settings => ({
   openAll: false,
   laptop: "chromatic",
   difficulty: "easy",
-  mode: "lanes",
+  mode: touch ? "tap" : "lanes",
   practiceSpeed: 0.75,
   skin: "cherry",
   laneKeys: "dfjk",
-  keepMelody: { lanes: false, piano: false, words: true },
+  keepMelody: { lanes: false, piano: false, words: true, tap: true },
 });
 
-export const emptySave = (): SaveData => ({
+export const emptySave = (touch = false): SaveData => ({
   v: 1,
   records: {},
   seen: [],
   freed: 0,
   lastIsland: "meadow",
-  settings: defaultSettings(),
+  settings: defaultSettings(touch),
 });
 
 const num = (v: unknown, lo: number, hi: number, d: number) =>
@@ -75,8 +76,8 @@ const pick = <T extends string>(v: unknown, options: readonly T[], d: T): T =>
   options.includes(v as T) ? (v as T) : d;
 const RANKS = ["S+", "S", "A", "B", "C", "D"] as const;
 
-export function parseSave(text: string | null): SaveData {
-  const out = emptySave();
+export function parseSave(text: string | null, touch = false): SaveData {
+  const out = emptySave(touch);
   if (!text) return out;
   let data: unknown;
   try {
@@ -88,7 +89,7 @@ export function parseSave(text: string | null): SaveData {
   const d = data as Record<string, unknown>;
   if (d.records && typeof d.records === "object" && !Array.isArray(d.records))
     for (const [key, value] of Object.entries(d.records as Record<string, unknown>).slice(0, 2000)) {
-      if (!/^[a-z0-9-]{1,60}\|(easy|normal|hard)\|(lanes|piano|words)$/.test(key)) continue;
+      if (!/^[a-z0-9-]{1,60}\|(easy|normal|hard)\|(lanes|piano|words|tap)$/.test(key)) continue;
       if (!value || typeof value !== "object") continue;
       const r = value as Record<string, unknown>;
       out.records[key] = {
@@ -105,7 +106,7 @@ export function parseSave(text: string | null): SaveData {
   out.freed = Math.round(num(d.freed, 0, 1e9, 0));
   if (typeof d.lastIsland === "string" && /^[a-z]{1,20}$/.test(d.lastIsland)) out.lastIsland = d.lastIsland;
   const s = (d.settings && typeof d.settings === "object" ? d.settings : {}) as Record<string, unknown>;
-  const def = defaultSettings();
+  const def = defaultSettings(touch);
   out.settings = {
     noteSpeed: num(s.noteSpeed, 1, 10, def.noteSpeed),
     offsetMs: Math.round(num(s.offsetMs, -300, 300, def.offsetMs)),
@@ -117,14 +118,14 @@ export function parseSave(text: string | null): SaveData {
     openAll: s.openAll === true,
     laptop: pick(s.laptop, ["chromatic", "home"] as const, def.laptop),
     difficulty: pick(s.difficulty, ["easy", "normal", "hard"] as const, def.difficulty),
-    mode: pick(s.mode, ["lanes", "piano", "words"] as const, def.mode),
+    mode: pick(s.mode, ["lanes", "piano", "words", "tap"] as const, def.mode),
     practiceSpeed: num(s.practiceSpeed, 0.5, 1, def.practiceSpeed),
     skin: typeof s.skin === "string" && /^[a-z]{1,16}$/.test(s.skin) ? s.skin : def.skin,
     laneKeys: pick(s.laneKeys, ["dfjk", "asdf", "jkl"] as const, def.laneKeys),
     keepMelody: (() => {
       const k = (s.keepMelody && typeof s.keepMelody === "object" ? s.keepMelody : {}) as Record<string, unknown>;
       const b = (v: unknown, d: boolean) => (typeof v === "boolean" ? v : d);
-      return { lanes: b(k.lanes, def.keepMelody.lanes), piano: b(k.piano, def.keepMelody.piano), words: b(k.words, def.keepMelody.words) };
+      return { lanes: b(k.lanes, def.keepMelody.lanes), piano: b(k.piano, def.keepMelody.piano), words: b(k.words, def.keepMelody.words), tap: b(k.tap, def.keepMelody.tap) };
     })(),
   };
   return out;
@@ -178,11 +179,11 @@ export function recordRun(
   return { newBest, firstClear: before === 0 && after > 0, starsGained: after - before };
 }
 
-export function loadSave(storage: Pick<Storage, "getItem"> | undefined): SaveData {
+export function loadSave(storage: Pick<Storage, "getItem"> | undefined, touch = false): SaveData {
   try {
-    return parseSave(storage?.getItem(KEY) ?? null);
+    return parseSave(storage?.getItem(KEY) ?? null, touch);
   } catch {
-    return emptySave();
+    return emptySave(touch);
   }
 }
 

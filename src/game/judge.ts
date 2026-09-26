@@ -46,6 +46,7 @@ export type Result = {
 export type JudgeOptions = {
   speed?: number;
   lenient?: boolean; // Easy: windows ×1.25
+  windowScale?: number; // overrides `lenient` (touch play is looser still)
   practice?: boolean; // wait-for-me: no timing, no score
   skip?: Iterable<number>; // note ids played automatically (not scored)
 };
@@ -82,7 +83,7 @@ export class Judge {
     this.speed = options.speed && options.speed > 0 ? options.speed : 1;
     this.practice = !!options.practice;
     this.skip = new Set(options.skip ?? []);
-    const k = options.lenient ? 1.25 : 1;
+    const k = options.windowScale ?? (options.lenient ? 1.25 : 1);
     this.windows = {
       perfect: WINDOWS.perfect * k,
       great: WINDOWS.great * k,

@@ -80,6 +80,12 @@ Imported MIDI files are charted automatically and appear in **My Songs**.
   QWERTY keyboard coloured by touch-typing finger, and gems share their finger's colour.
   Input reads the typed character, so AZERTY and other layouts work. Space never fires
   Encore here (typists tap it between words); Enter does.
+- **Tap** (phones): two lanes chosen by the melody's contour (up = right, down =
+  left, repeated notes stay put). The whole left or right half of the screen is the
+  button, so it doesn't matter where on the road you tap, and two thumbs can press at once.
+  Spacing is 0.5 / 0.27 / 0.17 s, with both-sides chords only on Hard. Timing windows are
+  ×1.35 (×1.5 on Easy) for touch latency. Phones default to Tap with the song kept playing.
+  Keyboards use F/J, D/K or the arrows; MIDI splits at middle C.
 - **Lane keys** preset: D F J K (split hands, default), A S D F (left hand) or
   J K L ; (right hand).
 - **Keep the song playing** (toggle, default on for Words): the whole melody is

@@ -27,7 +27,11 @@ const WHITE_LANE: Record<number, number> = { 0: 0, 2: 1, 4: 2, 5: 3, 7: 4, 9: 5 
 export type InputMode =
   | { kind: "lanes"; lanes: number; preset?: LanePreset }
   | { kind: "piano"; base: number; layout: "chromatic" | "home" }
-  | { kind: "words" };
+  | { kind: "words" }
+  | { kind: "tap" }; // two lanes: left and right
+
+// Tap mode on a keyboard: either hand's home keys or the arrow keys.
+export const TAP_KEYS: Record<string, number> = { KeyF: 0, KeyD: 0, ArrowLeft: 0, KeyJ: 1, KeyK: 1, ArrowRight: 1 };
 
 /** Lane for a key. Words mode reads the typed character (`key`) so any keyboard layout works. */
 export function laneForKey(code: string, mode: InputMode, key?: string): number | undefined {
@@ -35,6 +39,7 @@ export function laneForKey(code: string, mode: InputMode, key?: string): number 
     const i = laneCodes(mode.lanes, mode.preset).indexOf(code);
     return i >= 0 ? i : undefined;
   }
+  if (mode.kind === "tap") return TAP_KEYS[code];
   if (mode.kind === "words") {
     if (key && /^[a-z]$/i.test(key)) return key.toLowerCase().charCodeAt(0) - 97;
     const m = /^Key([A-Z])$/.exec(code);
@@ -47,6 +52,7 @@ export function laneForKey(code: string, mode: InputMode, key?: string): number 
 export function laneForMidi(midi: number, mode: InputMode): number | undefined {
   if (mode.kind === "piano") return midi;
   if (mode.kind === "words") return undefined;
+  if (mode.kind === "tap") return midi < 60 ? 0 : 1;
   const lane = WHITE_LANE[midi % 12];
   return lane !== undefined && lane < mode.lanes ? lane : undefined;
 }

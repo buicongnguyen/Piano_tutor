@@ -20,6 +20,7 @@ export type StageChoice = {
 };
 
 const WORD_HINT: Record<Difficulty, string> = { easy: "home-row words", normal: "everyday words", hard: "long words" };
+const TAP_HINT: Record<Difficulty, string> = { easy: "slow & roomy", normal: "left & right", hard: "both sides at once" };
 const DIFF: { id: Difficulty; name: string; hint: string }[] = [
   { id: "easy", name: "Easy", hint: "4 lanes · relaxed" },
   { id: "normal", name: "Normal", hint: "6 lanes · the melody" },
@@ -303,7 +304,8 @@ export class Screens {
       ${open ? "" : `<p class="panel-locked">🔒 The Hush's fog covers this island. Earn <b>${island.gate} ★</b> to open it (you have ${this.total}).</p>`}
       <div class="stage-list">${rows}</div>`;
     this.panel.hidden = false;
-    this.panel.querySelector<HTMLElement>(".stage-row:not([disabled])")?.focus();
+    this.panel.scrollTop = 0;
+    this.panel.querySelector<HTMLElement>(".stage-row:not([disabled])")?.focus({ preventScroll: true });
   }
 
   openSetup(island: Island | undefined, stage: Stage) {
@@ -336,11 +338,12 @@ export class Screens {
         <h3>Difficulty</h3>
         <div class="seg">${DIFF.map(
           (d) => `<button data-act="difficulty" data-value="${d.id}" aria-pressed="${c.difficulty === d.id}">
-            <b>${d.name}</b><small>${c.mode === "piano" ? d.hint.replace(/\d lanes · /, "") : c.mode === "words" ? WORD_HINT[d.id] : c.mode === "lanes" ? `${laneLabels(d.id === "easy" ? 4 : 6, c.laneKeys).join(" ")}` : d.hint}</small>
+            <b>${d.name}</b><small>${c.mode === "piano" ? d.hint.replace(/\d lanes · /, "") : c.mode === "words" ? WORD_HINT[d.id] : c.mode === "tap" ? TAP_HINT[d.id] : c.mode === "lanes" ? `${laneLabels(d.id === "easy" ? 4 : 6, c.laneKeys).join(" ")}` : d.hint}</small>
             <span class="seg-stars">${stars(rec(d.id, c.mode)?.stars ?? 0)}</span></button>`,
         ).join("")}</div>
         <h3>Keys</h3>
-        <div class="seg seg-3">
+        <div class="seg seg-4">
+          <button data-act="mode" data-value="tap" aria-pressed="${c.mode === "tap"}"><b>👆 Tap</b><small>Left &amp; right — made for phones</small></button>
           <button data-act="mode" data-value="lanes" aria-pressed="${c.mode === "lanes"}"><b>🎮 Lanes</b><small>Lanes follow the melody</small></button>
           <button data-act="mode" data-value="piano" aria-pressed="${c.mode === "piano"}"><b>🎹 Real piano</b><small>Every key is the real note</small></button>
           <button data-act="mode" data-value="words" aria-pressed="${c.mode === "words"}"><b>⌨️ Words</b><small>Type the words to the beat</small></button>
@@ -367,7 +370,8 @@ export class Screens {
         speed.nextElementSibling!.textContent = `${Math.round(c.speed * 100)}%`;
       };
     this.panel.hidden = false;
-    this.panel.querySelector<HTMLElement>('[data-act="go"]')?.focus();
+    this.panel.scrollTop = 0; // keep the song title in view on phones
+    this.panel.querySelector<HTMLElement>('[data-act="go"]')?.focus({ preventScroll: true });
   }
 
   hidePanel() {

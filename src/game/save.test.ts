@@ -57,6 +57,13 @@ describe("save data", () => {
     expect(parseSave(JSON.stringify({ settings: { laneKeys: "wasd" } })).settings.laneKeys).toBe("dfjk");
   });
 
+  it("starts phones in Tap mode with the song kept playing", () => {
+    expect(parseSave(null, true).settings).toMatchObject({ mode: "tap", keepMelody: { tap: true } });
+    expect(parseSave(null, false).settings.mode).toBe("lanes");
+    expect(parseSave(JSON.stringify({ settings: { mode: "lanes" } }), true).settings.mode).toBe("lanes");
+    expect(Object.keys(parseSave(JSON.stringify({ records: { "arirang|easy|tap": { stars: 1 } } })).records)).toEqual(["arirang|easy|tap"]);
+  });
+
   it("keeps the best of every run and reports first clears", () => {
     const save = emptySave();
     const first = recordRun(save, "arirang", "easy", "lanes", result(1, 1000));

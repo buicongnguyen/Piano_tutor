@@ -30,7 +30,9 @@ const browser = await chromium.launch({
 });
 const results = [];
 const live = new Set(); // contexts opened by the current check, closed even when it fails
+const only = args.includes("--only") ? args[args.indexOf("--only") + 1] : undefined;
 async function check(name, fn) {
+  if (only && !name.includes(only)) return;
   const started = Date.now();
   try {
     await fn();
@@ -332,6 +334,43 @@ await check("phone portrait: touch taps press lanes and the HUD fits", async () 
   assert.equal(overflow, false);
   assert.deepEqual(errors, []);
   await context.close();
+});
+
+await check("phone Tap mode: default on phones, either half of the screen is a button", async () => {
+  const { page, context, errors } = await open({ width: 412, height: 860 }, { isMobile: true, hasTouch: true, deviceScaleFactor: 2 });
+  await page.evaluate(() => window.__encore.app.save.seen.push("intro", "arrive:meadow"));
+  await page.tap(".title-play", { force: true });
+  await page.waitForFunction(() => window.__encore.state() === "map");
+  await page.waitForTimeout(1500); // labels follow the map camera: let it settle
+  for (let i = 0; i < 3 && !(await page.isVisible('.stage-row[data-stage="arirang"]')); i++) {
+    await page.tap('.island-label[data-island="meadow"]', { force: true });
+    await page.waitForTimeout(500);
+  }
+  await page.tap('.stage-row[data-stage="arirang"]');
+  assert.equal(await page.getAttribute('[data-act="mode"][data-value="tap"]', "aria-pressed"), "true", "Tap is the phone default");
+  assert.equal(await page.isChecked('[data-act="keepmelody"]'), true, "the song keeps playing by default");
+  await page.tap('[data-act="go"]');
+  await page.waitForFunction(() => window.__encore.state() === "play", null, { timeout: 60000 });
+  assert.ok(await page.isVisible(".hud-tap"));
+  const cdp = await context.newCDPSession(page);
+  const tapAt = async (x) => {
+    await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x, y: 420 }] });
+    await page.waitForTimeout(60);
+    const held = await page.evaluate(() => window.__encore.app.stage.keys.filter((k) => k.held).map((k) => k.lane));
+    await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+    await page.waitForTimeout(40);
+    return held;
+  };
+  // Middle of the road, far from the keys: still counts, by screen half.
+  assert.deepEqual(await tapAt(60), [0]);
+  assert.deepEqual(await tapAt(360), [1]);
+  // Two thumbs at once.
+  await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x: 80, y: 600, id: 1 }, { x: 330, y: 600, id: 2 }] });
+  await page.waitForTimeout(60);
+  const both = await page.evaluate(() => window.__encore.app.stage.keys.filter((k) => k.held).map((k) => k.lane));
+  await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+  assert.deepEqual(both, [0, 1]);
+  assert.deepEqual(errors, []);
 });
 
 await check("stars open the next island with a toast", async () => {

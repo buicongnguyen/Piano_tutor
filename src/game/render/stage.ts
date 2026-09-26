@@ -2,7 +2,7 @@
 // beat lines, bar arches and lamps, and all hit feedback. World dressing
 // (islets, destination island, characters) lives in world.ts.
 import * as THREE from "three";
-import type { Chart, ChartNote } from "../chart";
+import { isArcade, type Chart, type ChartNote } from "../chart";
 import { noteName } from "../../music";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 import { glowFromInstanceColor, ownMaterial, spawn, type Kit } from "./assets";
@@ -12,6 +12,7 @@ import { LANE_COLORS, LANE_SETS, PITCH_COLORS, type Theme } from "./themes";
 export const ROAD_VIEW = 64; // distance (units) a note travels in `approach` seconds
 const ROAD_FAR = 320; // deck length
 const LANE_W = 1.18; // arcade lane width
+const TAP_W = 2.3; // Tap mode: two wide lanes
 const KEY_W = 0.46; // real-piano white key width
 const PAD_LEN = 2.4;
 const BLACK = new Set([1, 3, 6, 8, 10]);
@@ -278,15 +279,16 @@ export class Stage {
     const kit = this.stageKit;
     this.keys = [];
     this.keyByLane.clear();
-    if (chart.mode === "lanes") {
+    if (isArcade(chart.mode)) {
       const set = LANE_SETS[chart.lanes] ?? LANE_SETS[6];
       this.laneColors = set.map((i) => new THREE.Color(LANE_COLORS[i]));
-      this.laneW = LANE_W;
-      this.halfWidth = (chart.lanes * LANE_W) / 2 + 0.35;
+      const lw = chart.mode === "tap" ? TAP_W : LANE_W;
+      this.laneW = lw;
+      this.halfWidth = (chart.lanes * lw) / 2 + 0.35;
       for (let lane = 0; lane < chart.lanes; lane++) {
-        const x = (lane - (chart.lanes - 1) / 2) * LANE_W;
+        const x = (lane - (chart.lanes - 1) / 2) * lw;
         const root = spawn(kit, "LanePad") ?? new THREE.Group();
-        root.scale.setScalar(LANE_W / 1.0);
+        root.scale.set(lw * 0.97, LANE_W, LANE_W); // wide Tap pads keep the normal key depth
         root.position.set(x, 0, 0);
         const glow = ownMaterial(root, "Pad Glow");
         const color = this.laneColors[lane];
@@ -296,11 +298,12 @@ export class Stage {
           glow.emissiveIntensity = 0.9;
         }
         this.content.add(root);
-        const key: KeyVisual = { lane, x, width: LANE_W, root, glow, color, pressed: 0, held: false, flash: 0, miss: 0, black: false };
+        const key: KeyVisual = { lane, x, width: lw, root, glow, color, pressed: 0, held: false, flash: 0, miss: 0, black: false };
         this.keys.push(key);
         this.keyByLane.set(lane, key);
         const label = o.laneLabels?.[lane];
-        if (label && !o.touch) this.addLabel(label, x, 0.03, 2.38, 0.6, "#1b1733");
+        // Tap mode shows ◀ ▶ even on touch screens; letter keys only where there's a keyboard.
+        if (label && (!o.touch || chart.mode === "tap")) this.addLabel(label, x, 0.03, 2.38, chart.mode === "tap" ? 0.8 : 0.6, "#1b1733");
       }
     } else if (chart.mode === "words") {
       // A toy QWERTY keyboard; lanes are letters (0 = a … 25 = z).
@@ -453,7 +456,7 @@ export class Stage {
   }
 
   private buildRoad(theme: Theme) {
-    const lanes = this.chart!.mode === "lanes" ? this.chart!.lanes : 0;
+    const lanes = isArcade(this.chart!.mode) ? this.chart!.lanes : 0;
     const geometry = new THREE.PlaneGeometry(this.halfWidth * 2, ROAD_FAR, 1, 1);
     geometry.rotateX(-Math.PI / 2);
     geometry.translate(0, 0, -ROAD_FAR / 2 + 0.02);
@@ -855,7 +858,7 @@ export class Stage {
     road.beat.value = this.beatPulse;
     road.time.value = songTime;
     const lit = road.laneLit.value as number[];
-    for (const key of this.keys) if (key.lane < 12 && chart.mode === "lanes") lit[key.lane] = key.held ? 1 : 0;
+    for (const key of this.keys) if (key.lane < 12 && isArcade(chart.mode)) lit[key.lane] = key.held ? 1 : 0;
 
     // Keys: press animation, glow and miss wobble.
     for (const key of this.keys) {
@@ -863,11 +866,11 @@ export class Stage {
       key.pressed += (target - key.pressed) * Math.min(1, dt * (target ? 40 : 18));
       key.flash = Math.max(0, key.flash - dt * 3.2);
       key.miss = Math.max(0, key.miss - dt * 3);
-      key.root.rotation.x = chart.mode === "words" ? 0 : key.pressed * (chart.mode === "lanes" ? 0.075 : 0.06);
+      key.root.rotation.x = chart.mode === "words" ? 0 : key.pressed * (isArcade(chart.mode) ? 0.075 : 0.06);
       key.root.position.y = -key.pressed * 0.05;
       key.root.position.x = key.x + (reduced ? 0 : Math.sin(key.miss * 40) * key.miss * 0.05);
       if (key.glow) {
-        if (chart.mode === "lanes") key.glow.emissiveIntensity = 0.45 + key.flash * 2 + key.pressed * 0.8;
+        if (isArcade(chart.mode)) key.glow.emissiveIntensity = 0.45 + key.flash * 2 + key.pressed * 0.8;
         else {
           key.glow.emissive.copy(key.color);
           key.glow.emissiveIntensity = key.flash * 1.6 + key.pressed * 0.6;
@@ -963,7 +966,8 @@ export class Stage {
       ci = 0,
       chi = 0;
     const horizon = t + ROAD_VIEW / ups;
-    const scaleLanes = this.chart!.mode === "lanes" ? LANE_W * 0.92 : this.chart!.mode === "words" ? 0.62 : KEY_W * 1.15;
+    const scaleLanes =
+      this.chart!.mode === "lanes" ? LANE_W * 0.92 : this.chart!.mode === "tap" ? 1.5 : this.chart!.mode === "words" ? 0.62 : KEY_W * 1.15;
     const groupX = new Map<number, [number, number, number]>(); // group -> min x, max x, z
     for (let i = 0; i < chart.notes.length; i++) {
       const n = chart.notes[i];
@@ -1046,7 +1050,7 @@ export class Stage {
         if (st !== 2) shadow(key.x, zHead, width, s);
         badge(key.x, y + 0.72, zHead + 0.05, s, n.lane);
       }
-      if (st === 0 && chart.mode === "lanes") {
+      if (st === 0 && isArcade(chart.mode)) {
         const g = groupX.get(n.group);
         if (g) {
           g[0] = Math.min(g[0], key.x);

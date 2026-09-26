@@ -155,6 +155,25 @@ describe("chart building", () => {
     }
   });
 
+  it("charts two thumb lanes in tap mode, with both-sides doubles only on Hard", () => {
+    const notes: Note[] = [];
+    for (let i = 0; i < 24; i++) {
+      notes.push(note(i * 0.5, [72, 74, 76, 74, 72, 79][i % 6], { hand: "right" }));
+      if (i % 4 === 0) notes.push(note(i * 0.5, 64, { hand: "right" }));
+      notes.push(note(i * 0.5, 48, { hand: "left" }));
+    }
+    const normal = buildChart(piece(notes), { difficulty: "normal", mode: "tap" });
+    expect(normal.lanes).toBe(2);
+    expect(new Set(normal.notes.map((n) => n.lane))).toEqual(new Set([0, 1]));
+    expect(new Set(normal.notes.map((n) => n.group)).size).toBe(normal.notes.length);
+    const hard = buildChart(piece(notes), { difficulty: "hard", mode: "tap" });
+    const byGroup = new Map<number, number[]>();
+    for (const n of hard.notes) byGroup.set(n.group, [...(byGroup.get(n.group) ?? []), n.lane]);
+    expect([...byGroup.values()].some((l) => l.length === 2 && l.includes(0) && l.includes(1))).toBe(true);
+    const easy = buildChart(piece(notes), { difficulty: "easy", mode: "tap" });
+    for (let i = 1; i < easy.notes.length; i++) expect(easy.notes[i].time - easy.notes[i - 1].time).toBeGreaterThanOrEqual(0.5 - 1e-9);
+  });
+
   it("uses real keys in piano mode", () => {
     const chart = buildChart(twoHands(), { difficulty: "normal", mode: "piano" });
     expect(chart.lanes).toBe(0);

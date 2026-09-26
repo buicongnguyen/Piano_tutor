@@ -61,7 +61,7 @@ export class App {
   constructor(readonly canvas: HTMLCanvasElement, readonly ui: HTMLElement) {
     this.renderer = new Renderer(canvas);
     this.input = new Input(canvas);
-    this.save = loadSave(safeStorage());
+    this.save = loadSave(safeStorage(), matchMedia("(pointer: coarse)").matches);
     this.screens = new Screens(ui);
     this.hud = new Hud(ui);
     this.dialogue = new Dialogue(ui);
@@ -162,7 +162,7 @@ export class App {
     s.onCalibrate = () => void this.calibrate();
     s.onReset = () => {
       const settings = this.save.settings;
-      this.save = loadSave(undefined);
+      this.save = loadSave(undefined, this.touch);
       this.save.settings = settings;
       this.persist();
       this.refreshMap();
@@ -443,7 +443,8 @@ export class App {
       this.renderer.renderer.toneMappingExposure = theme.exposure;
       this.screens.loading.hidden = true;
       this.state = "play";
-      session.start(choice.island?.name ?? "My songs");
+      const place = choice.island?.name ?? "My songs";
+      session.start(choice.mode === "tap" ? `${place} · tap ◀ left or right ▶` : place);
       // Tabbed away while it loaded: wait on the pause screen instead of playing to nobody.
       if (document.hidden) this.pause();
     } catch (error) {
