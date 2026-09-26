@@ -39,6 +39,33 @@ function chart(notes: ChartNote[]): Chart {
 }
 
 describe("conductor", () => {
+  it("caps lookahead at an uncleared practice gate and schedules after clearing", () => {
+    const {bank, notes, advance} = fakeBank();
+    const ch = chart([note(0, 1)]);
+    ch.accompaniment = [{time:1.05,midi:48,duration:.3,velocity:.6}];
+    const c = new Conductor(bank,ch,{speed:1,practice:true,offsetMs:0,approach:1});
+    let gate: number | undefined = 1;
+    c.gate=()=>gate; c.start();
+    advance(.1+.95-c.startTime); c.update(false);
+    expect(notes).toHaveLength(0);
+    advance(.2); c.update(false); expect(c.waiting).toBe(1);
+    advance(5); c.update(false); expect(notes).toHaveLength(0);
+    gate=undefined; c.update(false);
+    expect(notes.map(n=>n.midi)).toEqual([48]);
+  });
+  it("keeps calibration in real milliseconds at every practice speed", () => {
+    for (const speed of [.5,.75,1]) {
+      const {bank,advance}=fakeBank();
+      const options={speed,practice:true,offsetMs:0,approach:1};
+      const a=new Conductor(bank,chart([note(0,1)]),options);
+      const b=new Conductor(bank,chart([note(0,1)]),{...options,offsetMs:100});
+      expect((a.time()-b.time())/speed).toBeCloseTo(.1);
+      a.start(); b.start(); advance(1);
+      expect((a.time()-b.time())/speed).toBeCloseTo(.1,2);
+      a.pause(); b.pause();
+      expect((a.time()-b.time())/speed).toBeCloseTo(.1,2);
+    }
+  });
   it("starts early enough for the first note to travel the road", () => {
     const { bank } = fakeBank();
     const c = new Conductor(bank, chart([note(0, 1)]), { speed: 1, practice: false, offsetMs: 0, approach: 2 });

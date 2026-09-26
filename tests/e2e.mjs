@@ -142,17 +142,30 @@ await check("keyboard presses reach the judge: strays, hits and a pause/resume r
   await enterMap(page);
   await page.evaluate(() => window.__encore.play("morning-light", "normal", "lanes"));
   await page.waitForFunction(() => window.__encore.state() === "play", null, { timeout: 60000 });
+  await page.evaluate(() => {
+    const j = window.__encore.app.session.judge;
+    const press = j.press.bind(j);
+    j.press = (lane, time) => {
+      const events = press(lane, time);
+      j.testPress = { lane, types: events.map((e) => e.type) };
+      return events;
+    };
+  });
   await page.keyboard.down("KeyS");
   await page.waitForTimeout(60);
   const held = await page.evaluate(() => window.__encore.app.stage.keys[0].held);
   await page.keyboard.up("KeyS");
   assert.equal(held, true);
-  assert.ok((await page.evaluate(() => window.__encore.app.session.judge.strays)) >= 1);
+  // A slow rendered frame can move the first press into a valid hit window.
+  // Verify delivery, without assuming the browser is still in the countdown.
+  const press = await page.evaluate(() => window.__encore.app.session.judge.testPress);
+  assert.equal(press.lane, 0);
+  assert.ok(press.types.some((type) => ["hit", "miss", "stray"].includes(type)));
   // Press each lane exactly when its first notes arrive (song time from the conductor).
   const hits = await page.evaluate(async () => {
     const s = window.__encore.app.session;
     const keys = ["KeyS", "KeyD", "KeyF", "KeyJ", "KeyK", "KeyL"];
-    const targets = s.chart.notes.slice(0, 6);
+    const targets = s.chart.notes.filter((n) => n.time > s.conductor.time() + 0.5).slice(0, 6);
     for (const n of targets) {
       while (s.conductor.time() < n.time - 0.004) await new Promise((r) => setTimeout(r, 1));
       dispatchEvent(new KeyboardEvent("keydown", { code: keys[n.lane], bubbles: true }));
@@ -170,6 +183,13 @@ await check("keyboard presses reach the judge: strays, hits and a pause/resume r
   await page.waitForTimeout(500);
   const t2 = await page.evaluate(() => window.__encore.app.session.conductor.time());
   assert.ok(Math.abs(t2 - t1) < 0.01, "clock frozen while paused");
+  await page.evaluate(() => {
+    Object.defineProperty(document, "hidden", { configurable: true, get: () => true });
+    document.dispatchEvent(new Event("visibilitychange"));
+    delete document.hidden;
+  });
+  await page.waitForTimeout(150);
+  assert.equal(await page.evaluate(() => window.__encore.app.session.paused), true, "hiding a paused game must not resume it");
   await page.keyboard.press("Escape");
   await page.waitForSelector(".pause-screen", { state: "hidden" });
   await page.keyboard.press("Escape");

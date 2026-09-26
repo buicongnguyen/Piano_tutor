@@ -32,6 +32,15 @@ function chart(times: number[], opts: { lanes?: number[]; holds?: number[]; gold
 }
 
 describe("judge", () => {
+  it("includes missed holds in completion but excludes assisted holds", () => {
+    const ch=chart([1,3],{holds:[1,1]});
+    const missed=new Judge(ch); missed.update(5);
+    expect(missed.result().holdPercent).toBe(0);
+    const partial=new Judge(ch); partial.press(0,1); partial.update(5);
+    expect(partial.result().holdPercent).toBe(50);
+    const assisted=new Judge(ch,{skip:[1]}); assisted.press(0,1); assisted.update(5);
+    expect(assisted.result().holdPercent).toBe(100);
+  });
   it("grades by timing window", () => {
     const j = new Judge(chart([1, 2, 3, 4]));
     expect(j.press(0, 1.02)[0]).toMatchObject({ type: "hit", judgement: "perfect" });

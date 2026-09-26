@@ -458,7 +458,7 @@ export class App {
 
   pause() {
     if (this.state !== "play" || !this.session || this.session.done) return;
-    if (this.session.paused) return this.resume();
+    if (this.session.paused) return;
     this.session.pause();
     this.screens.pause.hidden = false;
     this.screens.pause.querySelector<HTMLElement>('[data-act="resume"]')?.focus();

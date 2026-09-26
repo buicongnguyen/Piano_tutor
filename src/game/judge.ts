@@ -83,6 +83,8 @@ export class Judge {
     this.speed = options.speed && options.speed > 0 ? options.speed : 1;
     this.practice = !!options.practice;
     this.skip = new Set(options.skip ?? []);
+    this.holdTotal = this.notes.reduce((total, n) =>
+      total + (n.hold && !this.skip.has(n.id) ? n.end - n.time : 0), 0);
     const k = options.windowScale ?? (options.lenient ? 1.25 : 1);
     this.windows = {
       perfect: WINDOWS.perfect * k,
@@ -174,7 +176,6 @@ export class Judge {
     if (best.hold) {
       st.holding = true;
       this.holding.add(best.id);
-      this.holdTotal += best.end - best.time;
     }
     events.push({ type: "hit", note: best, judgement, delta: bestDelta, points });
     this.checkGolden(best, events);

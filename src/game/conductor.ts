@@ -63,11 +63,12 @@ export class Conductor {
 
   /** Current song time as heard by the player, adjusted by the user offset. */
   time(perf = performance.now()): number {
-    if (this.state !== "playing") return this.anchorSong - this.options.offsetMs / 1000;
+    const offset = this.options.offsetMs / 1000 * this.speed;
+    if (this.state !== "playing") return this.anchorSong - offset;
     const heard = this.heardCtx(perf);
     let t = this.anchorSong + (heard - this.anchorCtx) * this.speed;
     if (this.waiting !== undefined) t = Math.min(t, this.waiting);
-    return t - this.options.offsetMs / 1000;
+    return t - offset;
   }
 
   /** Song time at which an input event (performance.now timestamp) happened. */
@@ -114,8 +115,9 @@ export class Conductor {
     if (this.state !== "playing" || !this.bank.ctx) return;
     const ctx = this.bank.ctx;
     const now = this.rawTime();
+    const pendingGate = this.options.practice ? this.gate?.(now) : undefined;
     if (this.options.practice) {
-      const gate = this.gate?.(now);
+      const gate = pendingGate;
       if (gate !== undefined && now >= gate && this.waiting === undefined) {
         // Freeze the clock at the gate; ringing notes keep sounding.
         this.waiting = gate;
@@ -130,6 +132,8 @@ export class Conductor {
     const horizon = this.waiting ?? this.rawTime() + LOOKAHEAD * this.speed;
     while (this.next < this.events.length) {
       const e = this.events[this.next];
+      // Never schedule at/beyond an uncleared gate, even before the clock reaches it.
+      if (pendingGate !== undefined && e.time >= pendingGate) break;
       if (this.waiting !== undefined ? e.time >= this.waiting - 0.001 : e.time > horizon) break;
       this.next++;
       if (e.time < this.anchorSong - 0.02) continue; // already past (after a resume)
