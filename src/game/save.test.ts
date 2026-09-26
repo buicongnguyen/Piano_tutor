@@ -45,6 +45,18 @@ describe("save data", () => {
     expect(save.settings).toMatchObject({ noteSpeed: 10, offsetMs: -300, quality: "auto", skin: "cherry", difficulty: "hard", openAll: false });
   });
 
+  it("accepts words-mode records and the new play options", () => {
+    const save = parseSave(
+      JSON.stringify({
+        records: { "arirang|easy|words": { stars: 2, score: 10, accuracy: 0.8, rank: "B", fullCombo: false, plays: 1 } },
+        settings: { mode: "words", laneKeys: "asdf", keepMelody: { lanes: true, piano: "yes" } },
+      }),
+    );
+    expect(save.records["arirang|easy|words"].stars).toBe(2);
+    expect(save.settings).toMatchObject({ mode: "words", laneKeys: "asdf", keepMelody: { lanes: true, piano: false, words: true } });
+    expect(parseSave(JSON.stringify({ settings: { laneKeys: "wasd" } })).settings.laneKeys).toBe("dfjk");
+  });
+
   it("keeps the best of every run and reports first clears", () => {
     const save = emptySave();
     const first = recordRun(save, "arirang", "easy", "lanes", result(1, 1000));

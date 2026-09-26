@@ -124,6 +124,20 @@ describe("conductor", () => {
     expect(c.time()).toBeGreaterThan(4);
   });
 
+  it("keep-the-song mode plays the melody itself and hits add no second copy", () => {
+    const { bank, notes, advance } = fakeBank();
+    const melody = [note(0, 1), note(1, 1.5, 1)];
+    const c = new Conductor(bank, chart(melody), { speed: 1, practice: false, offsetMs: 0, approach: 1, auto: melody, keepMelody: true });
+    c.start();
+    for (let i = 0; i < 30; i++) {
+      advance(0.1);
+      c.update(false);
+    }
+    expect(notes.filter((n) => n.midi === 60 || n.midi === 61)).toHaveLength(2);
+    c.hit(melody[0]);
+    expect(notes.filter((n) => n.midi === 60)).toHaveLength(1);
+  });
+
   it("rewinds a little on resume", () => {
     const { bank, advance } = fakeBank();
     const c = new Conductor(bank, chart([note(0, 3)]), { speed: 1, practice: false, offsetMs: 0, approach: 1 });

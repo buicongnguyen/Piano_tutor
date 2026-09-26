@@ -59,6 +59,7 @@ export class Hud {
       <div class="hud-count" data-el="count"></div>
       <div class="hud-banner" data-el="banner"></div>
       <div class="hud-hint" data-el="hint"></div>
+      <div class="hud-words" data-el="words" hidden><div class="hud-word" data-el="word"></div><div class="hud-next" data-el="nextWords"></div></div>
       <button class="hud-encore-btn" data-el="encoreBtn">ENCORE!</button>`;
     parent.append(this.root);
     this.root.querySelectorAll<HTMLElement>("[data-el]").forEach((e) => (this.el[e.dataset.el!] = e));
@@ -73,18 +74,22 @@ export class Hud {
     }
   }
 
-  begin(info: { title: string; difficulty: string; mode: string; practice: boolean; lanes: number; notes: number; excerpt: boolean; assisted: number }) {
+  begin(info: { title: string; difficulty: string; mode: string; practice: boolean; lanes: number; notes: number; excerpt: boolean; assisted: number; keepMelody?: boolean }) {
     this.root.hidden = false;
     this.shownScore = 0;
     this.last = {};
     this.el.title.textContent = info.title;
     const bits = [
       info.practice ? "Practice" : info.difficulty[0].toUpperCase() + info.difficulty.slice(1),
-      info.mode === "lanes" ? `${info.lanes} lanes` : "Real piano",
+      info.mode === "lanes" ? `${info.lanes} lanes` : info.mode === "words" ? "Words" : "Real piano",
       `${info.notes} notes`,
     ];
     if (info.excerpt) bits.push("Excerpt");
     if (info.assisted) bits.push(`${info.assisted} assisted`);
+    if (info.keepMelody) bits.push("Song keeps playing");
+    this.el.words.hidden = info.mode !== "words";
+    this.el.word.innerHTML = "";
+    this.el.nextWords.textContent = "";
     this.el.badges.textContent = bits.join(" · ");
     this.root.classList.toggle("practice", info.practice);
     this.el.score.textContent = "0";
@@ -138,6 +143,20 @@ export class Hud {
     pop.style.top = `${y}px`;
     void pop.offsetWidth;
     pop.classList.add("go");
+  }
+
+  /** Words mode: the current word, letter by letter, and what comes next. */
+  words(letters: readonly { ch: string; state: "hit" | "miss" | "todo" }[], next: string[]) {
+    let cursor = false;
+    this.el.word.innerHTML = letters
+      .map((l) => {
+        const now = l.state === "todo" && !cursor;
+        if (now) cursor = true;
+        return `<span class="${l.state}${now ? " now" : ""}">${l.ch.toUpperCase()}</span>`;
+      })
+      .join("");
+    this.el.nextWords.textContent = next.map((w) => w.toUpperCase()).join("  ·  ");
+    this.bump(this.el.word);
   }
 
   countdown(text: string) {

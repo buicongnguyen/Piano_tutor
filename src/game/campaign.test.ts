@@ -57,6 +57,8 @@ describe("campaign", () => {
             `${stage.id.padEnd(26)} ${length.toFixed(0).padStart(4)}s ${String(chart.notes.length).padStart(4)} notes ${nps.toFixed(2)}/s holds ${chart.notes.filter((n) => n.hold).length} golden ${chart.golden.length}${chart.excerpt ? " excerpt" : ""}`,
           );
       }
+      const words = buildChart(piece, { difficulty: "normal", mode: "words", seed: stage.id });
+      expect(words.words!.map((w) => w.text).join("").length, stage.id).toBe(words.notes.length);
       const piano = buildChart(piece, { difficulty: "normal", mode: "piano" });
       expect(piano.range[1] - piano.range[0], stage.id).toBeLessThanOrEqual(60);
     }

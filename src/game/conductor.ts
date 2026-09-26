@@ -14,7 +14,8 @@ export type ConductorOptions = {
   practice: boolean;
   offsetMs: number;
   approach: number; // seconds a note takes to travel the road (for the lead-in)
-  auto?: ChartNote[]; // assist notes played for the player
+  auto?: ChartNote[]; // notes played for the player (assisted, or the whole melody)
+  keepMelody?: boolean; // the melody plays itself, so hits add no second copy
 };
 
 type Scheduled = { time: number; midi: number; duration: number; velocity: number; program?: number; gain: number };
@@ -51,7 +52,7 @@ export class Conductor {
       gain: 0.82,
     }));
     for (const n of options.auto ?? [])
-      acc.push({ time: n.time, midi: n.midi, duration: n.sound, velocity: n.velocity, program: undefined, gain: 0.9 });
+      acc.push({ time: n.time, midi: n.midi, duration: n.sound, velocity: Math.max(0.42, n.velocity), program: undefined, gain: 0.95 });
     this.events = acc.sort((a, b) => a.time - b.time);
     this.anchorSong = this.startTime;
   }
@@ -147,6 +148,7 @@ export class Conductor {
 
   /** Sound a note the player just hit, right now. */
   hit(note: ChartNote) {
+    if (this.options.keepMelody) return; // already scheduled with the song
     this.live.get(note.id)?.();
     const at = this.bank.now;
     const duration = Math.min(note.sound, this.chart.end + TAIL - note.time) / this.speed;

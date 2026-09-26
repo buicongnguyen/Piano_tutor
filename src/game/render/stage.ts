@@ -4,6 +4,7 @@
 import * as THREE from "three";
 import type { Chart, ChartNote } from "../chart";
 import { noteName } from "../../music";
+import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 import { glowFromInstanceColor, ownMaterial, spawn, type Kit } from "./assets";
 import { Particles, Rings, WeatherFx } from "./fx";
 import { LANE_COLORS, LANE_SETS, PITCH_COLORS, type Theme } from "./themes";
@@ -14,6 +15,64 @@ const LANE_W = 1.18; // arcade lane width
 const KEY_W = 0.46; // real-piano white key width
 const PAD_LEN = 2.4;
 const BLACK = new Set([1, 3, 6, 8, 10]);
+
+// Words mode: a toy QWERTY keyboard. Keys and gems share the colour of the
+// finger that types them (touch-typing zones), so the colours teach fingering.
+const QWERTY = ["qwertyuiop", "asdfghjkl", "zxcvbnm"];
+const CAP = 0.68; // keycap pitch
+const ROW_Z = [0.42, 1.12, 1.82];
+const ROW_SHIFT = [0, 0.25, 0.75];
+const FINGER_OF_COLUMN = [0, 1, 2, 3, 3, 4, 4, 5, 6, 7];
+export const FINGER_COLORS = ["#ff4f4f", "#ff9416", "#ffd02a", "#5fd84a", "#2fb2ff", "#8f5bff", "#ff3d7f", "#20d3b0"];
+export function letterKey(index: number) {
+  const ch = String.fromCharCode(97 + index);
+  for (let row = 0; row < 3; row++) {
+    const col = QWERTY[row].indexOf(ch);
+    if (col >= 0) return { ch, row, col, finger: FINGER_OF_COLUMN[col], x: (col - 4.5 + ROW_SHIFT[row]) * CAP, z: ROW_Z[row] };
+  }
+  return { ch, row: 1, col: 4, finger: 3, x: 0, z: ROW_Z[1] };
+}
+
+const letterVertex = /* glsl */ `
+attribute float letter;
+varying vec2 vUv;
+void main(){
+  float col = mod(letter, 8.0), row = floor(letter / 8.0);
+  vUv = vec2((uv.x + col) / 8.0, (uv.y + 3.0 - row) / 4.0);
+  gl_Position = projectionMatrix * modelViewMatrix * instanceMatrix * vec4(position, 1.0);
+}`;
+const letterFragment = /* glsl */ `
+uniform sampler2D atlas; varying vec2 vUv;
+void main(){ vec4 c = texture2D(atlas, vUv); if (c.a < 0.05) discard; gl_FragColor = c; }`;
+
+/** 8×4 atlas of letter badges (white disc, ink letter) for the note gems. */
+function letterAtlas() {
+  const canvas = document.createElement("canvas");
+  canvas.width = 512;
+  canvas.height = 256;
+  const g = canvas.getContext("2d")!;
+  g.textAlign = "center";
+  g.textBaseline = "middle";
+  for (let i = 0; i < 26; i++) {
+    const cx = (i % 8) * 64 + 32,
+      cy = Math.floor(i / 8) * 64 + 32;
+    g.fillStyle = "#1b1733";
+    g.beginPath();
+    g.arc(cx, cy + 2, 29, 0, Math.PI * 2);
+    g.fill();
+    g.fillStyle = "#fff8ea";
+    g.beginPath();
+    g.arc(cx, cy, 28, 0, Math.PI * 2);
+    g.fill();
+    g.fillStyle = "#1b1733";
+    g.font = `800 42px "Baloo 2", "Nunito", system-ui, sans-serif`;
+    g.fillText(String.fromCharCode(65 + i), cx, cy + 3);
+  }
+  const t = new THREE.CanvasTexture(canvas);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = 4;
+  return t;
+}
 
 export type StageOptions = {
   approach: number; // real seconds a note is visible
@@ -76,7 +135,7 @@ void main(){
     edge = smoothstep(0.94, 0.985, d) * step(0.2, lx) * step(lx, lanes - 0.2);
     int li = int(floor(lx));
     for (int i = 0; i < 12; i++) if (i == li) col += line * laneLit[i] * 0.22 * smoothstep(-14.0, 0.0, z);
-  } else {
+  } else if (pianoMode < 1.5) {
     float kx = (x + halfWidth) / keyW;
     float d = abs(fract(kx) - 0.5) * 2.0;
     edge = smoothstep(0.93, 0.99, d) * 0.5;
@@ -127,6 +186,7 @@ export class Stage {
   private tails?: THREE.InstancedMesh;
   private caps?: THREE.InstancedMesh;
   private chords?: THREE.InstancedMesh;
+  private letters?: THREE.InstancedMesh;
   private shadows?: THREE.InstancedMesh;
   private beatLines?: THREE.InstancedMesh;
   private curbs?: THREE.InstancedMesh;
@@ -242,6 +302,33 @@ export class Stage {
         const label = o.laneLabels?.[lane];
         if (label && !o.touch) this.addLabel(label, x, 0.03, 2.38, 0.6, "#1b1733");
       }
+    } else if (chart.mode === "words") {
+      // A toy QWERTY keyboard; lanes are letters (0 = a … 25 = z).
+      this.laneW = CAP;
+      this.halfWidth = 5 * CAP + 0.55;
+      const capGeo = new RoundedBoxGeometry(0.6, 0.3, 0.6, 3, 0.1);
+      for (let lane = 0; lane < 26; lane++) {
+        const k = letterKey(lane);
+        const color = new THREE.Color(FINGER_COLORS[k.finger]);
+        const root = new THREE.Group();
+        root.position.set(k.x, 0, k.z);
+        const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.3, metalness: 0 });
+        const cap = new THREE.Mesh(capGeo, mat);
+        cap.position.y = -0.03;
+        root.add(cap);
+        // Dark ink on the light yellow and lime keys, white elsewhere.
+        this.addLabel(k.ch.toUpperCase(), 0, 0.13, 0.02, 0.46, k.finger === 2 || k.finger === 3 ? "#1b1733" : "#ffffff", undefined, root);
+        // Home-row bumps on F and J, like a real keyboard.
+        if (k.ch === "f" || k.ch === "j") {
+          const bump = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.03, 0.04), new THREE.MeshStandardMaterial({ color: "#ffffff", roughness: 0.4 }));
+          bump.position.set(0, 0.135, 0.2);
+          root.add(bump);
+        }
+        this.content.add(root);
+        const key: KeyVisual = { lane, x: k.x, width: 0.6, root, glow: mat, color, pressed: 0, held: false, flash: 0, miss: 0, black: false };
+        this.keys.push(key);
+        this.keyByLane.set(lane, key);
+      }
     } else {
       // A real keyboard covering the chart range, padded to whole octaves.
       const lo = o.keyRange?.[0] ?? Math.max(21, Math.floor((chart.range[0] - 2) / 12) * 12);
@@ -334,7 +421,7 @@ export class Stage {
     });
   }
 
-  private addLabel(text: string, x: number, y: number, z: number, size: number, color: string, bg?: string) {
+  private addLabel(text: string, x: number, y: number, z: number, size: number, color: string, bg?: string, parent?: THREE.Object3D) {
     const canvas = document.createElement("canvas");
     canvas.width = 128;
     canvas.height = 128;
@@ -362,7 +449,7 @@ export class Stage {
     mesh.renderOrder = 7;
     mesh.userData.baseY = y + 0.01;
     this.labels.push(mesh);
-    this.content.add(mesh);
+    (parent ?? this.content).add(mesh);
   }
 
   private buildRoad(theme: Theme) {
@@ -388,7 +475,7 @@ export class Stage {
           encore: { value: 0 },
           beat: { value: 0 },
           time: { value: 0 },
-          pianoMode: { value: lanes ? 0 : 1 },
+          pianoMode: { value: lanes ? 0 : this.chart!.mode === "words" ? 2 : 1 },
           keyW: { value: KEY_W },
           firstKey: { value: 0 },
           laneLit: { value: new Array(12).fill(0) },
@@ -490,6 +577,28 @@ export class Stage {
       cap + Math.min(cap, 200),
     );
     this.shadows.renderOrder = 1;
+    this.letters = undefined;
+    if (chart.mode === "words") {
+      // Letter badges riding on each gem (atlas lookup by instance attribute).
+      const geo = new THREE.PlaneGeometry(1, 1);
+      geo.setAttribute("letter", new THREE.InstancedBufferAttribute(new Float32Array(cap + 200), 1).setUsage(THREE.DynamicDrawUsage));
+      this.letters = new THREE.InstancedMesh(
+        geo,
+        new THREE.ShaderMaterial({
+          vertexShader: letterVertex,
+          fragmentShader: letterFragment,
+          uniforms: { atlas: { value: letterAtlas() } },
+          transparent: true,
+          depthWrite: false,
+        }),
+        cap + 200,
+      );
+      this.letters.renderOrder = 8;
+      this.letters.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+      this.letters.count = 0;
+      this.letters.frustumCulled = false;
+      this.content.add(this.letters);
+    }
     for (const mesh of [this.gems, this.golds, this.tails, this.caps, this.chords, this.shadows]) {
       mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
       mesh.count = 0;
@@ -560,10 +669,12 @@ export class Stage {
     const portrait = aspect < 1;
     cam.fov = portrait ? 64 : aspect < 1.5 ? 56 : 50;
     cam.updateProjectionMatrix();
-    const elevation = THREE.MathUtils.degToRad(portrait ? 33 : 24);
-    const look = new THREE.Vector3(0, portrait ? 0 : 1.2, portrait ? -9 : -15);
-    const coverage = this.halfWidth + (portrait ? 0.5 : 1.6);
-    const keyLen = this.chart?.mode === "piano" ? 6 * KEY_W * 0.98 : PAD_LEN * LANE_W;
+    // Words mode looks down more steeply so the keyboard and letters read large.
+    const words = this.chart?.mode === "words";
+    const elevation = THREE.MathUtils.degToRad(portrait ? 33 : words ? 31 : 24);
+    const look = new THREE.Vector3(0, portrait || words ? 0 : 1.2, portrait ? -9 : words ? -10 : -15);
+    const coverage = this.halfWidth + (portrait ? 0.5 : words ? 0.8 : 1.6);
+    const keyLen = this.chart?.mode === "piano" ? 6 * KEY_W * 0.98 : this.chart?.mode === "words" ? ROW_Z[2] + 0.35 : PAD_LEN * LANE_W;
     let lo = 4,
       hi = 80;
     const probe = new THREE.Vector3();
@@ -654,6 +765,7 @@ export class Stage {
 
   noteColor(note: ChartNote) {
     if (note.golden) return this.color.set("#ffc53d");
+    if (this.chart?.mode === "words") return this.color.set(FINGER_COLORS[letterKey(note.lane).finger]);
     if (this.chart?.mode === "piano") return this.color.set(PITCH_COLORS[note.midi % 12]);
     return this.color.copy(this.laneColors[note.lane] ?? this.laneColors[0]);
   }
@@ -673,6 +785,20 @@ export class Stage {
     const hit = new THREE.Vector3();
     if (!ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), hit)) return undefined;
     if (Math.abs(hit.x) > this.halfWidth + 0.6) return undefined;
+    if (this.chart?.mode === "words") {
+      // Only the keyboard itself is tappable: the nearest keycap wins.
+      if (hit.z < -0.3) return undefined;
+      let best: KeyVisual | undefined,
+        bestD = Infinity;
+      for (const k of this.keys) {
+        const d = Math.hypot(k.x - hit.x, letterKey(k.lane).z - hit.z);
+        if (d < bestD) {
+          best = k;
+          bestD = d;
+        }
+      }
+      return bestD < 0.6 ? best?.lane : undefined;
+    }
     if (this.chart?.mode === "piano") {
       // Black keys win in their raised front half, like a real keyboard.
       let best: KeyVisual | undefined,
@@ -737,7 +863,7 @@ export class Stage {
       key.pressed += (target - key.pressed) * Math.min(1, dt * (target ? 40 : 18));
       key.flash = Math.max(0, key.flash - dt * 3.2);
       key.miss = Math.max(0, key.miss - dt * 3);
-      key.root.rotation.x = key.pressed * (chart.mode === "lanes" ? 0.075 : 0.06);
+      key.root.rotation.x = chart.mode === "words" ? 0 : key.pressed * (chart.mode === "lanes" ? 0.075 : 0.06);
       key.root.position.y = -key.pressed * 0.05;
       key.root.position.x = key.x + (reduced ? 0 : Math.sin(key.miss * 40) * key.miss * 0.05);
       if (key.glow) {
@@ -811,6 +937,18 @@ export class Stage {
     const m = this.tmp;
     const shadows = this.shadows!;
     let si = 0;
+    const letters = this.letters;
+    const letterAttr = letters?.geometry.getAttribute("letter") as THREE.InstancedBufferAttribute | undefined;
+    let li = 0;
+    const badge = (x: number, y: number, z: number, s: number, lane: number) => {
+      if (!letters || !letterAttr || li >= letters.instanceMatrix.count || s <= 0.02) return;
+      m.position.set(x, y, z);
+      m.rotation.set(-0.95, 0, 0);
+      m.scale.setScalar(0.82 * s);
+      m.updateMatrix();
+      letters.setMatrixAt(li, m.matrix);
+      letterAttr.setX(li++, lane);
+    };
     const shadow = (x: number, z: number, w: number, s: number) => {
       if (si >= shadows.instanceMatrix.count || s <= 0.02) return;
       m.position.set(x, 0.025, z + 0.05);
@@ -825,7 +963,7 @@ export class Stage {
       ci = 0,
       chi = 0;
     const horizon = t + ROAD_VIEW / ups;
-    const scaleLanes = this.chart!.mode === "lanes" ? LANE_W * 0.92 : KEY_W * 1.15;
+    const scaleLanes = this.chart!.mode === "lanes" ? LANE_W * 0.92 : this.chart!.mode === "words" ? 0.62 : KEY_W * 1.15;
     const groupX = new Map<number, [number, number, number]>(); // group -> min x, max x, z
     for (let i = 0; i < chart.notes.length; i++) {
       const n = chart.notes[i];
@@ -893,6 +1031,7 @@ export class Stage {
         m.updateMatrix();
         golds.setMatrixAt(goi++, m.matrix);
         shadow(key.x, zHead, width, s);
+        badge(key.x, y + 0.95, zHead + 0.05, s, n.lane);
       } else {
         if (gi >= gems.instanceMatrix.count) continue;
         m.position.set(key.x, y + 0.12, zHead);
@@ -905,6 +1044,7 @@ export class Stage {
         else if (assist) this.color.lerp(new THREE.Color("#9aa3c7"), 0.65);
         gems.setColorAt(gi++, this.color);
         if (st !== 2) shadow(key.x, zHead, width, s);
+        badge(key.x, y + 0.72, zHead + 0.05, s, n.lane);
       }
       if (st === 0 && chart.mode === "lanes") {
         const g = groupX.get(n.group);
@@ -924,6 +1064,11 @@ export class Stage {
     }
     shadows.count = si;
     shadows.instanceMatrix.needsUpdate = true;
+    if (letters && letterAttr) {
+      letters.count = li;
+      letters.instanceMatrix.needsUpdate = true;
+      letterAttr.needsUpdate = true;
+    }
     gems.count = gi;
     golds.count = goi;
     tails.count = ti;

@@ -362,6 +362,8 @@ export class App {
     this.settings.difficulty = choice.difficulty;
     this.settings.mode = choice.mode;
     this.settings.practiceSpeed = choice.speed;
+    this.settings.keepMelody[choice.mode] = choice.keepMelody;
+    this.settings.laneKeys = choice.laneKeys;
     this.persist();
     try {
       this.dialogue.dismiss();
@@ -412,6 +414,8 @@ export class App {
           reducedMotion: this.reducedMotion,
           quality: QUALITY[this.quality].particles,
           theme: THEMES[themeId],
+          laneKeys: choice.laneKeys,
+          keepMelody: choice.keepMelody,
         },
         this.bank,
         this.input,
@@ -534,6 +538,7 @@ export class App {
       hasNext: !!this.nextStage(),
       freed: result.counts.perfect + result.counts.great + result.counts.good,
       tendency,
+      extra: session.summary(),
     });
     this.coda?.celebrate();
     if (result.stars > 0 && !choice.practice) {
@@ -675,10 +680,26 @@ export class App {
       autoplay: (on = true) => {
         if (this.session) this.session.autoplay = on;
       },
-      play: (stageId: string, difficulty: StageChoice["difficulty"] = "easy", mode: StageChoice["mode"] = "lanes", practice = false) => {
+      play: (
+        stageId: string,
+        difficulty: StageChoice["difficulty"] = "easy",
+        mode: StageChoice["mode"] = "lanes",
+        practice = false,
+        extra: Partial<StageChoice> = {},
+      ) => {
         const found = findStage(stageId);
         if (!found) throw Error(`Unknown stage ${stageId}`);
-        return this.play({ island: found.island, stage: found.stage, difficulty, mode, practice, speed: 0.75 });
+        return this.play({
+          island: found.island,
+          stage: found.stage,
+          difficulty,
+          mode,
+          practice,
+          speed: 0.75,
+          keepMelody: this.settings.keepMelody[mode],
+          laneKeys: this.settings.laneKeys,
+          ...extra,
+        });
       },
     };
   }

@@ -73,6 +73,19 @@ Imported MIDI files are charted automatically and appear in **My Songs**.
   chromatic window (or the home-row layout) placed automatically for the stage. Notes
   outside the playable window are played for you as *assist* notes: they flash their
   key and are never scored.
+- **Words** (typing): every charted note carries a letter and consecutive letters
+  spell words fitted to the phrases. Breaths in the music end a word. Easy uses only
+  home-row words, Normal everyday words, and Hard long words plus island-themed ones.
+  Spacing is capped at typeable speeds of about 22, 37 and 60 WPM. The keys form a toy
+  QWERTY keyboard coloured by touch-typing finger, and gems share their finger's colour.
+  Input reads the typed character, so AZERTY and other layouts work. Space never fires
+  Encore here (typists tap it between words); Enter does.
+- **Lane keys** preset: D F J K (split hands, default), A S D F (left hand) or
+  J K L ; (right hand).
+- **Keep the song playing** (toggle, default on for Words): the whole melody is
+  scheduled with the accompaniment, so the song always sounds right. Hits add no
+  second copy, and misses and wrong keys make no sound: they only show MISS on screen.
+  Scoring is unchanged.
 - **Practice** (toggle): the road waits at every note until you press it. No
   score and no stars, and you can play at 50–100% speed. This is the tutor mode.
 

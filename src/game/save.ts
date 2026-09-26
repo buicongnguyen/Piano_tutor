@@ -1,6 +1,7 @@
 // Local save data: progress per stage, story beats seen and player settings.
 // Everything is validated on load; storage failures never break play.
 import type { Difficulty, KeyMode } from "./chart";
+import type { LanePreset } from "./input";
 import type { Result } from "./judge";
 
 export type StageRecord = {
@@ -26,6 +27,8 @@ export type Settings = {
   mode: KeyMode;
   practiceSpeed: number; // 0.5..1
   skin: string;
+  laneKeys: LanePreset;
+  keepMelody: Record<KeyMode, boolean>; // the song plays itself; misses only show on screen
 };
 
 export type SaveData = {
@@ -53,6 +56,8 @@ export const defaultSettings = (): Settings => ({
   mode: "lanes",
   practiceSpeed: 0.75,
   skin: "cherry",
+  laneKeys: "dfjk",
+  keepMelody: { lanes: false, piano: false, words: true },
 });
 
 export const emptySave = (): SaveData => ({
@@ -83,7 +88,7 @@ export function parseSave(text: string | null): SaveData {
   const d = data as Record<string, unknown>;
   if (d.records && typeof d.records === "object" && !Array.isArray(d.records))
     for (const [key, value] of Object.entries(d.records as Record<string, unknown>).slice(0, 2000)) {
-      if (!/^[a-z0-9-]{1,60}\|(easy|normal|hard)\|(lanes|piano)$/.test(key)) continue;
+      if (!/^[a-z0-9-]{1,60}\|(easy|normal|hard)\|(lanes|piano|words)$/.test(key)) continue;
       if (!value || typeof value !== "object") continue;
       const r = value as Record<string, unknown>;
       out.records[key] = {
@@ -112,9 +117,15 @@ export function parseSave(text: string | null): SaveData {
     openAll: s.openAll === true,
     laptop: pick(s.laptop, ["chromatic", "home"] as const, def.laptop),
     difficulty: pick(s.difficulty, ["easy", "normal", "hard"] as const, def.difficulty),
-    mode: pick(s.mode, ["lanes", "piano"] as const, def.mode),
+    mode: pick(s.mode, ["lanes", "piano", "words"] as const, def.mode),
     practiceSpeed: num(s.practiceSpeed, 0.5, 1, def.practiceSpeed),
     skin: typeof s.skin === "string" && /^[a-z]{1,16}$/.test(s.skin) ? s.skin : def.skin,
+    laneKeys: pick(s.laneKeys, ["dfjk", "asdf", "jkl"] as const, def.laneKeys),
+    keepMelody: (() => {
+      const k = (s.keepMelody && typeof s.keepMelody === "object" ? s.keepMelody : {}) as Record<string, unknown>;
+      const b = (v: unknown, d: boolean) => (typeof v === "boolean" ? v : d);
+      return { lanes: b(k.lanes, def.keepMelody.lanes), piano: b(k.piano, def.keepMelody.piano), words: b(k.words, def.keepMelody.words) };
+    })(),
   };
   return out;
 }

@@ -6,9 +6,20 @@ import type { Result } from "../judge";
 import type { SaveData, Settings } from "../save";
 import { recordKey } from "../save";
 import { el, esc, stars } from "./dom";
+import { LANE_PRESETS, laneLabels, type LanePreset } from "../input";
 
-export type StageChoice = { island?: Island; stage: Stage; difficulty: Difficulty; mode: KeyMode; practice: boolean; speed: number };
+export type StageChoice = {
+  island?: Island;
+  stage: Stage;
+  difficulty: Difficulty;
+  mode: KeyMode;
+  practice: boolean;
+  speed: number;
+  keepMelody: boolean;
+  laneKeys: LanePreset;
+};
 
+const WORD_HINT: Record<Difficulty, string> = { easy: "home-row words", normal: "everyday words", hard: "long words" };
 const DIFF: { id: Difficulty; name: string; hint: string }[] = [
   { id: "easy", name: "Easy", hint: "4 lanes · relaxed" },
   { id: "normal", name: "Normal", hint: "6 lanes · the melody" },
@@ -180,7 +191,18 @@ export class Screens {
         this.refreshSetup();
         break;
       case "mode":
-        if (this.choice) this.choice.mode = target.dataset.value as KeyMode;
+        if (this.choice) {
+          this.choice.mode = target.dataset.value as KeyMode;
+          this.choice.keepMelody = this.save!.settings.keepMelody[this.choice.mode];
+        }
+        this.refreshSetup();
+        break;
+      case "lanekeys":
+        if (this.choice) this.choice.laneKeys = target.dataset.value as LanePreset;
+        this.refreshSetup();
+        break;
+      case "keepmelody":
+        if (this.choice) this.choice.keepMelody = !this.choice.keepMelody;
         this.refreshSetup();
         break;
       case "practice":
@@ -286,7 +308,16 @@ export class Screens {
 
   openSetup(island: Island | undefined, stage: Stage) {
     const s = this.save!.settings;
-    this.choice = { island, stage, difficulty: s.difficulty, mode: s.mode, practice: false, speed: s.practiceSpeed };
+    this.choice = {
+      island,
+      stage,
+      difficulty: s.difficulty,
+      mode: s.mode,
+      practice: false,
+      speed: s.practiceSpeed,
+      keepMelody: s.keepMelody[s.mode],
+      laneKeys: s.laneKeys,
+    };
     this.refreshSetup();
   }
 
@@ -305,14 +336,24 @@ export class Screens {
         <h3>Difficulty</h3>
         <div class="seg">${DIFF.map(
           (d) => `<button data-act="difficulty" data-value="${d.id}" aria-pressed="${c.difficulty === d.id}">
-            <b>${d.name}</b><small>${c.mode === "piano" ? d.hint.replace(/\d lanes · /, "") : d.hint}</small>
+            <b>${d.name}</b><small>${c.mode === "piano" ? d.hint.replace(/\d lanes · /, "") : c.mode === "words" ? WORD_HINT[d.id] : c.mode === "lanes" ? `${laneLabels(d.id === "easy" ? 4 : 6, c.laneKeys).join(" ")}` : d.hint}</small>
             <span class="seg-stars">${stars(rec(d.id, c.mode)?.stars ?? 0)}</span></button>`,
         ).join("")}</div>
         <h3>Keys</h3>
-        <div class="seg seg-2">
-          <button data-act="mode" data-value="lanes" aria-pressed="${c.mode === "lanes"}"><b>🎮 Lanes</b><small>Arcade lanes follow the melody</small></button>
+        <div class="seg seg-3">
+          <button data-act="mode" data-value="lanes" aria-pressed="${c.mode === "lanes"}"><b>🎮 Lanes</b><small>Lanes follow the melody</small></button>
           <button data-act="mode" data-value="piano" aria-pressed="${c.mode === "piano"}"><b>🎹 Real piano</b><small>Every key is the real note</small></button>
+          <button data-act="mode" data-value="words" aria-pressed="${c.mode === "words"}"><b>⌨️ Words</b><small>Type the words to the beat</small></button>
         </div>
+        ${
+          c.mode === "lanes"
+            ? `<div class="seg seg-3 seg-mini" role="group" aria-label="Lane keys">${(Object.keys(LANE_PRESETS) as LanePreset[])
+                .map((id) => `<button data-act="lanekeys" data-value="${id}" aria-pressed="${c.laneKeys === id}"><b>${LANE_PRESETS[id][4].join(" ")}</b><small>${LANE_PRESETS[id].name.split("· ")[1]}</small></button>`)
+                .join("")}</div>`
+            : ""
+        }
+        <label class="toggle"><input type="checkbox" data-act="keepmelody" ${c.keepMelody ? "checked" : ""}>
+          <span><b>🎵 Keep the song playing</b> — the music never stops; misses only show on screen.</span></label>
         <label class="toggle"><input type="checkbox" data-act="practice" ${c.practice ? "checked" : ""}>
           <span><b>Practice</b> — the road waits for each note. No score, no stars.</span></label>
         <label class="speed" ${c.practice ? "" : "hidden"}>Practice speed <input type="range" min="0.5" max="1" step="0.05" value="${c.speed}" data-el="speed"> <output>${Math.round(c.speed * 100)}%</output></label>
@@ -371,7 +412,7 @@ export class Screens {
 
   // ------------------------------------------------------------ results
 
-  showResults(r: Result, info: { title: string; practice: boolean; newBest: boolean; firstClear: boolean; hasNext: boolean; freed: number; tendency: string }) {
+  showResults(r: Result, info: { title: string; practice: boolean; newBest: boolean; firstClear: boolean; hasNext: boolean; freed: number; tendency: string; extra?: string }) {
     const accuracy = Math.round(r.accuracy * 1000) / 10;
     this.results.innerHTML = `<div class="modal-card results-card ${info.practice ? "practice" : ""}">
       <span class="results-kicker">${info.practice ? "Practice complete" : info.firstClear ? "Stage cleared!" : "Results"}</span>
@@ -392,7 +433,7 @@ export class Screens {
           <div class="j-good"><span>Good</span><b>${r.counts.good}</b></div>
           <div class="j-miss"><span>Miss</span><b>${r.counts.miss}</b></div>
         </div>
-        <p class="results-tip">${esc(info.tendency)}</p>`
+        <p class="results-tip">${esc(info.tendency)}</p>${info.extra ? `<p class="results-extra">${esc(info.extra)}</p>` : ""}`
       }
       <p class="results-freed">♪ ${info.freed} stillnotes freed</p>
       <div class="results-actions">
@@ -437,6 +478,9 @@ export class Screens {
           <option value="full" ${s.motion === "full" ? "selected" : ""}>Full</option>
           <option value="reduced" ${s.motion === "reduced" ? "selected" : ""}>Reduced</option>
         </select></label>
+        <label>Lane keys <select name="laneKeys">
+          ${(Object.keys(LANE_PRESETS) as LanePreset[]).map((id) => `<option value="${id}" ${s.laneKeys === id ? "selected" : ""}>${LANE_PRESETS[id].name}</option>`).join("")}
+        </select></label>
         <label>Laptop keys (real piano) <select name="laptop">
           <option value="chromatic" ${s.laptop === "chromatic" ? "selected" : ""}>Chromatic · A W S E D F T G…</option>
           <option value="home" ${s.laptop === "home" ? "selected" : ""}>Home row · A S D F / J K L ;</option>
@@ -468,6 +512,7 @@ export class Screens {
         quality: f("quality").value as Settings["quality"],
         motion: f("motion").value as Settings["motion"],
         laptop: f("laptop").value as Settings["laptop"],
+        laneKeys: f("laneKeys").value as LanePreset,
         labels: f("labels").checked,
         openAll: f("openAll").checked,
         skin: skin?.value ?? s.skin,

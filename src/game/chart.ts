@@ -5,9 +5,10 @@
 import { soundDuration, type Note, type Piece } from "../music";
 import { hasBothHands } from "../practice";
 import { contourLanes } from "./lanes";
+import { assignWords, hashText, letterIndex, type Word } from "./words";
 
 export type Difficulty = "easy" | "normal" | "hard";
-export type KeyMode = "lanes" | "piano";
+export type KeyMode = "lanes" | "piano" | "words";
 
 export type ChartNote = {
   id: number;
@@ -27,7 +28,8 @@ export type Chart = {
   notes: ChartNote[];
   accompaniment: Note[];
   mode: KeyMode;
-  lanes: number; // 0 in piano mode
+  lanes: number; // 0 in piano and words modes
+  words?: Word[]; // words mode: first/last are note ids
   difficulty: Difficulty;
   start: number; // song time the stage starts at (intro trimmed)
   end: number; // song time the stage ends at
@@ -42,6 +44,8 @@ export type Chart = {
 export const LANES: Record<Difficulty, number> = { easy: 4, normal: 6, hard: 6 };
 // Minimum real-time gap between charted onsets.
 const MIN_GAP: Record<Difficulty, number> = { easy: 0.42, normal: 0.19, hard: 0.1 };
+// Typing letters is slower than tapping lanes: about 22, 37 and 60 words per minute.
+const WORD_GAP: Record<Difficulty, number> = { easy: 0.55, normal: 0.32, hard: 0.2 };
 const HOLD_MIN: Record<Difficulty, number> = { easy: 0.85, normal: 0.6, hard: 0.5 };
 const ONSET = 0.03; // notes closer than this share an onset
 
@@ -50,6 +54,8 @@ export type ChartOptions = {
   mode: KeyMode;
   speed?: number; // playback rate; gaps are judged in real time
   maxLength?: number; // longest stage before an excerpt is cut (seconds)
+  seed?: string; // words mode: the same stage always spells the same words
+  theme?: string; // words mode: island-themed words
 };
 
 /** Split a piece into its melody line and everything else. */
@@ -170,7 +176,7 @@ export function buildChart(piece: Piece, options: ChartOptions): Chart {
   const inWindow = groupsAll.filter((g) => g[0].time >= window.start && g[0].time < window.end - 0.05);
 
   // Greedy thinning in real time, preferring stronger beats when two onsets crowd.
-  const gap = MIN_GAP[difficulty] * speed;
+  const gap = (mode === "words" ? WORD_GAP : MIN_GAP)[difficulty] * speed;
   const kept: { g: Note[]; s: number }[] = [];
   for (const g of inWindow) {
     const s = strength(g[0].time, beats, bars);
@@ -181,20 +187,34 @@ export function buildChart(piece: Piece, options: ChartOptions): Chart {
       if (!before || g[0].time - before.g[0].time >= gap) kept[kept.length - 1] = { g, s };
     }
   }
-  const chordSize = difficulty === "hard" ? (mode === "piano" ? 3 : 2) : 1;
+  const chordSize = mode === "words" ? 1 : difficulty === "hard" ? (mode === "piano" ? 3 : 2) : 1;
   const chosen: Note[][] = kept.map(({ g }) =>
     g.filter((n, i) => i === 0 || (i < chordSize && g[i - 1].midi - n.midi >= 3)).slice(0, chordSize),
   );
   const used = new Set(chosen.flat());
 
   const laneCount = mode === "lanes" ? LANES[difficulty] : 0;
+  // Words mode: letters spell words; the lane is the letter (0 = a … 25 = z).
+  const words =
+    mode === "words"
+      ? assignWords(
+          chosen.map((g) => g[0].time),
+          difficulty,
+          hashText(`${options.seed ?? piece.title}|${difficulty}`),
+          options.theme,
+        )
+      : undefined;
+  const letters: number[] = [];
+  for (const w of words ?? []) for (const ch of w.text) letters.push(letterIndex(ch));
   const laneOf =
     mode === "lanes"
       ? contourLanes(
           chosen.map((g) => ({ pitches: g.map((n) => n.midi) })),
           laneCount,
         )
-      : chosen.map((g) => g.map((n) => n.midi));
+      : mode === "words"
+        ? chosen.map((_, gi) => [letters[gi]])
+        : chosen.map((g) => g.map((n) => n.midi));
 
   const notes: ChartNote[] = [];
   chosen.forEach((g, gi) =>
@@ -239,7 +259,7 @@ export function buildChart(piece: Piece, options: ChartOptions): Chart {
     if (i < unique.length - 1 && unique[i + 1].group !== n.group) nextOnset = unique[i + 1].time;
     const next = chordSize > 1 ? (nextInLane.get(n.lane) ?? Infinity) : nextOnset;
     const tail = Math.min(n.time + source.duration, next - 0.12 * speed, window.end);
-    if (tail - n.time >= Math.max(holdMin, 1.5 * beatAt(n.time))) {
+    if (mode !== "words" && tail - n.time >= Math.max(holdMin, 1.5 * beatAt(n.time))) {
       n.hold = true;
       n.end = tail;
     }
@@ -286,6 +306,7 @@ export function buildChart(piece: Piece, options: ChartOptions): Chart {
     beats,
     bars,
     range: pitches.length ? [Math.min(...pitches), Math.max(...pitches)] : [60, 72],
+    words,
     golden,
   };
 }

@@ -237,6 +237,74 @@ await check("real piano mode maps laptop keys from the chosen C and assists far 
   await context.close();
 });
 
+await check("words mode: typed letters score, wrong letters stay silent, the song keeps playing", async () => {
+  const { page, errors } = await open();
+  await enterMap(page);
+  await page.evaluate(() => window.__encore.play("arirang", "easy", "words"));
+  await page.waitForFunction(() => window.__encore.state() === "play", null, { timeout: 60000 });
+  const info = await page.evaluate(() => {
+    const s = window.__encore.app.session;
+    window.__blips = [];
+    const bank = window.__encore.app.bank;
+    const blip = bank.blip.bind(bank);
+    bank.blip = (kind, pitch) => (window.__blips.push(kind), blip(kind, pitch));
+    return {
+      keep: s.setup.keepMelody,
+      words: s.chart.words.map((w) => w.text),
+      scheduledMelody: s.conductor.events.length - s.chart.accompaniment.length,
+      notes: s.chart.notes.length,
+      keys: window.__encore.app.stage.keys.length,
+    };
+  });
+  assert.equal(info.keep, true, "keep-the-song is on by default for words");
+  assert.equal(info.scheduledMelody, info.notes, "every melody note is scheduled to play by itself");
+  assert.equal(info.keys, 26);
+  assert.ok(info.words.join("").match(/^[asdfghjkl]+$/), `home-row words on Easy: ${info.words.slice(0, 5)}`);
+  const hits = await page.evaluate(async () => {
+    const s = window.__encore.app.session;
+    for (const n of s.chart.notes.slice(0, 5)) {
+      while (s.conductor.time() < n.time - 0.004) await new Promise((r) => setTimeout(r, 1));
+      const key = String.fromCharCode(97 + n.lane);
+      dispatchEvent(new KeyboardEvent("keydown", { key, code: `Key${key.toUpperCase()}`, bubbles: true }));
+      await new Promise((r) => setTimeout(r, 30));
+      dispatchEvent(new KeyboardEvent("keyup", { key, code: `Key${key.toUpperCase()}`, bubbles: true }));
+    }
+    const c = s.judge.counts;
+    return c.perfect + c.great + c.good;
+  });
+  assert.ok(hits >= (gpu ? 4 : 1), `typed ${hits} of 5 letters on the beat`);
+  assert.match(await page.textContent(".hud-word"), /[A-Z]/);
+  // A wrong letter: counted as a stray, but no stray/miss sound in keep-the-song mode.
+  await page.keyboard.press("q");
+  await page.waitForTimeout(100);
+  const after = await page.evaluate(() => ({ strays: window.__encore.app.session.judge.strays, blips: window.__blips }));
+  assert.ok(after.strays >= 1);
+  assert.ok(!after.blips.includes("stray") && !after.blips.includes("miss"), `no penalty sounds: ${after.blips}`);
+  assert.deepEqual(errors, []);
+});
+
+await check("lane keys: ASDF picked in the setup panel drives the lanes", async () => {
+  const { page, errors } = await open();
+  await enterMap(page);
+  await page.click('.island-label[data-island="meadow"]');
+  if (await page.isVisible(".dialogue")) await page.click(".dialogue-skip");
+  await page.click('.stage-row[data-stage="morning-light"]');
+  await page.click('[data-act="difficulty"][data-value="easy"]');
+  await page.click('[data-act="mode"][data-value="lanes"]');
+  await page.click('[data-act="lanekeys"][data-value="asdf"]');
+  assert.match(await page.textContent('[data-act="difficulty"][data-value="easy"]'), /A S D F/);
+  await page.click('[data-act="go"]');
+  await page.waitForFunction(() => window.__encore.state() === "play", null, { timeout: 60000 });
+  await page.keyboard.down("KeyA");
+  await page.waitForTimeout(50);
+  const held = await page.evaluate(() => window.__encore.app.stage.keys.filter((k) => k.held).map((k) => k.lane));
+  await page.keyboard.up("KeyA");
+  assert.deepEqual(held, [0]);
+  const saved = await page.evaluate(() => JSON.parse(localStorage.getItem("stillnote-encore-v1")).settings.laneKeys);
+  assert.equal(saved, "asdf");
+  assert.deepEqual(errors, []);
+});
+
 await check("phone portrait: touch taps press lanes and the HUD fits", async () => {
   const { page, context, errors } = await open({ width: 412, height: 860 }, { isMobile: true, hasTouch: true, deviceScaleFactor: 2 });
   await page.evaluate(() => window.__encore.app.save.seen.push("intro"));

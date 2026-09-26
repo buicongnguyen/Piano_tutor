@@ -5,25 +5,40 @@ import { computerNote } from "../computer-keyboard";
 
 export type LaneEvent = { down: boolean; lane: number; at: number; source: "key" | "touch" | "midi" };
 
-export const LANE_KEYS: Record<number, string[]> = {
-  4: ["KeyD", "KeyF", "KeyJ", "KeyK"],
-  6: ["KeyS", "KeyD", "KeyF", "KeyJ", "KeyK", "KeyL"],
+// Arcade lane keys. Split hands is the default; left-hand ASDF and right-hand
+// JKL; suit players who keep one hand on the mouse or prefer one side.
+export type LanePreset = "dfjk" | "asdf" | "jkl";
+export const LANE_PRESETS: Record<LanePreset, { name: string; 4: string[]; 6: string[] }> = {
+  dfjk: { name: "D F J K · split hands", 4: ["D", "F", "J", "K"], 6: ["S", "D", "F", "J", "K", "L"] },
+  asdf: { name: "A S D F · left hand", 4: ["A", "S", "D", "F"], 6: ["A", "S", "D", "F", "G", "H"] },
+  jkl: { name: "J K L ; · right hand", 4: ["J", "K", "L", ";"], 6: ["H", "J", "K", "L", ";", "'"] },
 };
-export const LANE_LABELS: Record<number, string[]> = {
-  4: ["D", "F", "J", "K"],
-  6: ["S", "D", "F", "J", "K", "L"],
-};
+const CODE: Record<string, string> = { ";": "Semicolon", "'": "Quote" };
+export const laneLabels = (lanes: number, preset: LanePreset = "dfjk") =>
+  LANE_PRESETS[preset]?.[lanes === 4 ? 4 : 6] ?? LANE_PRESETS.dfjk[6];
+export const laneCodes = (lanes: number, preset: LanePreset = "dfjk") =>
+  laneLabels(lanes, preset).map((k) => CODE[k] ?? `Key${k}`);
+// Kept for callers that only need the default layout.
+export const LANE_KEYS: Record<number, string[]> = { 4: laneCodes(4), 6: laneCodes(6) };
+export const LANE_LABELS: Record<number, string[]> = { 4: laneLabels(4), 6: laneLabels(6) };
 // Arcade lanes on a MIDI keyboard: consecutive white keys from C (any octave).
 const WHITE_LANE: Record<number, number> = { 0: 0, 2: 1, 4: 2, 5: 3, 7: 4, 9: 5 };
 
 export type InputMode =
-  | { kind: "lanes"; lanes: number }
-  | { kind: "piano"; base: number; layout: "chromatic" | "home" };
+  | { kind: "lanes"; lanes: number; preset?: LanePreset }
+  | { kind: "piano"; base: number; layout: "chromatic" | "home" }
+  | { kind: "words" };
 
-export function laneForKey(code: string, mode: InputMode): number | undefined {
+/** Lane for a key. Words mode reads the typed character (`key`) so any keyboard layout works. */
+export function laneForKey(code: string, mode: InputMode, key?: string): number | undefined {
   if (mode.kind === "lanes") {
-    const i = LANE_KEYS[mode.lanes]?.indexOf(code) ?? -1;
+    const i = laneCodes(mode.lanes, mode.preset).indexOf(code);
     return i >= 0 ? i : undefined;
+  }
+  if (mode.kind === "words") {
+    if (key && /^[a-z]$/i.test(key)) return key.toLowerCase().charCodeAt(0) - 97;
+    const m = /^Key([A-Z])$/.exec(code);
+    return m && !key ? m[1].charCodeAt(0) - 65 : undefined;
   }
   const octave = Math.round(mode.base / 12) - 1;
   return computerNote(code, octave, 2, mode.layout === "home" ? "home" : "classic");
@@ -31,6 +46,7 @@ export function laneForKey(code: string, mode: InputMode): number | undefined {
 
 export function laneForMidi(midi: number, mode: InputMode): number | undefined {
   if (mode.kind === "piano") return midi;
+  if (mode.kind === "words") return undefined;
   const lane = WHITE_LANE[midi % 12];
   return lane !== undefined && lane < mode.lanes ? lane : undefined;
 }
@@ -107,7 +123,7 @@ export class Input {
       return;
     }
     if (this.typing(e) || !this.enabled) return;
-    const lane = laneForKey(e.code, this.mode);
+    const lane = laneForKey(e.code, this.mode, e.key);
     // P pauses unless the real-piano layout uses it as a note.
     if (e.code === "KeyP" && lane === undefined) {
       e.preventDefault();
@@ -116,7 +132,8 @@ export class Input {
     }
     if (e.code === "Space" || e.code === "Enter") {
       e.preventDefault();
-      if (!e.repeat) this.onAction?.("encore");
+      // Typists tap Space between words out of habit: in words mode only Enter fires Encore.
+      if (!e.repeat && !(this.mode.kind === "words" && e.code === "Space")) this.onAction?.("encore");
       return;
     }
     if (lane === undefined) return;

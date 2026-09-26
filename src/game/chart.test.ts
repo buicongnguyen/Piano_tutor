@@ -138,6 +138,23 @@ describe("chart building", () => {
     for (const lanes of byGroup.values()) expect(new Set(lanes).size).toBe(lanes.length);
   });
 
+  it("spells words in words mode: one letter per note, no holds, typeable spacing", () => {
+    const p = twoHands();
+    for (const difficulty of ["easy", "normal", "hard"] as const) {
+      const chart = buildChart(p, { difficulty, mode: "words", seed: "t" });
+      expect(chart.words?.length).toBeGreaterThan(0);
+      const spelled = chart.words!.map((w) => w.text).join("");
+      expect(spelled.length).toBe(chart.notes.length);
+      chart.notes.forEach((n, i) => {
+        expect(n.lane).toBe(spelled.charCodeAt(i) - 97);
+        expect(n.hold).toBe(false);
+      });
+      const min = { easy: 0.55, normal: 0.32, hard: 0.2 }[difficulty];
+      for (let i = 1; i < chart.notes.length; i++)
+        expect(chart.notes[i].time - chart.notes[i - 1].time).toBeGreaterThanOrEqual(min - 1e-9);
+    }
+  });
+
   it("uses real keys in piano mode", () => {
     const chart = buildChart(twoHands(), { difficulty: "normal", mode: "piano" });
     expect(chart.lanes).toBe(0);

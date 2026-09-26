@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { LANE_KEYS, laneForKey, laneForMidi } from "./input";
+import { LANE_KEYS, laneCodes, laneForKey, laneForMidi, laneLabels } from "./input";
 
 describe("input mapping", () => {
   it("maps home-row keys to arcade lanes", () => {
@@ -7,6 +7,25 @@ describe("input mapping", () => {
     expect(LANE_KEYS[6].map((k) => laneForKey(k, { kind: "lanes", lanes: 6 }))).toEqual([0, 1, 2, 3, 4, 5]);
     expect(laneForKey("KeyS", { kind: "lanes", lanes: 4 })).toBeUndefined();
     expect(laneForKey("KeyQ", { kind: "lanes", lanes: 6 })).toBeUndefined();
+  });
+
+  it("supports ASDF (left hand) and JKL; (right hand) lane keys", () => {
+    expect(laneLabels(4, "asdf")).toEqual(["A", "S", "D", "F"]);
+    expect(laneCodes(4, "jkl")).toEqual(["KeyJ", "KeyK", "KeyL", "Semicolon"]);
+    const asdf = { kind: "lanes" as const, lanes: 4, preset: "asdf" as const };
+    expect(["KeyA", "KeyS", "KeyD", "KeyF"].map((k) => laneForKey(k, asdf))).toEqual([0, 1, 2, 3]);
+    expect(laneForKey("KeyJ", asdf)).toBeUndefined();
+    expect(laneForKey("Quote", { kind: "lanes", lanes: 6, preset: "jkl" })).toBe(5);
+  });
+
+  it("reads typed letters in words mode (any keyboard layout)", () => {
+    const words = { kind: "words" as const };
+    expect(laneForKey("KeyA", words, "a")).toBe(0);
+    expect(laneForKey("KeyQ", words, "A")).toBe(0); // AZERTY: the Q position types A
+    expect(laneForKey("KeyZ", words, "z")).toBe(25);
+    expect(laneForKey("Digit1", words, "1")).toBeUndefined();
+    expect(laneForKey("KeyP", words)).toBe(15);
+    expect(laneForMidi(60, words)).toBeUndefined();
   });
 
   it("maps the chromatic laptop layout from the chosen base C", () => {

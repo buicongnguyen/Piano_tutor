@@ -3,7 +3,8 @@ import type { Piece } from "../music";
 import { noteName } from "../music";
 import { buildChart, laptopBase, pianoWindow, type Chart, type Difficulty, type KeyMode } from "./chart";
 import { Conductor } from "./conductor";
-import { LANE_LABELS, laneForKey, type Input, type LaneEvent } from "./input";
+import { laneForKey, laneLabels, type Input, type LaneEvent, type LanePreset } from "./input";
+import { letterOf } from "./words";
 import { Judge, type JudgeEvent, type Result } from "./judge";
 import type { Stage } from "./render/stage";
 import type { World } from "./render/world";
@@ -30,6 +31,8 @@ export type PlaySetup = {
   reducedMotion: boolean;
   quality: number;
   theme: Theme;
+  laneKeys: LanePreset;
+  keepMelody: boolean; // the song always plays itself; misses only show on screen
 };
 
 export const approachFor = (noteSpeed: number) => Math.max(0.9, 3.3 - 0.26 * (noteSpeed - 1));
@@ -63,7 +66,7 @@ export class PlaySession {
     readonly hud: Hud,
   ) {
     const { piece, difficulty, mode, practice, speed } = setup;
-    this.chart = buildChart(piece, { difficulty, mode, speed });
+    this.chart = buildChart(piece, { difficulty, mode, speed, seed: setup.stageId, theme: setup.theme.id });
     // Real-piano mode on a laptop: notes outside the 17-key window are assisted.
     let laptopKeys: Map<number, string> | undefined;
     let base = 60;
@@ -95,14 +98,16 @@ export class PlaySession {
       practice,
       offsetMs: setup.offsetMs,
       approach,
-      auto: this.chart.notes.filter((n) => this.assist.has(n.id)),
+      // Keep-the-song mode schedules every melody note; otherwise only assisted ones.
+      auto: this.chart.notes.filter((n) => setup.keepMelody || this.assist.has(n.id)),
+      keepMelody: setup.keepMelody,
     });
     this.conductor.gate = () => this.judge.gate()?.time;
     stage.setup(this.chart, setup.theme, {
       approach,
       speed,
       labels: setup.labels,
-      laneLabels: mode === "lanes" ? LANE_LABELS[this.chart.lanes] : undefined,
+      laneLabels: mode === "lanes" ? laneLabels(this.chart.lanes, setup.laneKeys) : undefined,
       laptopKeys,
       touch: setup.touch,
       reducedMotion: setup.reducedMotion,
@@ -112,7 +117,13 @@ export class PlaySession {
       keyRange,
     });
     world.build(setup.theme, hash(setup.stageId), stage.roadHalf, setup.quality);
-    input.setMode(mode === "lanes" ? { kind: "lanes", lanes: this.chart.lanes } : { kind: "piano", base, layout: setup.laptop });
+    input.setMode(
+      mode === "lanes"
+        ? { kind: "lanes", lanes: this.chart.lanes, preset: setup.laneKeys }
+        : mode === "words"
+          ? { kind: "words" }
+          : { kind: "piano", base, layout: setup.laptop },
+    );
     input.onLane = (e) => this.lane(e);
     input.pointerLane = (x, y) => stage.laneAt(x, y, input.surface.getBoundingClientRect());
     hud.begin({
@@ -124,6 +135,7 @@ export class PlaySession {
       notes: this.judge.scored,
       excerpt: this.chart.excerpt,
       assisted: this.assist.size,
+      keepMelody: setup.keepMelody,
     });
   }
 
@@ -178,7 +190,7 @@ export class PlaySession {
       this.apply(events);
       // Real keys always sound their own pitch, even when they weren't the target
       // (a stray, or a press so early it only consumed the note as a miss).
-      if (this.chart.mode === "piano" && events.some((ev) => ev.type === "stray" || (ev.type === "miss" && ev.early))) {
+      if (!this.setup.keepMelody && this.chart.mode === "piano" && events.some((ev) => ev.type === "stray" || (ev.type === "miss" && ev.early))) {
         this.laneStops.get(e.lane)?.();
         this.laneStops.set(e.lane, this.bank.note(e.lane, this.bank.now, 0.9, 0.6));
       }
@@ -206,11 +218,12 @@ export class PlaySession {
             const pos = this.stage.screenOf(ev.note.lane, innerWidth, innerHeight);
             this.hud.judgement("miss", pos.x, pos.y, 0);
           }
-          this.bank.blip("miss");
+          // Keep-the-song mode never punishes with sound: the miss is only shown.
+          if (!this.setup.keepMelody) this.bank.blip("miss");
           break;
         case "stray":
           this.stage.stray(ev.lane);
-          if (this.chart.mode === "lanes") this.bank.blip("stray");
+          if (this.chart.mode !== "piano" && !this.setup.keepMelody) this.bank.blip("stray");
           if (this.judge.practice) this.hud.hint(this.practiceHint());
           break;
         case "hold-end":
@@ -243,7 +256,11 @@ export class PlaySession {
     const group = this.judge.gateGroup();
     if (!group.length) return "";
     const names = group.map((n) =>
-      this.chart.mode === "piano" ? noteName(n.midi) : LANE_LABELS[this.chart.lanes]?.[n.lane] ?? String(n.lane + 1),
+      this.chart.mode === "piano"
+        ? noteName(n.midi)
+        : this.chart.mode === "words"
+          ? `“${letterOf(n.lane).toUpperCase()}”`
+          : laneLabels(this.chart.lanes, this.setup.laneKeys)[n.lane] ?? String(n.lane + 1),
     );
     return `Next: ${names.join(" + ")}`;
   }
@@ -277,6 +294,7 @@ export class PlaySession {
     });
     const beat = this.beatPhase(t);
     this.beat = beat;
+    if (this.chart.mode === "words") this.updateWords();
     this.stage.update(dt, t, {
       encore: this.judge.encore,
       encoreActive: this.judge.encoreActive,
@@ -332,6 +350,51 @@ export class PlaySession {
       this.pressLane(n.lane, true, this.judge.practice ? t : n.time);
       this.autoRelease.set(n.lane, n.hold ? n.end + 0.01 : n.time + 0.08);
     }
+  }
+
+  private wordCursor = 0;
+  private wordSig = "";
+
+  /** Words mode: the word being typed (letter by letter) and the next two. */
+  private updateWords() {
+    const words = this.chart.words;
+    if (!words?.length) return;
+    const st = this.judge.state;
+    while (this.wordCursor < words.length - 1) {
+      const w = words[this.wordCursor];
+      let done = true;
+      for (let i = w.first; i <= w.last; i++) if (!st[i]?.judgement && !this.assist.has(i)) done = false;
+      if (!done) break;
+      this.wordCursor++;
+    }
+    const w = words[this.wordCursor];
+    const letters = [...w.text].map((ch, k) => {
+      const j = st[w.first + k]?.judgement;
+      return { ch, state: j === "miss" ? "miss" : j ? "hit" : "todo" } as const;
+    });
+    const next = words.slice(this.wordCursor + 1, this.wordCursor + 3).map((x) => x.text);
+    const sig = letters.map((l) => l.state[0]).join("") + w.text + next.join();
+    if (sig === this.wordSig) return;
+    this.wordSig = sig;
+    this.hud.words(letters, next);
+  }
+
+  /** A line for the results card: typing speed in words mode, a note on keep-the-song mode. */
+  summary() {
+    const bits: string[] = [];
+    const words = this.chart.words;
+    if (words?.length) {
+      const c = this.judge.counts;
+      const minutes = Math.max(0.1, (this.chart.end - this.chart.start) / this.setup.speed / 60);
+      const wpm = Math.round((c.perfect + c.great + c.good) / 5 / minutes);
+      const clean = words.filter((w) => {
+        for (let i = w.first; i <= w.last; i++) if (this.judge.state[i]?.judgement === "miss" || !this.judge.state[i]?.judgement) return false;
+        return true;
+      }).length;
+      bits.push(`⌨️ ${wpm} WPM · ${clean} of ${words.length} words typed perfectly`);
+    }
+    if (this.setup.keepMelody) bits.push("🎵 The song kept playing for you");
+    return bits.join(" · ");
   }
 
   private liveAccuracy() {

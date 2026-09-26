@@ -14,9 +14,18 @@ beacon and pours the colour back into the world.
 - **43 real pieces across 9 islands:** Beethoven, Debussy, Chopin, Satie, Joplin,
   all twelve movements of Vivaldi's *Four Seasons*, Pachelbel's Canon, carols,
   anthems, folk songs and two originals.
-- **Lanes or real piano.** Arcade lanes follow the shape of the melody (4 lanes on
-  Easy, 6 on Normal and Hard). **Real piano** turns the road into an actual
-  keyboard, so every key is the true note.
+- **Three ways to play:**
+  - **🎮 Lanes.** Arcade lanes follow the shape of the melody (4 lanes on Easy, 6 on
+    Normal and Hard), on **D F J K** (split hands), **A S D F** (left hand) or
+    **J K L ;** (right hand).
+  - **🎹 Real piano.** The road becomes an actual keyboard, so every key is the true note.
+  - **⌨️ Words.** Each note carries a letter and the letters spell English words.
+    Type them to the beat. Easy uses home-row words only (*salad*, *flask*, *glass*),
+    Normal uses everyday words, and Hard uses long ones, plus words themed to each island.
+    Keys and gems share touch-typing finger colours, and results show your WPM.
+- **🎵 Keep the song playing** (on by default for Words). The whole song, melody
+  included, plays by itself. Your presses are only judged, so a miss or a wrong key
+  just shows on screen and the music never breaks.
 - **Keyboard, touch or MIDI.** Laptop keys, phones and tablets, or a USB or
   Bluetooth MIDI keyboard (Chrome and Edge).
 - **Practice mode** stops the road at every note until you play it, at 50–100% speed.
@@ -30,16 +39,17 @@ beacon and pours the colour back into the world.
 | --- | --- | --- |
 | ![Title](docs/screenshots/title.jpg) | ![World map](docs/screenshots/map.jpg) | ![Results](docs/screenshots/results.jpg) |
 | ![Starlight Snow Village at night](docs/screenshots/night.jpg) | ![Neon Reef](docs/screenshots/neon.jpg) | ![Real piano mode in Glasshouse Gardens](docs/screenshots/piano.jpg) |
+| ![Words mode: type the words to the beat](docs/screenshots/words.jpg) | ![Stage setup: three key modes, lane keys, keep the song playing](docs/screenshots/setup.jpg) | ![Words results with WPM](docs/screenshots/words-results.jpg) |
 
 ## How to play
 
-| | Lanes | Real piano |
-| --- | --- | --- |
-| Laptop | Easy: **D F J K** · Normal/Hard: **S D F J K L** | Chromatic **A W S E D F T G Y H U J K O L P ;** (or home row), placed for each song |
-| Touch | Tap the lane | Tap the key |
-| MIDI keyboard | White keys C D E F G A | Any key |
-| Encore | **Space** or the gold button | same |
-| Pause | **Esc** / **P** / ❚❚ | same |
+| | Lanes | Real piano | Words |
+| --- | --- | --- | --- |
+| Laptop | Easy **D F J K**, Normal/Hard **S D F J K L** (or the A S D F / J K L ; sets) | Chromatic **A W S E D F T G Y H U J K O L P ;** (or home row), placed for each song | Type the letter on the gem |
+| Touch | Tap the lane | Tap the key | Tap the keycap |
+| MIDI keyboard | White keys C D E F G A | Any key | — |
+| Encore | **Space** or the gold button | same | **Enter** (Space is free for typists) |
+| Pause | **Esc** / **P** / ❚❚ | **Esc** / ❚❚ (P may be a note) | **Esc** / ❚❚ |
 
 Notes land on your keys at the glowing hit line. Hold a note for as long as its
 ribbon lasts. Notes a lighter difficulty leaves out are played for you, so every
