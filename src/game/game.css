@@ -398,3 +398,7 @@ a { color: var(--sun); }
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
   .hud-pop.go, .hud-count.go, .hud-banner.go { animation-duration: 0.9s !important; }
 }
+.language-control { display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; font-size: 13px; }
+.language-control select { max-width: 100%; padding: 7px 10px; border-radius: 10px; font: inherit; }
+html[lang="vi"] .btn { white-space: normal; }
+html[lang="vi"] .title-hint { letter-spacing: normal; }

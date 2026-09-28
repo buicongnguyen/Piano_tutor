@@ -188,6 +188,7 @@ export function loadSave(storage: Pick<Storage, "getItem"> | undefined, touch = 
 }
 
 export function storeSave(storage: Pick<Storage, "setItem"> | undefined, save: SaveData) {
+  if (!storage) return false;
   try {
     storage?.setItem(KEY, JSON.stringify(save));
     return true;

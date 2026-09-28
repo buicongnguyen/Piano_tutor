@@ -6,6 +6,7 @@ import type { Result } from "../judge";
 import type { SaveData, Settings } from "../save";
 import { recordKey } from "../save";
 import { el, esc, stars } from "./dom";
+import { languageControl, t } from "../i18n";
 import { LANE_PRESETS, laneLabels, type LanePreset } from "../input";
 
 export type StageChoice = {
@@ -83,6 +84,7 @@ export class Screens {
        <button class="btn btn-big btn-sun title-play" data-act="start">▶&nbsp; Play</button>
        <p class="title-hint">Press any key · Headphones recommended</p>
        <nav class="title-links">
+         ${languageControl}
          <button class="btn btn-ghost" data-act="settings">⚙ Settings</button>
          <a class="btn btn-ghost" href="./studio.html">🎹 Classic Studio</a>
        </nav>`,
@@ -90,7 +92,7 @@ export class Screens {
     this.title.hidden = true;
     // Tap anywhere on the title to begin (links and buttons keep their own actions).
     this.title.addEventListener("click", (e) => {
-      if (!(e.target as HTMLElement).closest("a, button")) this.onStart?.();
+      if (!(e.target as HTMLElement).closest("a, button, select, label, option")) this.onStart?.();
     });
 
     this.mapBar = el(
@@ -232,7 +234,7 @@ export class Screens {
         this.onCalibrate?.();
         break;
       case "reset":
-        if (confirm("Reset all stars, scores and story progress? Settings are kept.")) this.onReset?.();
+        if (confirm(t("Reset all stars, scores and story progress? Settings are kept."))) this.onReset?.();
         break;
       case "import":
         this.pickFile();
@@ -331,7 +333,7 @@ export class Screens {
       <div class="panel-head theme-${c.island?.theme ?? "meadow"}">
         <button class="btn btn-icon panel-close" data-act="back-stages" aria-label="Back">←</button>
         <span class="panel-kicker">${esc(c.island?.name ?? "My songs")}</span>
-        <h2>${esc(c.stage.title)}</h2>
+        <h2 translate="no">${esc(c.stage.title)}</h2>
         <p>${esc(c.stage.composer)} — ${esc(c.stage.blurb)}</p>
       </div>
       <div class="setup">
@@ -468,6 +470,7 @@ export class Screens {
     this.settings.innerHTML = `<div class="modal-card wide">
       <header class="modal-head"><h2>⚙ Settings</h2><button class="btn btn-icon" data-act="close-settings" aria-label="Close">✕</button></header>
       <div class="settings-grid">
+        ${languageControl}
         <label>Note speed <input type="range" min="1" max="10" step="1" name="noteSpeed" value="${s.noteSpeed}"><output>${s.noteSpeed}</output></label>
         <label>Music volume <input type="range" min="0" max="1" step="0.05" name="music" value="${s.music}"><output>${Math.round(s.music * 100)}%</output></label>
         <label>Effects volume <input type="range" min="0" max="1" step="0.05" name="effects" value="${s.effects}"><output>${Math.round(s.effects * 100)}%</output></label>
@@ -522,7 +525,7 @@ export class Screens {
         skin: skin?.value ?? s.skin,
       };
     };
-    this.settings.querySelectorAll<HTMLInputElement | HTMLSelectElement>("input, select").forEach((input) => {
+    this.settings.querySelectorAll<HTMLInputElement | HTMLSelectElement>("input, select:not([data-language])").forEach((input) => {
       input.addEventListener("input", () => {
         const out = input.nextElementSibling;
         if (out?.tagName === "OUTPUT") {

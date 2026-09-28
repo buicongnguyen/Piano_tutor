@@ -1,8 +1,10 @@
 import "./game.css";
 import { App } from "./app";
+import { mountLanguage } from "./i18n";
 
 const canvas = document.querySelector<HTMLCanvasElement>("#scene")!;
 const ui = document.querySelector<HTMLElement>("#ui")!;
+mountLanguage(document.body);
 const boot = document.querySelector<HTMLElement>("#boot")!;
 const bar = boot.querySelector<HTMLElement>(".boot-bar i")!;
 const label = boot.querySelector<HTMLElement>("p")!;

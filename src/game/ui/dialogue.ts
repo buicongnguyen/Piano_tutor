@@ -1,6 +1,7 @@
 // Portrait dialogue box: typewriter text, advance with any key, click or tap.
 import type { Line } from "../story";
 import { esc } from "./dom";
+import { t } from "../i18n";
 
 const PORTRAIT: Record<string, string> = {
   "coda-happy": "coda-happy",
@@ -94,7 +95,7 @@ export class Dialogue {
       img.hidden = false;
     } else img.hidden = true;
     q("name").textContent = line.who === "coda" ? "Coda" : line.who === "hush" ? "The Hush" : line.name ?? "";
-    this.full = line.text;
+    this.full = t(line.text);
     this.shown = 0;
     q("text").innerHTML = "";
     clearInterval(this.timer);

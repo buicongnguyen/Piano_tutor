@@ -452,6 +452,30 @@ await check("the classic studio still loads", async () => {
   await context.close();
 });
 
+await check("Vietnamese language switches, persists and fits phone settings", async () => {
+  const {page,context,errors}=await open();
+  await page.locator('.title-screen [data-language]').selectOption('vi');
+  await page.waitForFunction(()=>document.documentElement.lang==='vi');
+  assert.equal(await state(page),'title');
+  assert.match(await page.locator('.title-play').textContent(),/Chơi/);
+  await page.reload();
+  await page.waitForFunction(()=>window.__encore?.state()==='title');
+  assert.equal(await page.locator('html').getAttribute('lang'),'vi');
+  await enterMap(page);
+  await page.click('.map-bar [data-act="settings"]');
+  assert.match(await page.locator('.settings-screen').textContent(),/Âm lượng nhạc/);
+  await page.setViewportSize({width:390,height:844});
+  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+  assert.equal(await page.locator('.settings-screen [name="laneKeys"]').inputValue(),'dfjk');
+  await page.screenshot({path: (process.env.TEMP || '.') + '/encore-vietnamese.png'});
+  await page.locator('.settings-screen [data-language]').selectOption('en');
+  await page.waitForFunction(()=>document.documentElement.lang==='en');
+  assert.match(await page.locator('.settings-screen').textContent(),/Music volume/);
+  assert.equal(await page.locator('.settings-screen [name="laneKeys"]').inputValue(),'dfjk');
+  assert.deepEqual(errors,[]);
+  await context.close();
+});
+
 await browser.close();
 server?.kill();
 const failed = results.filter((r) => !r.ok);

@@ -55,9 +55,11 @@ export function loadSong(stage: Stage): Promise<Piece> {
 
 /** Register an imported score as a playable stage. */
 export function importedStage(piece: Piece): { stage: Stage; piece: Piece } {
-  // Hash the whole key (file name + size) so similar names never collide.
+  // Include musical content: two arrangements can share a file name and byte size.
   let h = 2166136261;
-  for (let i = 0; i < piece.id.length; i++) h = Math.imul(h ^ piece.id.charCodeAt(i), 16777619);
+  const identity = JSON.stringify([piece.id, piece.duration, piece.notes.map(n =>
+    [n.midi,n.time,n.duration,n.soundingDuration,n.velocity,n.hand,n.program,n.track])]);
+  for (let i = 0; i < identity.length; i++) h = Math.imul(h ^ identity.charCodeAt(i), 16777619);
   const id = "my-" + (h >>> 0).toString(36);
   const stage: Stage = {
     id,
