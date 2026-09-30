@@ -28,6 +28,8 @@ export class SoundBank {
   pianoState: "idle" | "loading" | "ready" | "fallback" = "idle";
   private pendingPiano?: Promise<boolean>;
   private voices = new Map<number, Sampler>();
+  private failed = new Set<number>(); // GM programs that failed to load this session
+  onInterrupted?: () => void; // the OS suspended or interrupted audio
   private stops = new Set<Stop>();
   private oscillators = new Set<OscillatorNode>();
   musicVolume = 0.8;
@@ -56,6 +58,9 @@ export class SoundBank {
       this.master.connect(compressor).connect(ctx.destination);
       this.ctx = ctx;
       this.setVolumes(this.musicVolume, this.effectsVolume);
+      ctx.addEventListener("statechange", () => {
+        if (ctx.state !== "running") this.onInterrupted?.();
+      });
     }
     if (this.ctx.state !== "running") await this.ctx.resume().catch(() => undefined);
   }
@@ -113,7 +118,9 @@ export class SoundBank {
   /** Load General MIDI voices for accompaniment (piano program 0 uses the grand). */
   async loadPrograms(programs: number[]): Promise<number> {
     await this.init();
-    const wanted = [...new Set(programs)].filter((p) => Number.isInteger(p) && p > 0 && p < 128).slice(0, 10);
+    const wanted = [...new Set(programs)]
+      .filter((p) => Number.isInteger(p) && p > 0 && p < 128 && !this.failed.has(p))
+      .slice(0, 10);
     const results = await Promise.allSettled(
       wanted.map(async (program) => {
         if (this.voices.has(program)) return;
@@ -122,11 +129,20 @@ export class SoundBank {
           kit: "MusyngKite",
           instrument: gmInstruments[program],
         });
-        await withTimeout(voice.ready, TIMEOUT);
+        try {
+          await withTimeout(voice.ready, TIMEOUT);
+        } catch (error) {
+          this.failed.add(program); // play with the piano instead; don't retry every stage
+          throw error;
+        }
         this.voices.set(program, voice);
       }),
     );
     return results.filter((r) => r.status === "fulfilled").length;
+  }
+
+  failedProgram(program: number) {
+    return this.failed.has(program);
   }
 
   hasProgram(program?: number) {

@@ -39,6 +39,17 @@ export class MenuMusic {
   stop() {
     this.playing = false;
     clearInterval(this.timer);
+    // Cancel notes already queued ahead so the theme doesn't ring into a stage.
+    const now = this.bank.now;
+    for (const q of this.queued) if (q.at > now) q.stop();
+    this.queued = [];
+  }
+
+  private queued: { at: number; stop: () => void }[] = [];
+
+  private note(midi: number, at: number, duration: number, velocity: number) {
+    this.queued.push({ at, stop: this.bank.note(midi, at, duration, velocity, undefined, 0.8) });
+    if (this.queued.length > 64) this.queued = this.queued.filter((q) => q.at > this.bank.now - 1);
   }
 
   private tick() {
@@ -55,9 +66,9 @@ export class MenuMusic {
       // Left hand: root, fifth, octave, tenth — an eighth-note wash.
       const pattern = [root, root + 7, root + 12, root + 12 + third, root + 19, root + 12 + third, root + 12, root + 7];
       const step = Math.round((loopBeat % 4) * 2);
-      this.bank.note(pattern[step], at, BEAT * 1.6, step === 0 ? 0.42 : 0.3, undefined, 0.8);
+      this.note(pattern[step], at, BEAT * 1.6, step === 0 ? 0.42 : 0.3);
       for (const [start, midi, len] of MELODY)
-        if (Math.abs(start - loopBeat) < 0.01) this.bank.note(midi, at, len * BEAT * 1.05, 0.55, undefined, 0.8);
+        if (Math.abs(start - loopBeat) < 0.01) this.note(midi, at, len * BEAT * 1.05, 0.55);
     }
     this.scheduledUntil = Math.max(this.scheduledUntil, until);
   }

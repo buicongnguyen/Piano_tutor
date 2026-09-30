@@ -2,7 +2,8 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { buildChart } from "./chart";
-import { allStages, islandOpen, islandRestored, islands, nextGate, totalStars } from "./campaign";
+import { allStages, islandOpen,
+  islandPlayed, islandRestored, islands, nextGate, totalStars } from "./campaign";
 import { pieceFromBytes } from "./songs";
 import { morningLight, roomToBreathe } from "../exercises";
 import type { Piece } from "../music";
@@ -34,6 +35,12 @@ describe("campaign", () => {
     expect(islandOpen(islands[1], 4)).toBe(true);
     expect(islandOpen(islands[8], 0, true)).toBe(true);
     expect(nextGate(5)?.id).toBe("festival");
+    // Islands already played stay open after the reorder, and the hint skips them.
+    const pier = islands.find((i) => i.id === "pier")!;
+    expect(islandPlayed(pier, { "the-entertainer|easy|lanes": {} })).toBe(true);
+    expect(islandPlayed(pier, { "arirang|easy|lanes": {} })).toBe(false);
+    expect(islandOpen(pier, 14, false, true)).toBe(true);
+    expect(nextGate(27, (i) => i.id === "pier")?.id).toBe("seasons");
     expect(totalStars({ arirang: 3, "fur-elise": 2, "canon-in-d": 9 })).toBe(8);
     expect(totalStars({ "my-abc123": 3 })).toBe(0);
     expect(islandRestored(islands[0], { "morning-light": 1, "room-to-breathe": 2 })).toBe(false);

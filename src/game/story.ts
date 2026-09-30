@@ -34,19 +34,18 @@ export const STORY: Record<string, Line[]> = {
   ],
   "arrive:festival": [
     { who: "keeper", name: "Lantern-maker Bo", text: "A thousand lanterns and not a spark between them. Lanterns need a song to float, you know." },
-    { who: "coda", mood: "happy", text: "See the golden stars on the road? Catch a whole golden phrase to fill your Encore meter — then press Space and shine!" },
+    { who: "coda", mood: "happy", text: "See the golden stars on the road? Catch a whole golden phrase to fill your Encore meter — then fire it (Space, Enter in Words mode, or the gold button) and shine!" },
   ],
   "restore:festival": [
     { who: "keeper", name: "Lantern-maker Bo", text: "Look at them rise! Festival Hills hasn't glowed like this in a hundred years." },
-    { who: "coda", mood: "happy", text: "Ragtime Pier is next. Fair warning — their music bounces off the beat. It's called syncopation!" },
+    { who: "coda", mood: "happy", text: "Next: the Glasshouse Gardens, home of the most famous little piano pieces in the world." },
   ],
   "arrive:pier": [
     { who: "keeper", name: "Captain Fizz", text: "Ahoy! The carousel's stuck, the ferris wheel's stuck, and I'm stuck humming nothing. Help an old sailor out?" },
   ],
   "restore:pier": [
     { who: "keeper", name: "Captain Fizz", text: "THAT'S the stuff! The whole pier's swinging! Here — free popcorn for life." },
-    { who: "hush", mood: "sad", text: "...I only wanted one quiet night... just one..." },
-    { who: "coda", mood: "determined", text: "The Hush is following us. I don't think it's angry. I think it just can't sleep." },
+    { who: "coda", mood: "wow", text: "Just the Season Wheel left before the Hush's castle. Four seasons, twelve songs. Deep breath!" },
   ],
   "arrive:garden": [
     { who: "keeper", name: "Professor Marigold", text: "The glasshouse flowers only open for the great piano pieces. They've been clenched shut like little fists." },
@@ -54,6 +53,8 @@ export const STORY: Record<string, Line[]> = {
   ],
   "restore:garden": [
     { who: "keeper", name: "Professor Marigold", text: "Blooming! All of them! Beethoven, Debussy, Satie — the whole conservatory is in flower." },
+    { who: "hush", mood: "sad", text: "...I only wanted one quiet night... just one..." },
+    { who: "coda", mood: "determined", text: "The Hush is following us. I don't think it's angry. I think it just can't sleep." },
   ],
   "arrive:neon": [
     { who: "keeper", name: "DJ Axolotl", text: "Yo, Keykeeper! The reef runs on beats and the beats ran out. Let's turn the lights back on." },
@@ -61,6 +62,7 @@ export const STORY: Record<string, Line[]> = {
   "restore:neon": [
     { who: "keeper", name: "DJ Axolotl", text: "The reef is LIT! Neon everywhere! You've got hands, friend." },
     { who: "hush", mood: "sad", text: "...every island glows... and I still can't close my eyes..." },
+    { who: "coda", mood: "happy", text: "Ragtime Pier is next. Fair warning — their music bounces off the beat. It's called syncopation!" },
   ],
   "arrive:harbour": [
     { who: "keeper", name: "Keeper Nell", text: "The lighthouse turns by moonlight music. Without it, the ships can't find the harbour." },
@@ -68,7 +70,7 @@ export const STORY: Record<string, Line[]> = {
   ],
   "restore:harbour": [
     { who: "keeper", name: "Keeper Nell", text: "There she turns. Ships on the horizon, lights on the water. Thank you, truly." },
-    { who: "coda", mood: "wow", text: "Just the Season Wheel left before the Hush's castle. Four seasons, twelve songs. Deep breath!" },
+    { who: "coda", mood: "happy", text: "Next stop: Neon Reef. Bring your loudest fingers!" },
   ],
   "arrive:seasons": [
     { who: "keeper", name: "The Season Sisters", text: "Spring, Summer, Autumn, Winter — our wheel turns only when Vivaldi plays. It stopped at the Hush's first yawn." },
@@ -84,7 +86,7 @@ export const STORY: Record<string, Line[]> = {
     { who: "coda", mood: "happy", text: "But music does rest! Every song has rests in it — little silences that let it breathe. Keykeeper, show the Hush." },
   ],
   finale: [
-    { who: "coda", mood: "happy", text: "Everyone came! Juniper, Grandma Pinecone, Bo, Captain Fizz, the Professor, the DJ, Nell and the Sisters!" },
+    { who: "coda", mood: "happy", text: "Everyone came! Juniper, Grandma Pinecone, Bo, the Professor, Nell, the DJ, Captain Fizz and the Sisters!" },
     { who: "coda", mood: "determined", text: "Canon in D: one melody passed from player to player, around and around. Let's play it together." },
   ],
   ending: [

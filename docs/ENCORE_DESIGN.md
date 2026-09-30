@@ -43,14 +43,21 @@ to end each night with a lullaby.
 | 1 | Dawn Meadow | Sunny spring morning, windmills | Morning Light, A Little Room to Breathe, Arirang | 0 |
 | 2 | Starlight Snow Village | Snowy evening, warm windows | Silent Night, O Come All Ye Faithful | 4 |
 | 3 | Festival Hills | Golden-hour lantern festival | Aegukga, Tiến quân ca, Star-Spangled Banner | 8 |
-| 4 | Ragtime Pier | Bright seaside carnival | The Entertainer, Maple Leaf Rag | 13 |
-| 5 | Glasshouse Gardens | Afternoon conservatory | Für Elise, Arabesque No. 1, Gymnopédie No. 1, Prelude, Variations d'automne, Flat | 18 |
+| 4 | Glasshouse Gardens | Afternoon conservatory | Für Elise, Arabesque No. 1, Gymnopédie No. 1, Prelude, Variations d'automne, Flat | 13 |
+| 5 | Moonlit Harbour | Deep-blue night | Moonlight Sonata I–III, Clair de lune, Nocturne Op. 9 No. 2 | 18 |
 | 6 | Neon Reef | Twilight synth lagoon | A1 Listen First, Action Title | 26 |
-| 7 | Moonlit Harbour | Deep-blue night | Moonlight Sonata I–III, Clair de lune, Nocturne Op. 9 No. 2 | 32 |
+| 7 | Ragtime Pier | Bright seaside carnival | The Entertainer, Maple Leaf Rag | 32 |
 | 8 | Season Wheel | Spring, summer, autumn and winter per movement | Vivaldi, The Four Seasons (12) | 40 |
 | 9 | Carillon Crown | The Hush's cloud castle at sunset | Canon in D (finale) | 60 |
 
+The order ramps difficulty: the gentle classics come before syncopated ragtime.
+Gates and map spots belong to the position, not the island. An island with any
+record stays open, so players who reached Ragtime Pier under the old order keep it.
+
 Settings has **Open all islands** for teachers and players who just want a song.
+Story scenes still follow real progress. An island that is open only through that
+setting tells its restore scene once its star gate is met, and the Canon finale waits
+for the crown gate.
 Imported MIDI files are charted automatically and appear in **My Songs**.
 
 ## Core loop
@@ -65,17 +72,22 @@ Imported MIDI files are charted automatically and appear in **My Songs**.
 ## Modes
 
 - **Lanes (arcade)**: Easy has 4 lanes (D F J K), Normal and Hard have 6 (S D F J K L).
+  The one-hand presets always use 4 lanes.
   Lanes follow the melody contour: up the scale means rightward, and a repeated
   note stays in its lane. Every hit plays the real melody pitch on a sampled grand.
 - **Real piano**: lanes are actual piano keys. Best with a MIDI keyboard or
   the on-screen keyboard. Like Rock Band 3's Pro Keys window, the road shows at most
-  three octaves around the busiest part of the melody. Laptop keys use a 17-key
-  chromatic window (or the home-row layout) placed automatically for the stage. Notes
+  three octaves around the busiest part of the melody. Laptop keys use three rows: the
+  17-key chromatic window (or the home-row layout) plus the Z row for the ten
+  semitones below, placed automatically for the stage. Notes
   outside the playable window are played for you as *assist* notes: they flash their
   key and are never scored.
 - **Words** (typing): every charted note carries a letter and consecutive letters
-  spell words fitted to the phrases. Breaths in the music end a word. Easy uses only
-  home-row words, Normal everyday words, and Hard long words plus island-themed ones.
+  spell words fitted to the phrases. Breaths end a word. A breath is a gap much longer
+  than the phrase just played, or any pause of a second or more. A lone pickup note
+  joins its phrase, and no word spans more than about three seconds. Easy uses only
+  home-row words, Normal everyday words of 3–5 letters, and Hard long words. Island
+  words appear at most about one word in five, and a word never repeats back to back.
   Spacing is capped at typeable speeds of about 22, 37 and 60 WPM. The keys form a toy
   QWERTY keyboard coloured by touch-typing finger, and gems share their finger's colour.
   Input reads the typed character, so AZERTY and other layouts work. Space never fires
@@ -83,7 +95,8 @@ Imported MIDI files are charted automatically and appear in **My Songs**.
 - **Tap** (phones): two lanes chosen by the melody's contour (up = right, down =
   left, repeated notes stay put). The whole left or right half of the screen is the
   button, so it doesn't matter where on the road you tap, and two thumbs can press at once.
-  Spacing is 0.5 / 0.27 / 0.17 s, with both-sides chords only on Hard. Timing windows are
+  Spacing is 0.5 / 0.24 / 0.17 s, with both-sides chords only on Hard. In a quick run
+  one thumb takes at most four notes in a row before the next switches sides. Timing windows are
   ×1.35 (×1.5 on Easy) for touch latency. Phones default to Tap with the song kept playing.
   Keyboards use F/J, D/K or the arrows; MIDI splits at middle C.
 - **Lane keys** preset: D F J K (split hands, default), A S D F (left hand) or
@@ -94,24 +107,53 @@ Imported MIDI files are charted automatically and appear in **My Songs**.
   Scoring is unchanged.
 - **Practice** (toggle): the road waits at every note until you press it. No
   score and no stars, and you can play at 50–100% speed. This is the tutor mode.
+  Practice uses exactly the chart that is played for stars. Only the clock slows.
 
-Notes removed by a lighter chart are never silent. They play automatically as
-accompaniment, so every difficulty sounds like the whole piece.
+Notes removed by a lighter chart are never silent. They play automatically on the
+piano, like the player's own notes, so every difficulty sounds like the whole piece.
+
+## Difficulty tiers
+
+- **Melody**: the lead is the right hand when hands are labelled. Otherwise it is a
+  track named for the tune (solo, melody, lead, voice…) that carries at least 24 notes,
+  and failing that the busiest high track. In Vivaldi's slow movements this picks
+  the solo violin over the tutti violins' accompaniment figure.
+- **Easy** keeps to the pulse: about one note per beat, one per half beat in a slow
+  song, one per two beats in a fast one. Its notes land on the beat instead of at
+  odd points between beats.
+- **Normal** plays the tune at a comfortable minimum spacing.
+- **Hard** plays nearly every melody note, adds chords, and where the melody rests (a
+  slow tune's long notes, a concerto's tutti) picks up the accompaniment's top line
+  on the beat. The bass is never used. Hard therefore stays a step above Normal even
+  in slow pieces.
 
 ## Scoring
 
 - Windows: Perfect ±45 ms, Great ±90 ms, Good ±140 ms (Easy ×1.25). An early
-  press inside the miss zone (≤ 200 ms) consumes the note as a Miss.
+  press inside the miss zone (≤ 200 ms) consumes the note as a Miss. A late press at a
+  note that has just timed out counts as that note's miss, not a new one.
+- **Wrong keys**: a press with no note in its lane while a note is due in another lane
+  shows ✗ WRONG KEY, breaks the combo and counts as an extra note in accuracy. A press
+  with nothing due anywhere is a harmless stray. A real MIDI keyboard in Real piano
+  mode is exempt, because pianists add harmony. With the song kept playing, wrong
+  keys make no sound.
 - Points: 300 / 200 / 100 × multiplier (×1 to ×4, +1 every 10 combo) × Encore ×2.
-- Holds: the head scores normally, then ticks while held. Releasing early loses
-  only the remaining tail.
-- Accuracy = Σ weight / notes (Perfect 1, Great 0.8, Good 0.5, Miss 0).
-  Stars: ★ 60%, ★★ 75%, ★★★ 88%. Ranks: S+ (all Perfect), S 95%, A 88%, B 75%, C 60%, D.
-  A Full Combo earns the crown.
+- Holds: the head scores normally, then ticks while held. Releasing early loses the
+  remaining tail. Letting go before half the hold also breaks the combo.
+- Accuracy = Σ weight / (notes + wrong keys) (Perfect 1, Great 0.8, Good 0.5, Miss 0).
+  Stars: the first star is for hitting 60% of the notes (or 60% accuracy), so a
+  steadily late player still earns it. ★★ needs 75% accuracy and ★★★ 88%. Ranks: S+ (all
+  Perfect, no wrong keys), S 95%, A 88%, B 75%, C 60% (or a full combo), D.
+  A Full Combo (every note hit, no wrong keys, no dropped holds) earns the crown.
+- Records keep the best score together with that run's rank and accuracy, plus the
+  best rank of any run. Practice runs count as plays but never as a clear. A steady
+  timing offset above 60 ms adds a **Calibrate timing** button to the results.
 - **Harmony** (0–1) rises with hits and falls with misses. It drives world
   saturation, beacon brightness and crowd energy. There is no fail state.
-- **Encore**: golden phrases fill the Encore gauge. At half or more, press Space
-  or tap ENCORE for double points, a golden road and full colour. It drains over
+- **Encore**: golden phrases fill the Encore gauge, each by 1 / (phrases in the
+  song), clamped to a quarter to a half. A short song still gets one golden phrase.
+  At half or more, press Space (Enter in Words mode) or tap ENCORE for double
+  points, a golden road and full colour. The HUD shows the right key. It drains over
   about eight seconds per quarter gauge.
 
 ## Presentation

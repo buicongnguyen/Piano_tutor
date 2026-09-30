@@ -5,6 +5,7 @@ import {
   allStages,
   findStage,
   islandOpen,
+  islandPlayed,
   islandRestored,
   islands,
   nextGate,
@@ -13,6 +14,7 @@ import {
   type Stage as StageInfo,
 } from "./campaign";
 import { Input } from "./input";
+import { loadKeyboardLayout } from "./keyboard-layout";
 import type { Result } from "./judge";
 import { MenuMusic } from "./menu-music";
 import { approachFor, PlaySession } from "./play";
@@ -56,10 +58,10 @@ export class App {
   private opened = new Set<string>();
   private busy = false;
   private pendingCelebration?: string;
-  private pendingStory: string[] = [];
 
   constructor(readonly canvas: HTMLCanvasElement, readonly ui: HTMLElement) {
     this.renderer = new Renderer(canvas);
+    this.renderer.onViewport = (h, pr) => this.viewport(h, pr);
     this.input = new Input(canvas);
     this.save = loadSave(safeStorage(), matchMedia("(pointer: coarse)").matches);
     this.screens = new Screens(ui);
@@ -96,6 +98,7 @@ export class App {
   // ------------------------------------------------------------ boot
 
   async boot(progress: (p: number, text: string) => void) {
+    void loadKeyboardLayout(); // labels keys as printed on the player's keyboard (AZERTY…)
     progress(0.1, "Unpacking the Encore…");
     const [stage, world, chars] = await Promise.allSettled([
       loadKit("stage-kit.glb"),
@@ -109,6 +112,7 @@ export class App {
     };
     progress(0.7, "Painting the Sky Isles…");
     this.map = new MapScene(this.kits.world, this.kits.chars);
+    this.map.ship?.setLacquer(SKINS.find((k) => k.id === this.settings.skin)?.color ?? "#e8282f");
     this.stage = new Stage(this.kits.stage ?? new Map());
     this.world = new World(this.stage.scene, this.kits.world, this.kits.chars);
     if (this.kits.chars) {
@@ -164,13 +168,17 @@ export class App {
       const settings = this.save.settings;
       this.save = loadSave(undefined, this.touch);
       this.save.settings = settings;
+      this.pendingCelebration = undefined;
+      this.opened.clear(); // unlock toasts can play again as islands reopen
       this.persist();
-      this.refreshMap();
+      this.refreshMap(true);
       s.toast("Progress reset. The Hush settles over the isles again…");
     };
     s.onSettings = (patch) => this.applySettings({ ...this.settings, ...patch });
     s.onOpenSettings = () => this.screens.renderSettings(this.settings, this.stars(), this.input.midiName);
     this.hud.onPause = () => this.pause();
+    // A phone call or Siri suspends audio mid-song: pause rather than freeze the clock.
+    this.bank.onInterrupted = () => this.pause();
     this.hud.onEncore = () => this.session?.activateEncore();
     this.input.onAction = (action) => {
       if (action === "pause") this.pause();
@@ -218,6 +226,7 @@ export class App {
 
   private back() {
     const s = this.screens;
+    if (this.dialogue.open) return; // the dialogue handles its own Escape (skip)
     // While paused the game input is off, so Escape arrives here: close settings, else resume.
     if (this.state === "play" && this.session?.paused) {
       if (!s.settings.hidden) s.settings.hidden = true;
@@ -262,6 +271,7 @@ export class App {
     this.screens.mapBar.hidden = false;
     this.screens.labels.hidden = false;
     this.renderer.attach(this.map!.scene, this.map!.camera);
+    this.renderer.renderer.toneMappingExposure = 1; // stage themes set their own
     this.map!.enterMap(this.pendingCelebration ?? this.save.lastIsland);
     this.refreshMap();
     if (this.pendingCelebration) {
@@ -269,7 +279,7 @@ export class App {
       this.bank.blip("unlock");
       this.pendingCelebration = undefined;
     }
-    void this.tellPendingStory();
+    void this.tellDueStory("map");
     this.resize();
     if (!this.music.playing) this.music.play();
     this.renderer.setBloom(0.35, 0.5, 0.85);
@@ -281,15 +291,20 @@ export class App {
     const total = totalStars(best);
     const states: Record<string, "locked" | "open" | "restored"> = {};
     for (const i of islands)
-      states[i.id] = !islandOpen(i, total, this.settings.openAll) ? "locked" : islandRestored(i, best) ? "restored" : "open";
+      states[i.id] = !this.isOpen(i, total) ? "locked" : islandRestored(i, best) ? "restored" : "open";
     return { states, best, total };
+  }
+
+  private isOpen(island: Island, total: number) {
+    return islandOpen(island, total, this.settings.openAll, islandPlayed(island, this.save.records));
   }
 
   refreshMap(silent = false) {
     const { states, best, total } = this.islandStates();
     if (silent) for (const i of islands) if (states[i.id] !== "locked") this.opened.add(i.id);
     this.map?.refresh(states, this.save.lastIsland);
-    this.screens.setProgress(this.save, best, total, this.settings.openAll ? undefined : nextGate(total));
+    const isOpen = (i: Island) => states[i.id] !== "locked";
+    this.screens.setProgress(this.save, best, total, this.settings.openAll ? undefined : nextGate(total, isOpen), isOpen);
     // Announce islands opened since the last visit.
     for (const i of islands)
       if (states[i.id] !== "locked") {
@@ -307,7 +322,7 @@ export class App {
     if (!island || this.state !== "map") return;
     this.map?.select(id, innerWidth > 700);
     const { total } = this.islandStates();
-    const open = islandOpen(island, total, this.settings.openAll);
+    const open = this.isOpen(island, total);
     if (open) {
       this.save.lastIsland = id;
       this.persist();
@@ -320,12 +335,39 @@ export class App {
     }
   }
 
-  private async tellPendingStory() {
-    while (this.pendingStory.length && this.state === "map") {
-      const key = this.pendingStory.shift()!;
-      if (this.save.seen.includes(key)) continue;
-      await this.dialogue.play(storyFor(key));
-      this.markSeen(key);
+  /**
+   * Story scenes the save says are due, in island order: each restore (after
+   * its arrival, if that was missed), and the ending last. Derived from the save
+   * every time, so a scene interrupted by a retry or a reload is never lost.
+   * Only real progress tells the story: an island reached through "open every
+   * island" waits until its stars gate is met.
+   */
+  private dueStory(): string[] {
+    const { states, total } = this.islandStates();
+    const seen = (key: string) => this.save.seen.includes(key);
+    const due: string[] = [];
+    for (const i of islands) {
+      if (states[i.id] !== "restored" || total < i.gate || seen(`restore:${i.id}`)) continue;
+      if (!seen(`arrive:${i.id}`)) due.push(`arrive:${i.id}`);
+      due.push(`restore:${i.id}`);
+    }
+    const crown = islands[islands.length - 1];
+    if (states[crown.id] === "restored" && total >= crown.gate && !seen("ending")) due.push("ending");
+    return due;
+  }
+
+  private telling = false;
+
+  private async tellDueStory(state: State) {
+    if (this.telling) return;
+    this.telling = true;
+    try {
+      for (let key = this.dueStory()[0]; key && this.state === state; key = this.dueStory()[0]) {
+        await this.dialogue.play(storyFor(key));
+        this.markSeen(key);
+      }
+    } finally {
+      this.telling = false;
     }
   }
 
@@ -336,7 +378,7 @@ export class App {
 
   showSongbook() {
     const { total } = this.islandStates();
-    this.screens.showSongbook((i) => islandOpen(i, total, this.settings.openAll), this.mine.map((m) => m.stage));
+    this.screens.showSongbook((i) => this.isOpen(i, total), this.mine.map((m) => m.stage));
   }
 
   async importFile(file: File) {
@@ -349,7 +391,7 @@ export class App {
       this.mine = [...this.mine.filter((m) => m.stage.id !== stage.id), { stage, piece }];
       this.screens.songbook.hidden = true;
       this.screens.openSetup(undefined, stage);
-      this.screens.toast(`♪ <b>${escapeHtml(stage.title)}</b> is ready to play.`);
+      this.screens.toast(`♪ <b translate="no">${escapeHtml(stage.title)}</b> is ready to play.`);
     } catch (error) {
       this.screens.toast(`Couldn't read that score: ${escapeHtml((error as Error).message)}`, "warn", 5000);
     }
@@ -374,21 +416,29 @@ export class App {
       this.screens.mapBar.hidden = true;
       this.screens.labels.hidden = true;
       this.screens.loading.hidden = false;
+      this.hud.hide(); // the last run's buttons must not be tappable while loading
       this.screens.setLoading("Freeing the stillnotes…");
       await this.bank.init();
       this.music.stop();
       const mine = this.mine.find((m) => m.stage.id === choice.stage.id);
       const piece = mine ? mine.piece : await loadSong(choice.stage);
       if (this.bank.pianoState !== "ready") {
-        this.screens.setLoading("Tuning the grand piano…");
-        await this.bank.loadPiano();
+        // After a failed download, retry quietly in the background instead of making
+        // every stage wait for another 20-second timeout.
+        if (this.bank.pianoState === "fallback") void this.bank.loadPiano();
+        else {
+          this.screens.setLoading("Tuning the grand piano…");
+          await this.bank.loadPiano();
+        }
       }
       const programs = [...new Set(piece.notes.map((n) => n.program ?? 0).filter((p) => p > 0))];
-      if (programs.length) {
+      if (programs.some((p) => !this.bank.hasProgram(p) && !this.bank.failedProgram(p))) {
         this.screens.setLoading("The orchestra is taking its seats…");
         await this.bank.loadPrograms(programs);
       }
-      if (choice.island?.id === "crown" && !this.save.seen.includes("finale")) {
+      // The finale is for the real last stage: not when the crown is only open
+      // through "open every island" (it then plays once the gate is met).
+      if (choice.island?.id === "crown" && !this.save.seen.includes("finale") && this.islandStates().total >= choice.island.gate) {
         this.screens.loading.hidden = true;
         await this.dialogue.play(storyFor("finale"));
         this.markSeen("finale");
@@ -425,7 +475,15 @@ export class App {
       );
       session.onFinish = (result) => void this.finish(result);
       session.onEncoreReady = () => {
-        this.screens.toast(this.touch ? "✨ ENCORE ready — tap the gold button!" : "✨ ENCORE ready — press <b>Space</b>!", "gold", 2600);
+        this.screens.toast(
+          this.touch
+            ? "✨ ENCORE ready — tap the gold button!"
+            : choice.mode === "words"
+              ? "✨ ENCORE ready — press <b>Enter</b>!"
+              : "✨ ENCORE ready — press <b>Space</b>!",
+          "gold",
+          2600,
+        );
         this.bank.blip("star", 12);
       };
       session.onCheer = () => this.coda?.celebrate();
@@ -443,6 +501,9 @@ export class App {
       this.renderer.renderer.toneMappingExposure = theme.exposure;
       this.screens.loading.hidden = true;
       this.state = "play";
+      // A slider left focused in a hidden panel would swallow lane keys (typing guard).
+      if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+      this.canvas.focus({ preventScroll: true });
       const place = choice.island?.name ?? "My songs";
       session.start(choice.mode === "tap" ? `${place} · tap ◀ left or right ▶` : place);
       // Tabbed away while it loaded: wait on the pause screen instead of playing to nobody.
@@ -471,6 +532,10 @@ export class App {
     this.screens.settings.hidden = true;
     await this.bank.init(); // mobile browsers may have suspended audio in the background
     if (this.session !== session || !session.paused) return;
+    if (document.hidden) {
+      this.screens.pause.hidden = false; // hidden again while audio woke up: stay paused
+      return;
+    }
     session.resume();
     this.canvas.focus();
   }
@@ -478,7 +543,6 @@ export class App {
   quitToMap() {
     this.session?.quit();
     this.session = undefined;
-    this.renderer.renderer.toneMappingExposure = 1;
     this.enterMap();
     const island = this.lastChoice?.island;
     if (island) this.screens.showIsland(island, true);
@@ -498,7 +562,7 @@ export class App {
     if (i >= 0 && i + 1 < list.length) return { ...c, stage: list[i + 1] };
     const { total } = this.islandStates();
     const nextIsland = islands[islands.indexOf(c.island) + 1];
-    if (nextIsland && islandOpen(nextIsland, total, this.settings.openAll))
+    if (nextIsland && this.isOpen(nextIsland, total))
       return { ...c, island: nextIsland, stage: nextIsland.stages[0] };
     return undefined;
   }
@@ -539,6 +603,7 @@ export class App {
       hasNext: !!this.nextStage(),
       freed: result.counts.perfect + result.counts.great + result.counts.good,
       tendency,
+      calibrate: !choice.practice && result.total >= 10 && Math.abs(result.meanOffsetMs) > 60,
       extra: session.summary(),
     });
     this.coda?.celebrate();
@@ -553,21 +618,10 @@ export class App {
     if (island && before.states[island.id] !== "restored" && after.states[island.id] === "restored") {
       this.pendingCelebration = island.id;
       await wait(1800);
-      const key = `restore:${island.id}`;
-      // The player moved on (retry, next, map): tell it on the map instead.
-      if (this.state !== "results" || this.session !== session) {
-        this.pendingStory.push(key);
-        if (island.id === "crown") this.pendingStory.push("ending");
-        return;
-      }
-      if (!this.save.seen.includes(key)) {
-        await this.dialogue.play(storyFor(key));
-        this.markSeen(key);
-      }
-      if (island.id === "crown" && !this.save.seen.includes("ending")) {
-        await this.dialogue.play(storyFor("ending"));
-        this.markSeen("ending");
-      }
+      // Still on this result: tell it here. If the player moved on (retry, next,
+      // map), the save still has it due and the next map visit tells it.
+      if (this.state === "results" && this.session === session) await this.tellDueStory("results");
+      else if ((this.state as State) === "map") void this.tellDueStory("map");
     }
   }
 
@@ -582,8 +636,12 @@ export class App {
     this.stage?.applySkin(next.skin);
     this.map?.ship?.setLacquer(SKINS.find((s) => s.id === next.skin)?.color ?? "#e8282f");
     if (openChanged) this.refreshMap(true);
-    this.persist();
+    // Sliders fire on every pixel of a drag: write storage once it settles.
+    clearTimeout(this.persistTimer);
+    this.persistTimer = window.setTimeout(() => this.persist(), 250);
   }
+
+  private persistTimer = 0;
 
   async connectMidi() {
     try {
@@ -596,7 +654,24 @@ export class App {
   }
 
   /** Eight clicks at 100 BPM; the player taps along; the median error becomes the offset. */
+  private calibrating = false;
+
   async calibrate() {
+    // One run at a time: taps on the button itself must not start another run.
+    if (this.calibrating) return;
+    this.calibrating = true;
+    const button = this.screens.settings.querySelector<HTMLButtonElement>('[data-act="calibrate"]');
+    if (button) button.disabled = true;
+    try {
+      await this.runCalibration();
+    } finally {
+      this.calibrating = false;
+      const again = this.screens.settings.querySelector<HTMLButtonElement>('[data-act="calibrate"]');
+      if (again) again.disabled = false;
+    }
+  }
+
+  private async runCalibration() {
     await this.bank.init();
     const interval = 0.6;
     const start = this.bank.now + 0.8;
@@ -644,7 +719,10 @@ export class App {
       this.map.camera.aspect = w / h;
       this.map.camera.updateProjectionMatrix();
     }
-    const pr = this.renderer.pixelRatio;
+    this.viewport(h, this.renderer.pixelRatio);
+  }
+
+  private viewport(h: number, pr: number) {
     this.map?.particles.setViewport(h, pr);
     this.stage?.particles.setViewport(h, pr);
     this.stage?.weather.setViewport(h, pr);

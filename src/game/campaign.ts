@@ -122,25 +122,12 @@ export const islands: Island[] = [
     ],
   },
   {
-    id: "pier",
-    name: "Ragtime Pier",
-    tagline: "The carnival that forgot how to swing.",
-    theme: "pier",
-    gate: 13,
-    map: [36, 22],
-    keeper: "Captain Fizz",
-    stages: [
-      song("the-entertainer.mid", "Syncopation! Notes that land just off the beat."),
-      song("maple-leaf-rag.mid", "The king of rags. Quick hands, big grin."),
-    ],
-  },
-  {
     id: "garden",
     name: "Glasshouse Gardens",
     tagline: "A conservatory of sleeping flowers.",
     theme: "garden",
-    gate: 18,
-    map: [50, -6],
+    gate: 13,
+    map: [36, 22],
     keeper: "Professor Marigold",
     stages: [
       song("fur-elise.mid", "The most famous little piece in the world."),
@@ -149,6 +136,30 @@ export const islands: Island[] = [
       song("prelude-kumar.mid", "A modern prelude that blooms in the sunlight."),
       song("variations-automne.mid", "Autumn variations on a quiet theme."),
       song("flat-kumar.mid", "A long, winding contemporary piece. The gardens' final door."),
+    ],
+  },
+  {
+    id: "harbour",
+    name: "Moonlit Harbour",
+    tagline: "The lighthouse that lost its tune.",
+    theme: "harbour",
+    gate: 18,
+    map: [50, -6],
+    keeper: "Keeper Nell",
+    stages: [
+      song("moonlight-1.mid", "Moonlight on still water. Slow triplets, soft hands.", {
+        title: "Moonlight Sonata I",
+      }),
+      song("clair-de-lune.mid", "Moonlight in French. Drift with it."),
+      song("nocturne-op9-no2.mid", "A night song full of ornaments and sighs.", {
+        title: "Nocturne Op. 9 No. 2",
+      }),
+      song("moonlight-2.mid", "A gentle dance between two storms.", {
+        title: "Moonlight Sonata II",
+      }),
+      song("moonlight-3.mid", "The storm. Fast, furious and very bright.", {
+        title: "Moonlight Sonata III",
+      }),
     ],
   },
   {
@@ -169,27 +180,16 @@ export const islands: Island[] = [
     ],
   },
   {
-    id: "harbour",
-    name: "Moonlit Harbour",
-    tagline: "The lighthouse that lost its tune.",
-    theme: "harbour",
+    id: "pier",
+    name: "Ragtime Pier",
+    tagline: "The carnival that forgot how to swing.",
+    theme: "pier",
     gate: 32,
     map: [4, -46],
-    keeper: "Keeper Nell",
+    keeper: "Captain Fizz",
     stages: [
-      song("moonlight-1.mid", "Moonlight on still water. Slow triplets, soft hands.", {
-        title: "Moonlight Sonata I",
-      }),
-      song("clair-de-lune.mid", "Moonlight in French. Drift with it."),
-      song("nocturne-op9-no2.mid", "A night song full of ornaments and sighs.", {
-        title: "Nocturne Op. 9 No. 2",
-      }),
-      song("moonlight-2.mid", "A gentle dance between two storms.", {
-        title: "Moonlight Sonata II",
-      }),
-      song("moonlight-3.mid", "The storm. Fast, furious and very bright.", {
-        title: "Moonlight Sonata III",
-      }),
+      song("the-entertainer.mid", "Syncopation! Notes that land just off the beat."),
+      song("maple-leaf-rag.mid", "The king of rags. Quick hands, big grin."),
     ],
   },
   {
@@ -251,13 +251,23 @@ export function totalStars(best: Record<string, number>) {
   );
 }
 
-export function islandOpen(island: Island, stars: number, openAll = false) {
-  return openAll || stars >= island.gate;
+/**
+ * Open by stars, by the "open every island" setting, or because it was already
+ * played: the islands were reordered, and nobody loses an island they reached.
+ */
+export function islandOpen(island: Island, stars: number, openAll = false, played = false) {
+  return openAll || played || stars >= island.gate;
+}
+
+/** Has any stage on this island a record (a play or a practice run)? */
+export function islandPlayed(island: Island, records: Record<string, unknown>) {
+  const ids = new Set(island.stages.map((s) => s.id));
+  return Object.keys(records).some((key) => ids.has(key.split("|")[0]));
 }
 
 /** The next island the player hasn't opened yet, for "N more stars" hints. */
-export function nextGate(stars: number) {
-  return islands.find((i) => i.gate > stars);
+export function nextGate(stars: number, isOpen: (island: Island) => boolean = () => false) {
+  return islands.find((i) => i.gate > stars && !isOpen(i));
 }
 
 /** An island is restored once every stage on it has at least one star. */

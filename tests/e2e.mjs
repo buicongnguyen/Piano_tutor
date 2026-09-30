@@ -177,6 +177,22 @@ await check("keyboard presses reach the judge: strays, hits and a pause/resume r
   });
   // Software rendering starves the timer loop, so only the GPU run holds presses to the beat.
   assert.ok(hits >= (gpu ? 5 : 1), `hit ${hits} of 6 timed presses`);
+  // A wrong lane while a note is due: ✗ WRONG KEY on screen and the combo resets.
+  const wrong = await page.evaluate(async () => {
+    const s = window.__encore.app.session;
+    const keys = ["KeyS", "KeyD", "KeyF", "KeyJ", "KeyK", "KeyL"];
+    const n = s.chart.notes.find(
+      (m) =>
+        m.time > s.conductor.time() + 0.5 &&
+        !s.chart.notes.some((o) => o.lane === (m.lane + 3) % 6 && Math.abs(o.time - m.time) < 0.25),
+    );
+    while (s.conductor.time() < n.time - 0.004) await new Promise((r) => setTimeout(r, 1));
+    dispatchEvent(new KeyboardEvent("keydown", { code: keys[(n.lane + 3) % 6], bubbles: true }));
+    const out = { wrong: s.judge.wrong, combo: s.judge.combo, pop: !!document.querySelector(".hud-pop.wrong") };
+    dispatchEvent(new KeyboardEvent("keyup", { code: keys[(n.lane + 3) % 6], bubbles: true }));
+    return out;
+  });
+  assert.ok(wrong.wrong >= 1 && wrong.combo === 0 && wrong.pop, `wrong key: ${JSON.stringify(wrong)}`);
   await page.keyboard.press("Escape");
   await page.waitForSelector(".pause-screen:not([hidden])");
   const t1 = await page.evaluate(() => window.__encore.app.session.conductor.time());
@@ -296,11 +312,15 @@ await check("words mode: typed letters score, wrong letters stay silent, the son
   });
   assert.ok(hits >= (gpu ? 4 : 1), `typed ${hits} of 5 letters on the beat`);
   assert.match(await page.textContent(".hud-word"), /[A-Z]/);
-  // A wrong letter: counted as a stray, but no stray/miss sound in keep-the-song mode.
+  // A wrong letter: a wrong key (a note is due) or a stray (nothing due), shown on
+  // screen but with no stray/miss sound in keep-the-song mode.
   await page.keyboard.press("q");
   await page.waitForTimeout(100);
-  const after = await page.evaluate(() => ({ strays: window.__encore.app.session.judge.strays, blips: window.__blips }));
-  assert.ok(after.strays >= 1);
+  const after = await page.evaluate(() => {
+    const j = window.__encore.app.session.judge;
+    return { counted: j.strays + j.wrong, blips: window.__blips };
+  });
+  assert.ok(after.counted >= 1);
   assert.ok(!after.blips.includes("stray") && !after.blips.includes("miss"), `no penalty sounds: ${after.blips}`);
   assert.deepEqual(errors, []);
 });

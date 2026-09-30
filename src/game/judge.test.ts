@@ -64,6 +64,42 @@ describe("judge", () => {
     expect(j.strays).toBe(1);
   });
 
+  it("counts a wrong key while a note is due elsewhere, breaking combo", () => {
+    const j = new Judge(chart([1, 2], { lanes: [0, 1] }));
+    j.press(0, 1);
+    expect(j.press(3, 2.02)[0]).toMatchObject({ type: "wrong", lane: 3 });
+    expect(j.combo).toBe(0);
+    expect(j.wrong).toBe(1);
+    // The right key still hits the note.
+    expect(j.press(1, 2.03)[0]).toMatchObject({ type: "hit" });
+  });
+
+  it("lets a real keyboard add extra notes without penalty", () => {
+    const j = new Judge(chart([1, 2], { lanes: [60, 64] }), { wrongKeys: false });
+    j.press(60, 1);
+    expect(j.press(48, 1.01)[0]).toMatchObject({ type: "stray" });
+    expect(j.combo).toBe(1);
+  });
+
+  it("gives no stars for mashing every lane", () => {
+    const times = Array.from({ length: 10 }, (_, i) => 1 + i);
+    const j = new Judge(chart(times));
+    for (const t of times) for (let lane = 0; lane < 4; lane++) j.press(lane, t);
+    const r = j.result();
+    expect(r.wrong).toBe(30);
+    expect(r.stars).toBe(0);
+    expect(r.fullCombo).toBe(false);
+  });
+
+  it("does not punish a late press at a note that just timed out twice", () => {
+    const j = new Judge(chart([1, 1.35], { lanes: [0, 0] }));
+    expect(j.update(1.16)[0]).toMatchObject({ type: "miss", early: false });
+    // 0.18 s late for note 0, 0.17 s early for note 1: the old miss, not a new one.
+    expect(j.press(0, 1.18)[0]).toMatchObject({ type: "stray" });
+    expect(j.press(0, 1.35)[0]).toMatchObject({ type: "hit" });
+    expect(j.counts.miss).toBe(1);
+  });
+
   it("consumes a note on an early press in the miss zone", () => {
     const j = new Judge(chart([1]));
     expect(j.press(0, 0.83)[0]).toMatchObject({ type: "miss", early: true });
@@ -108,14 +144,23 @@ describe("judge", () => {
     ];
     const j = new Judge(chart(times, { lanes: times.map(() => 0), golden }));
     for (const t of times) j.press(0, t);
-    expect(j.encore).toBeCloseTo(0.5);
+    // Two golden phrases in the song: each fills half the gauge.
+    expect(j.encore).toBeCloseTo(1);
     expect(j.activateEncore()).toEqual([{ type: "encore", active: true }]);
     j.update(13);
     j.update(20);
-    expect(j.encore).toBeLessThan(0.5);
-    const ended = j.update(40);
+    expect(j.encore).toBeLessThan(1);
+    const ended = j.update(50);
     expect(j.encoreActive).toBe(false);
     expect(ended).toContainEqual({ type: "encore", active: false });
+  });
+
+  it("fills a quarter per phrase when a song has many golden phrases", () => {
+    const times = Array.from({ length: 8 }, (_, i) => 1 + i);
+    const golden = [[0, 1], [2, 3], [4, 5], [6, 7]];
+    const j = new Judge(chart(times, { lanes: times.map(() => 0), golden }));
+    for (const t of times.slice(0, 2)) j.press(0, t);
+    expect(j.encore).toBeCloseTo(0.25);
   });
 
   it("breaks a golden phrase on a miss", () => {
@@ -146,6 +191,27 @@ describe("judge", () => {
     for (const t of times.slice(0, 7)) mixed.press(0, t);
     mixed.update(20);
     expect(mixed.result()).toMatchObject({ stars: 1, rank: "C", fullCombo: false });
+  });
+
+  it("earns the first star for hitting notes even when timing is loose", () => {
+    const times = Array.from({ length: 10 }, (_, i) => 1 + i);
+    const j = new Judge(chart(times, { lanes: times.map(() => 0) }));
+    for (const t of times.slice(0, 7)) j.press(0, t + 0.11); // all Good (≈50% credit)
+    j.update(20);
+    const r = j.result();
+    expect(r.accuracy).toBeLessThan(0.6);
+    expect(r.stars).toBe(1);
+  });
+
+  it("breaks the combo and the full combo when a hold is dropped early", () => {
+    const j = new Judge(chart([1, 5], { holds: [2, 0], lanes: [0, 1] }));
+    j.press(0, 1);
+    j.release(0, 1.3);
+    expect(j.combo).toBe(0);
+    j.press(1, 5);
+    const r = j.result();
+    expect(r.holdsDropped).toBe(1);
+    expect(r.fullCombo).toBe(false);
   });
 
   it("never scores assisted notes", () => {

@@ -21,6 +21,7 @@ export type Piece = {
   warning?: string;
   beatToSeconds?: (beat: number) => number;
   meter?: number; // Beats per bar from the first time signature (MIDI only).
+  trackNames?: string[]; // MIDI track names by index (used to find a named solo line).
   source?: { url: string; sheetUrl?: string; fileUrl: string; edition: string };
 };
 const names = ["C", "C♯", "D", "D♯", "E", "F", "F♯", "G", "G♯", "A", "A♯", "B"];
@@ -78,6 +79,7 @@ export function parseMidi(data: ArrayBuffer, title: string): Piece {
     composer: "Imported MIDI",
     beatToSeconds: (beat) => midi.header.ticksToSeconds(beat * midi.header.ppq),
     meter: meterOf(midi.header.timeSignatures[0]?.timeSignature),
+    trackNames: midi.tracks.map((t) => t.name),
     notes: midi.tracks
       .map((t, track) => ({ t, track }))
       .filter(({ t }) => !t.instrument.percussion)

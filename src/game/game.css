@@ -297,6 +297,7 @@ a { color: var(--sun); }
 .hud-pop.great { color: #6bffb0; }
 .hud-pop.good { color: #7fd6ff; }
 .hud-pop.miss { color: #ff7a8a; font-size: clamp(0.9rem, 2.2vw, 1.2rem); }
+.hud-pop.wrong { color: #ffb3bd; font-size: clamp(0.8rem, 2vw, 1.05rem); }
 @keyframes popup { 0% { opacity: 0; transform: translate(-50%, -30%) scale(0.5); } 20% { opacity: 1; transform: translate(-50%, -80%) scale(1.15); } 70% { opacity: 1; transform: translate(-50%, -110%) scale(1); } 100% { opacity: 0; transform: translate(-50%, -140%) scale(0.95); } }
 .hud-count { position: absolute; left: 50%; top: 38%; transform: translate(-50%, -50%); font-weight: 800; font-size: clamp(4rem, 14vw, 8rem); color: var(--sun); -webkit-text-stroke: 0.05em #1b1733; paint-order: stroke fill; opacity: 0; }
 .hud-count.go { animation: count 0.8s ease-out forwards; }
@@ -363,6 +364,7 @@ a { color: var(--sun); }
 .j-good b { color: #7fd6ff; }
 .j-miss b { color: #ff9aa6; }
 .results-tip, .results-practice, .results-freed { margin: 0; font-weight: 700; }
+.results-calibrate { margin: 0.4rem 0 0; }
 .results-freed { color: #9fe8ff; font-family: var(--display); font-weight: 800; }
 .results-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
 

@@ -16,7 +16,7 @@ export type HudState = {
   hint: string;
 };
 
-const LABEL: Record<string, string> = { perfect: "PERFECT!", great: "GREAT", good: "GOOD", miss: "MISS" };
+const LABEL: Record<string, string> = { perfect: "PERFECT!", great: "GREAT", good: "GOOD", miss: "MISS", wrong: "✗ WRONG KEY" };
 
 export class Hud {
   readonly root: HTMLElement;
@@ -27,6 +27,7 @@ export class Hud {
   onPause?: () => void;
   onEncore?: () => void;
   private el: Record<string, HTMLElement> = {};
+  private stars?: HTMLElement[];
 
   constructor(parent: HTMLElement) {
     this.root = document.createElement("div");
@@ -91,6 +92,8 @@ export class Hud {
     this.el.words.hidden = info.mode !== "words";
     // Big left/right touch zones in Tap mode (phones and tablets).
     this.el.tap.hidden = info.mode !== "tap" || !info.touch;
+    // The key that fires Encore: Enter while typing words (Space is a word gap).
+    this.el.encoreReady.textContent = info.touch ? "TAP" : info.mode === "words" ? "ENTER" : "SPACE";
     this.el.word.innerHTML = "";
     this.el.nextWords.textContent = "";
     this.el.badges.textContent = bits.join(" · ");
@@ -128,16 +131,14 @@ export class Hud {
     this.el.encoreBtn.classList.toggle("show", ready);
     this.root.classList.toggle("encore-on", s.encoreActive);
     this.el.progressFill.style.transform = `scaleX(${s.progress.toFixed(4)})`;
-    this.root.querySelectorAll<HTMLElement>("[data-star]").forEach((star) => {
-      const i = Number(star.dataset.star);
-      star.classList.toggle("lit", s.accuracy >= STAR_ACCURACY[i] && s.progress > 0.05);
-    });
+    this.stars ??= [...this.root.querySelectorAll<HTMLElement>("[data-star]")];
+    this.stars.forEach((star, i) => star.classList.toggle("lit", s.accuracy >= STAR_ACCURACY[i] && s.progress > 0.05));
     if (s.hint !== this.last.hint) this.el.hint.textContent = s.hint;
     this.el.hint.classList.toggle("waiting", s.waiting);
     this.last = s;
   }
 
-  judgement(kind: "perfect" | "great" | "good" | "miss", x: number, y: number, delta: number) {
+  judgement(kind: "perfect" | "great" | "good" | "miss" | "wrong", x: number, y: number, delta: number) {
     const pop = this.pops[this.popIndex++ % this.pops.length];
     const timing = kind === "great" || kind === "good" ? (delta < 0 ? "EARLY" : "LATE") : "";
     pop.innerHTML = `${LABEL[kind]}${timing ? `<small>${timing}</small>` : ""}`;
@@ -178,7 +179,8 @@ export class Hud {
   /** Stage title card during the fly-in. */
   intro(title: string, place: string) {
     const el = this.el.banner;
-    el.innerHTML = `<small>${place.replace(/[<>&]/g, "")}</small>${title.replace(/[<>&]/g, "")}`;
+    // Song titles are data, not UI copy: the translator must leave them alone.
+    el.innerHTML = `<small>${place.replace(/[<>&]/g, "")}</small><span translate="no">${title.replace(/[<>&]/g, "")}</span>`;
     el.className = "hud-banner intro";
     void el.offsetWidth;
     el.classList.add("go");

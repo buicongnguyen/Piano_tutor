@@ -25,19 +25,18 @@ export const viStory: Record<string, string[]> = {
   ],
   "arrive:festival": [
     "Ngàn chiếc đèn lồng mà chẳng có tia sáng nào. Bạn biết đấy, đèn lồng cần một bài hát để bay.",
-    "Thấy những ngôi sao vàng không? Chơi trọn đoạn nhạc vàng để nạp thanh Encore, rồi nhấn Space để tỏa sáng!",
+    "Thấy những ngôi sao vàng không? Chơi trọn đoạn nhạc vàng để nạp thanh Encore, rồi kích hoạt nó (Space, Enter ở chế độ Từ, hoặc nút vàng) để tỏa sáng!",
   ],
   "restore:festival": [
     "Nhìn chúng bay lên kìa! Đồi lễ hội chưa từng sáng thế này suốt một trăm năm.",
-    "Tiếp theo là Bến cảng Ragtime. Nhạc ở đó nhảy lệch nhịp một chút. Đó gọi là đảo phách!",
+    "Tiếp theo là Vườn nhà kính, nơi có những bản piano nhỏ nổi tiếng nhất thế giới.",
   ],
   "arrive:pier": [
     "Xin chào! Vòng ngựa gỗ kẹt, vòng quay kẹt, còn tôi chẳng ngân nga nổi gì. Giúp lão thủy thủ này nhé?",
   ],
   "restore:pier": [
     "Đúng rồi! Cả bến cảng đang đung đưa! Tặng bạn bỏng ngô miễn phí trọn đời.",
-    "...tôi chỉ muốn một đêm yên tĩnh... chỉ một đêm...",
-    "Hush đang đi theo chúng ta. Tôi không nghĩ Hush giận dữ. Có lẽ chỉ là không ngủ được.",
+    "Chỉ còn Vòng quay bốn mùa trước lâu đài của Hush. Bốn mùa, mười hai bài. Hít thở sâu nào!",
   ],
   "arrive:garden": [
     "Hoa trong nhà kính chỉ nở khi nghe những bản piano tuyệt vời. Giờ chúng khép chặt như những nắm tay nhỏ.",
@@ -45,6 +44,8 @@ export const viStory: Record<string, string[]> = {
   ],
   "restore:garden": [
     "Nở rồi! Tất cả đều nở! Beethoven, Debussy, Satie — cả khu vườn đang khoe sắc.",
+    "...tôi chỉ muốn một đêm yên tĩnh... chỉ một đêm...",
+    "Hush đang đi theo chúng ta. Tôi không nghĩ Hush giận dữ. Có lẽ chỉ là không ngủ được.",
   ],
   "arrive:neon": [
     "Chào Người giữ phím! Rạn san hô sống nhờ nhịp điệu, nhưng nhịp đã cạn. Cùng bật đèn lên nào.",
@@ -52,6 +53,7 @@ export const viStory: Record<string, string[]> = {
   "restore:neon": [
     "Rạn san hô sáng rực rồi! Neon khắp nơi! Bạn chơi giỏi thật đấy.",
     "...mọi đảo đều sáng... mà tôi vẫn không thể nhắm mắt...",
+    "Tiếp theo là Bến cảng Ragtime. Nhạc ở đó nhảy lệch nhịp một chút. Đó gọi là đảo phách!",
   ],
   "arrive:harbour": [
     "Hải đăng quay theo nhạc ánh trăng. Thiếu nhạc, tàu không tìm được bến.",
@@ -59,7 +61,7 @@ export const viStory: Record<string, string[]> = {
   ],
   "restore:harbour": [
     "Hải đăng lại quay rồi. Tàu nơi chân trời, ánh sáng trên mặt nước. Thật lòng cảm ơn bạn.",
-    "Chỉ còn Vòng quay bốn mùa trước lâu đài của Hush. Bốn mùa, mười hai bài. Hít thở sâu nào!",
+    "Điểm đến tiếp theo: Rạn san hô neon. Hãy mang theo những ngón tay mạnh mẽ nhất!",
   ],
   "arrive:seasons": [
     "Xuân, Hạ, Thu, Đông — bánh xe chỉ quay khi nhạc Vivaldi vang lên. Nó dừng từ cái ngáp đầu tiên của Hush.",
@@ -75,7 +77,7 @@ export const viStory: Record<string, string[]> = {
     "Nhưng âm nhạc cũng nghỉ mà! Bài nào cũng có dấu lặng — những khoảng yên để thở. Hãy cho Hush thấy nhé.",
   ],
   finale: [
-    "Mọi người đều đến! Juniper, bà Pinecone, Bo, thuyền trưởng Fizz, giáo sư, DJ, Nell và các chị em Bốn Mùa!",
+    "Mọi người đều đến! Juniper, bà Pinecone, Bo, giáo sư, Nell, DJ, thuyền trưởng Fizz và các chị em Bốn Mùa!",
     "Canon in D: một giai điệu được chuyền từ người này sang người khác, vòng nối vòng. Cùng chơi nào.",
   ],
   ending: [

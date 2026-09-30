@@ -10,7 +10,8 @@ export const WEIGHT = { perfect: 1, great: 0.8, good: 0.5, miss: 0 };
 const HARMONY = { perfect: 0.03, great: 0.025, good: 0.015, miss: -0.07 };
 export const STAR_ACCURACY = [0.6, 0.75, 0.88];
 export const ENCORE_READY = 0.5;
-const ENCORE_DRAIN = 0.25 / 7; // gauge per real second while active
+const ENCORE_DRAIN = 0.25 / 8; // gauge per real second while active (8 s per quarter)
+const WRONG_HARMONY = -0.04;
 
 export type NoteState = {
   judgement?: Judgement;
@@ -23,7 +24,8 @@ export type NoteState = {
 export type JudgeEvent =
   | { type: "hit"; note: ChartNote; judgement: Exclude<Judgement, "miss">; delta: number; points: number }
   | { type: "miss"; note: ChartNote; early: boolean }
-  | { type: "stray"; lane: number }
+  | { type: "stray"; lane: number } // nowhere near a note: harmless
+  | { type: "wrong"; lane: number } // wrong key while a note was due elsewhere: breaks combo
   | { type: "hold-end"; note: ChartNote; complete: boolean; points: number }
   | { type: "golden"; complete: boolean; start: number }
   | { type: "combo"; combo: number }
@@ -39,6 +41,8 @@ export type Result = {
   counts: Record<Judgement, number>;
   total: number;
   strays: number;
+  wrong: number; // wrong-key presses (count against accuracy)
+  holdsDropped: number; // holds let go before half their length
   meanOffsetMs: number; // negative = early on average
   holdPercent: number;
 };
@@ -49,6 +53,7 @@ export type JudgeOptions = {
   windowScale?: number; // overrides `lenient` (touch play is looser still)
   practice?: boolean; // wait-for-me: no timing, no score
   skip?: Iterable<number>; // note ids played automatically (not scored)
+  wrongKeys?: boolean; // count wrong keys (default on; off for a real MIDI keyboard)
 };
 
 export class Judge {
@@ -65,7 +70,11 @@ export class Judge {
   encore = 0; // 0..1 gauge
   encoreActive = false;
   strays = 0;
+  wrong = 0;
+  holdsDropped = 0;
   counts: Record<Judgement, number> = { perfect: 0, great: 0, good: 0, miss: 0 };
+  private encoreGain: number;
+  private countWrong: boolean;
   private cursor = 0; // first note that may still be unjudged
   private lastTime = -Infinity;
   private goldenDone = new Set<number>();
@@ -85,6 +94,9 @@ export class Judge {
     this.skip = new Set(options.skip ?? []);
     this.holdTotal = this.notes.reduce((total, n) =>
       total + (n.hold && !this.skip.has(n.id) ? n.end - n.time : 0), 0);
+    this.countWrong = options.wrongKeys ?? true;
+    // Short songs have few golden phrases: each fills more of the gauge so Encore is reachable.
+    this.encoreGain = Math.max(0.25, Math.min(0.5, 1 / Math.max(1, chart.golden.length)));
     const k = options.windowScale ?? (options.lenient ? 1.25 : 1);
     this.windows = {
       perfect: WINDOWS.perfect * k,
@@ -152,8 +164,17 @@ export class Judge {
       if (delta < 0 && !early) early = n;
     }
     if (!best) {
-      if (early) this.miss(early, events, true);
-      else {
+      // A late press at a note that just timed out is that note's (already counted)
+      // miss, not an early grab at the next one: one mistake, one penalty.
+      if (early && !this.recentlyMissed(lane, t)) this.miss(early, events, true);
+      else if (!early && this.countWrong && this.dueElsewhere(lane, t)) {
+        // A wrong key while a note is due in another lane: mashing every lane
+        // earns no stars. Shown on screen; silent when the song keeps playing.
+        this.wrong++;
+        this.combo = 0;
+        this.harmony = clamp01(this.harmony + WRONG_HARMONY);
+        events.push({ type: "wrong", lane });
+      } else {
         this.strays++;
         events.push({ type: "stray", lane });
       }
@@ -228,6 +249,11 @@ export class Judge {
     return [{ type: "encore", active: true }];
   }
 
+  /** Note ids whose hold is in progress (live view; don't mutate). */
+  get holdingIds(): ReadonlySet<number> {
+    return this.holding;
+  }
+
   get finished() {
     return this.cursor >= this.notes.length && this.holding.size === 0;
   }
@@ -238,10 +264,20 @@ export class Judge {
       this.counts.perfect * WEIGHT.perfect +
       this.counts.great * WEIGHT.great +
       this.counts.good * WEIGHT.good;
-    const accuracy = total ? weighted / total : 0;
-    const stars = this.practice ? 0 : STAR_ACCURACY.filter((a) => accuracy >= a - 1e-9).length;
+    // Wrong keys count as extra notes in the denominator.
+    const played = total + this.wrong;
+    const accuracy = played ? weighted / played : 0;
+    const hits = this.counts.perfect + this.counts.great + this.counts.good;
+    const hitRate = played ? hits / played : 0;
+    // The first star rewards hitting the notes (a steadily late player still earns
+    // it); the second and third reward timing.
+    const stars = this.practice
+      ? 0
+      : (hitRate >= STAR_ACCURACY[0] - 1e-9 || accuracy >= STAR_ACCURACY[0] - 1e-9 ? 1 : 0) +
+        STAR_ACCURACY.slice(1).filter((a) => accuracy >= a - 1e-9).length;
+    const fullCombo = total > 0 && hits === total && this.wrong === 0 && this.holdsDropped === 0;
     const rank: Result["rank"] =
-      total && this.counts.perfect === total
+      total && this.counts.perfect === total && this.wrong === 0
         ? "S+"
         : accuracy >= 0.95
           ? "S"
@@ -249,7 +285,7 @@ export class Judge {
             ? "A"
             : accuracy >= 0.75
               ? "B"
-              : accuracy >= 0.6
+              : accuracy >= 0.6 || fullCombo
                 ? "C"
                 : "D";
     const mean = this.offsets.length
@@ -260,11 +296,13 @@ export class Judge {
       accuracy,
       stars,
       rank,
-      fullCombo: total > 0 && this.counts.miss === 0 && this.counts.perfect + this.counts.great + this.counts.good === total,
+      fullCombo,
       maxCombo: this.maxCombo,
       counts: { ...this.counts },
       total,
       strays: this.strays,
+      wrong: this.wrong,
+      holdsDropped: this.holdsDropped,
       meanOffsetMs: Math.round(mean * 1000),
       holdPercent: this.holdTotal ? Math.round((this.holdGot / this.holdTotal) * 100) : 100,
     };
@@ -289,6 +327,11 @@ export class Judge {
     st.held = length > 0 ? held / length : 1;
     this.holdGot += held;
     const complete = st.held >= 0.9;
+    if (st.held < 0.5) {
+      // Letting go early breaks the combo: holds matter, not just their first press.
+      this.holdsDropped++;
+      this.combo = 0;
+    }
     const points = Math.round(((held / this.speed) * 100 * this.multiplier * (this.encoreActive ? 2 : 1)) / 5) * 5;
     this.score += points;
     events.push({ type: "hold-end", note: n, complete, points });
@@ -304,10 +347,45 @@ export class Judge {
         events.push({ type: "golden", complete: false, start: phrase.start });
       } else if (states.every((s) => s)) {
         this.goldenDone.add(i);
-        this.encore = Math.min(1, this.encore + 0.25);
+        this.encore = Math.min(1, this.encore + this.encoreGain);
         events.push({ type: "golden", complete: true, start: phrase.start });
       }
     });
+  }
+
+  /** Is a scored note (judged or not) due in another lane right now? */
+  private dueElsewhere(lane: number, t: number) {
+    for (let i = this.firstNear(t); i < this.notes.length; i++) {
+      const n = this.notes[i];
+      const delta = (t - n.time) / this.speed;
+      if (delta < -this.windows.good) break;
+      if (n.lane !== lane && !this.skip.has(i) && Math.abs(delta) <= this.windows.good) return true;
+    }
+    return false;
+  }
+
+  /** Did a note in this lane time out as a miss moments ago? */
+  private recentlyMissed(lane: number, t: number) {
+    for (let i = this.firstNear(t); i < this.notes.length; i++) {
+      const n = this.notes[i];
+      const delta = (t - n.time) / this.speed;
+      if (delta < 0) break;
+      if (n.lane === lane && this.state[i].judgement === "miss" && delta <= this.windows.miss) return true;
+    }
+    return false;
+  }
+
+  /** First note that could be within the miss window of `t` (binary search). */
+  private firstNear(t: number) {
+    const from = t - this.windows.miss * this.speed;
+    let lo = 0,
+      hi = this.notes.length;
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if (this.notes[mid].time < from) lo = mid + 1;
+      else hi = mid;
+    }
+    return lo;
   }
 
   private advanceCursor() {

@@ -1,9 +1,10 @@
 // One run of a stage: chart + judge + conductor + input + 3D stage + HUD.
 import type { Piece } from "../music";
 import { noteName } from "../music";
-import { buildChart, laptopBase, pianoWindow, type Chart, type Difficulty, type KeyMode } from "./chart";
+import { buildChart, LANES, laptopBase, pianoWindow, type Chart, type Difficulty, type KeyMode } from "./chart";
 import { Conductor } from "./conductor";
-import { laneForKey, laneLabels, type Input, type LaneEvent, type LanePreset } from "./input";
+import { laneCodes, laneForKey, laneLabels, lanesFor, type Input, type LaneEvent, type LanePreset } from "./input";
+import { keyLabel } from "./keyboard-layout";
 import { letterOf } from "./words";
 import { Judge, type JudgeEvent, type Result } from "./judge";
 import type { Stage } from "./render/stage";
@@ -66,8 +67,17 @@ export class PlaySession {
     readonly hud: Hud,
   ) {
     const { piece, difficulty, mode, practice, speed } = setup;
-    this.chart = buildChart(piece, { difficulty, mode, speed, seed: setup.stageId, theme: setup.theme.id });
-    // Real-piano mode on a laptop: notes outside the 17-key window are assisted.
+    // Practice teaches the very chart that is played for stars: build it at full
+    // speed; only the clock (and the judge's windows) slow down.
+    this.chart = buildChart(piece, {
+      difficulty,
+      mode,
+      speed: 1,
+      seed: setup.stageId,
+      theme: setup.theme.id,
+      lanes: lanesFor(LANES[difficulty], setup.laneKeys),
+    });
+    // Real-piano mode on a laptop: notes outside the three-row key window are assisted.
     let laptopKeys: Map<number, string> | undefined;
     let base = 60;
     let keyRange: [number, number] | undefined;
@@ -77,14 +87,14 @@ export class PlaySession {
       this.chart.notes.forEach((n) => {
         if (n.midi < keyRange![0] || n.midi > keyRange![1]) this.assist.add(n.id);
       });
-      base = laptopBase(this.chart, setup.laptop === "home" ? 13 : 17);
+      base = laptopBase(this.chart, setup.laptop === "home" ? 13 : 17, 10);
       if (!setup.midi && !setup.touch) {
         laptopKeys = new Map();
-        const layout = computerLayout(2, setup.laptop === "home" ? "home" : "classic");
+        const layout = computerLayout(3, setup.laptop === "home" ? "home" : "classic");
         for (const row of layout.rows)
           for (const label of row) {
             const midi = laneForKey(keyCode(label), { kind: "piano", base, layout: setup.laptop });
-            if (midi !== undefined) laptopKeys.set(midi, label);
+            if (midi !== undefined) laptopKeys.set(midi, keyLabel(keyCode(label), label));
           }
         this.chart.notes.forEach((n) => {
           if (!laptopKeys!.has(n.midi)) this.assist.add(n.id);
@@ -98,6 +108,9 @@ export class PlaySession {
       windowScale: mode === "tap" ? (difficulty === "easy" ? 1.5 : 1.35) : undefined,
       practice,
       skip: this.assist,
+      // A pianist on a real keyboard may add harmony or a left hand: extra keys
+      // there are not mistakes. Everywhere else a wrong key while a note is due counts.
+      wrongKeys: !(mode === "piano" && setup.midi),
     });
     const approach = approachFor(setup.noteSpeed);
     this.conductor = new Conductor(bank, this.chart, {
@@ -116,11 +129,11 @@ export class PlaySession {
       labels: setup.labels,
       laneLabels:
         mode === "lanes"
-          ? laneLabels(this.chart.lanes, setup.laneKeys)
+          ? laneLabels(this.chart.lanes, setup.laneKeys).map((label, i) => keyLabel(laneCodes(this.chart.lanes, setup.laneKeys)[i], label))
           : mode === "tap"
             ? setup.touch
               ? ["◀", "▶"]
-              : ["F", "J"]
+              : [keyLabel("KeyF", "F"), keyLabel("KeyJ", "J")]
             : undefined,
       laptopKeys,
       touch: setup.touch,
@@ -215,7 +228,11 @@ export class PlaySession {
       this.apply(events);
       // Real keys always sound their own pitch, even when they weren't the target
       // (a stray, or a press so early it only consumed the note as a miss).
-      if (!this.setup.keepMelody && this.chart.mode === "piano" && events.some((ev) => ev.type === "stray" || (ev.type === "miss" && ev.early))) {
+      if (
+        !this.setup.keepMelody &&
+        this.chart.mode === "piano" &&
+        events.some((ev) => ev.type === "stray" || ev.type === "wrong" || (ev.type === "miss" && ev.early))
+      ) {
         this.laneStops.get(e.lane)?.();
         this.laneStops.set(e.lane, this.bank.note(e.lane, this.bank.now, 0.9, 0.6));
       }
@@ -251,6 +268,15 @@ export class PlaySession {
           if (this.chart.mode !== "piano" && !this.setup.keepMelody) this.bank.blip("stray");
           if (this.judge.practice) this.hud.hint(this.practiceHint());
           break;
+        case "wrong": {
+          // Wrong key while a note was due elsewhere: shown (and it breaks the combo),
+          // but silent when the song keeps playing.
+          this.stage.stray(ev.lane);
+          const pos = this.stage.screenOf(ev.lane, innerWidth, innerHeight);
+          this.hud.judgement("wrong", pos.x, pos.y, 0);
+          if (this.chart.mode !== "piano" && !this.setup.keepMelody) this.bank.blip("stray");
+          break;
+        }
         case "hold-end":
           this.stage.holdEnd(ev.note, ev.complete);
           if (!ev.complete) this.conductor.release(ev.note);
@@ -317,10 +343,7 @@ export class PlaySession {
         this.bank.blip("go");
       }
     }
-    const holding = new Set<number>();
-    this.judge.state.forEach((s, i) => {
-      if (s.holding) holding.add(i);
-    });
+    const holding = this.judge.holdingIds; // no per-frame scan of every note
     const beat = this.beatPhase(t);
     this.beat = beat;
     if (this.chart.mode === "words") this.updateWords();
@@ -416,11 +439,13 @@ export class PlaySession {
       const c = this.judge.counts;
       const minutes = Math.max(0.1, (this.chart.end - this.chart.start) / this.setup.speed / 60);
       const wpm = Math.round((c.perfect + c.great + c.good) / 5 / minutes);
+      // The song sets the pace: a flawless run types exactly this fast.
+      const pace = Math.round(this.chart.notes.length / 5 / minutes);
       const clean = words.filter((w) => {
         for (let i = w.first; i <= w.last; i++) if (this.judge.state[i]?.judgement === "miss" || !this.judge.state[i]?.judgement) return false;
         return true;
       }).length;
-      bits.push(`⌨️ ${wpm} WPM · ${clean} of ${words.length} words typed perfectly`);
+      bits.push(`⌨️ ${wpm} WPM · song pace ${pace} WPM · ${clean} of ${words.length} words typed perfectly`);
     }
     if (this.setup.keepMelody) bits.push("🎵 The song kept playing for you");
     return bits.join(" · ");

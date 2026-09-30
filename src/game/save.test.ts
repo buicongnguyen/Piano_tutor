@@ -12,6 +12,8 @@ const result = (stars: number, score: number, extra: Partial<Result> = {}): Resu
   counts: { perfect: 10, great: 5, good: 2, miss: 1 },
   total: 18,
   strays: 0,
+  wrong: 0,
+  holdsDropped: 0,
   meanOffsetMs: 0,
   holdPercent: 100,
   ...extra,
@@ -38,7 +40,7 @@ describe("save data", () => {
       }),
     );
     expect(Object.keys(save.records)).toEqual(["fur-elise|hard|piano"]);
-    expect(save.records["fur-elise|hard|piano"]).toEqual({ stars: 3, score: 0, accuracy: 1, rank: "D", fullCombo: false, plays: 2 });
+    expect(save.records["fur-elise|hard|piano"]).toEqual({ stars: 3, score: 0, accuracy: 1, rank: "D", bestRank: "D", fullCombo: false, plays: 2 });
     expect(save.seen).toEqual(["intro", "arrive:meadow"]);
     expect(save.freed).toBe(1e9);
     expect(save.lastIsland).toBe("meadow");
@@ -75,6 +77,16 @@ describe("save data", () => {
     expect(hard.starsGained).toBe(2);
     expect(bestStars(save)).toEqual({ arirang: 3 });
     expect(save.freed).toBe(17 * 3);
+  });
+
+  it("keeps score, rank and accuracy from the same best run, and the best rank separately", () => {
+    const save = emptySave();
+    recordRun(save, "arirang", "easy", "lanes", result(2, 5000, { rank: "A", accuracy: 0.9 }));
+    // A longer combo streak scores more with worse accuracy.
+    recordRun(save, "arirang", "easy", "lanes", result(2, 6000, { rank: "B", accuracy: 0.8 }));
+    expect(save.records[recordKey("arirang", "easy", "lanes")]).toMatchObject({ score: 6000, rank: "B", accuracy: 0.8, bestRank: "A" });
+    recordRun(save, "arirang", "easy", "lanes", result(3, 5500, { rank: "S", accuracy: 0.95 }));
+    expect(save.records[recordKey("arirang", "easy", "lanes")]).toMatchObject({ score: 6000, rank: "B", bestRank: "S", stars: 3 });
   });
 
   it("counts practice runs as plays only", () => {

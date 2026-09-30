@@ -86,8 +86,8 @@ export const vi: Record<string, string> = {
   "right hand": "tay phải",
   "My songs": "Nhạc của tôi",
   "Import a song": "Nhập bản nhạc",
-  "Import a MIDI or MusicXML file — Encore charts it for every difficulty. Files stay on this device.":
-    "Nhập tệp MIDI hoặc MusicXML — Encore tạo màn chơi cho mọi độ khó. Tệp chỉ được dùng trên thiết bị này.",
+  "Import a MIDI or MusicXML file — Encore charts it for every difficulty. Files stay on this device and are kept until you close the page.":
+    "Nhập tệp MIDI hoặc MusicXML — Encore tạo màn chơi cho mọi độ khó. Tệp chỉ ở trên thiết bị này và được giữ đến khi bạn đóng trang.",
   "Your own score, charted automatically.":
     "Bản nhạc của bạn, tự động tạo màn chơi.",
   Close: "Đóng",
@@ -117,6 +117,8 @@ export const vi: Record<string, string> = {
   COMBO: "CHUỖI",
   SPACE: "PHÍM CÁCH",
   TAP: "CHẠM",
+  ENTER: "ENTER",
+  "✗ WRONG KEY": "✗ SAI PHÍM",
   "Play!": "Chơi nào!",
   "Go!": "Bắt đầu!",
   Excerpt: "Trích đoạn",

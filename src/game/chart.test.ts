@@ -35,6 +35,49 @@ function twoHands(bars = 8) {
   return piece(notes);
 }
 
+describe("difficulty tiers", () => {
+  // A fast tune (180 BPM) in running eighth notes.
+  function fast() {
+    const notes: Note[] = [];
+    for (let i = 0; i < 96; i++) notes.push(note(i * (60 / 180 / 2), 72 + (i % 5), { track: 0 }));
+    return piece(notes, 180);
+  }
+
+  it("keeps Easy on the pulse in a fast song", () => {
+    const chart = buildChart(fast(), { difficulty: "easy", mode: "lanes" });
+    const times = chart.notes.map((n) => n.time);
+    const beat = 60 / 180;
+    for (let i = 1; i < times.length; i++) expect(times[i] - times[i - 1]).toBeGreaterThan(beat * 1.8);
+    for (const t of times) expect(Math.abs(t / beat - Math.round(t / beat))).toBeLessThan(0.01);
+  });
+
+  it("lets Easy play half beats in a slow song", () => {
+    const notes: Note[] = [];
+    for (let i = 0; i < 32; i++) notes.push(note(i * 0.5, 72 + (i % 5), { track: 0, duration: 0.45 }));
+    const chart = buildChart(piece(notes, 60), { difficulty: "easy", mode: "lanes" });
+    expect(chart.notes.length).toBeGreaterThanOrEqual(28);
+  });
+
+  it("adds accompaniment on the empty beats of a sparse tune on Hard only", () => {
+    const notes: Note[] = [];
+    // Melody: a long note every two beats (120 BPM); strings: a quarter-note line.
+    for (let i = 0; i < 32; i++) notes.push(note(i * 1, 79, { track: 0, duration: 0.9, program: 40 }));
+    for (let i = 0; i < 64; i++) notes.push(note(i * 0.5, 74 + (i % 3), { track: 1, program: 40 }));
+    for (let i = 0; i < 64; i++) notes.push(note(i * 0.5, 40, { track: 2, program: 32 }));
+    const p = { ...piece(notes), trackNames: ["solo", "violinone", "bass"] };
+    const normal = buildChart(p, { difficulty: "normal", mode: "lanes" });
+    const hard = buildChart(p, { difficulty: "hard", mode: "lanes" });
+    expect(normal.notes.every((n) => n.midi === 79)).toBe(true);
+    expect(hard.notes.length).toBeGreaterThan(normal.notes.length * 1.5);
+    // Support notes come from the strings, never the bass, and are not doubled in the backing.
+    expect(hard.notes.some((n) => n.midi !== 79)).toBe(true);
+    expect(hard.notes.every((n) => n.midi !== 40)).toBe(true);
+    for (const n of hard.notes)
+      expect(hard.accompaniment.some((a) => a.midi === n.midi && Math.abs(a.time - n.time) < 0.02)).toBe(false);
+    expect(buildChart(p, { difficulty: "hard", mode: "words" }).notes.length).toBe(normal.notes.length);
+  });
+});
+
 describe("lead extraction", () => {
   it("uses the right hand when both hands are labelled", () => {
     const { lead, rest } = leadNotes(twoHands());
@@ -49,6 +92,17 @@ describe("lead extraction", () => {
     for (let i = 0; i < 20; i++) notes.push(note(i * 0.5, 64, { track: 3, program: 41 }));
     const { lead } = leadNotes(piece(notes));
     expect(new Set(lead.map((n) => n.track))).toEqual(new Set([1]));
+  });
+
+  it("follows a named solo track over busier tutti violins", () => {
+    const notes: Note[] = [];
+    for (let i = 0; i < 30; i++) notes.push(note(i * 1, 77 + (i % 3), { track: 0, program: 40 }));
+    for (let i = 0; i < 200; i++) notes.push(note(i * 0.15, 74 + (i % 2), { track: 1, program: 40 }));
+    const p = { ...piece(notes), trackNames: ["solo", "violinone"] };
+    expect(new Set(leadNotes(p).lead.map((n) => n.track))).toEqual(new Set([0]));
+    // A named track with only a stray cue does not take over.
+    const cue = { ...piece([...notes.filter((n) => n.track === 1), ...notes.slice(0, 3)]), trackNames: ["solo", "violinone"] };
+    expect(new Set(leadNotes(cue).lead.map((n) => n.track))).toEqual(new Set([1]));
   });
 
   it("groups chords by onset and keeps the longest duplicate", () => {
@@ -213,5 +267,49 @@ describe("chart building", () => {
     const p = { ...twoHands(), meter: 3 };
     const chart = buildChart(p, { difficulty: "normal", mode: "lanes" });
     expect(chart.bars[1] - chart.bars[0]).toBeCloseTo(1.5);
+  });
+});
+
+describe("lane count override", () => {
+  it("keeps one-hand presets at four lanes on Hard", () => {
+    const notes: Note[] = [];
+    for (let i = 0; i < 40; i++) notes.push(note(i * 0.5, 60 + ((i * 5) % 19), { track: 0 }));
+    const chart = buildChart(piece(notes), { difficulty: "hard", mode: "lanes", lanes: 4 });
+    expect(chart.lanes).toBe(4);
+    expect(chart.notes.every((n) => n.lane >= 0 && n.lane < 4)).toBe(true);
+  });
+});
+
+describe("tap mode", () => {
+  it("never gives one thumb more than four quick notes in a row", () => {
+    // A repeated-note run: contour alone would keep it all on one side.
+    const notes: Note[] = [];
+    for (let i = 0; i < 24; i++) notes.push(note(i * 0.3, 72, { track: 0 }));
+    const lanes = buildChart(piece(notes), { difficulty: "normal", mode: "tap" }).notes.map((n) => n.lane);
+    let run = 1;
+    for (let i = 1; i < lanes.length; i++) {
+      run = lanes[i] === lanes[i - 1] ? run + 1 : 1;
+      expect(run).toBeLessThanOrEqual(4);
+    }
+    expect(new Set(lanes)).toEqual(new Set([0, 1]));
+  });
+});
+
+describe("short songs", () => {
+  it("still get one golden phrase so Encore is reachable", () => {
+    const notes: Note[] = [];
+    for (let i = 0; i < 20; i++) notes.push(note(i * 0.5, 72 + (i % 5), { track: 0 }));
+    const chart = buildChart(piece(notes), { difficulty: "normal", mode: "lanes" });
+    expect(chart.golden.length).toBe(1);
+    expect(chart.golden[0].ids.length).toBeGreaterThanOrEqual(6);
+  });
+
+  it("plays melody notes a lighter difficulty leaves out on the piano", () => {
+    const notes: Note[] = [];
+    for (let i = 0; i < 64; i++) notes.push(note(i * 0.125, 72 + (i % 5), { track: 0, program: 40 }));
+    const chart = buildChart(piece(notes), { difficulty: "easy", mode: "lanes" });
+    const leftOut = chart.accompaniment.filter((n) => n.track === 0);
+    expect(leftOut.length).toBeGreaterThan(0);
+    expect(leftOut.every((n) => n.program === undefined)).toBe(true);
   });
 });

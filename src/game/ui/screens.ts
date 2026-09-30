@@ -7,7 +7,7 @@ import type { SaveData, Settings } from "../save";
 import { recordKey } from "../save";
 import { el, esc, stars } from "./dom";
 import { languageControl, t } from "../i18n";
-import { LANE_PRESETS, laneLabels, type LanePreset } from "../input";
+import { LANE_PRESETS, laneLabels, lanesFor, type LanePreset } from "../input";
 
 export type StageChoice = {
   island?: Island;
@@ -249,7 +249,7 @@ export class Screens {
   private total = 0;
   extraStages: Stage[] = [];
 
-  setProgress(save: SaveData, best: Record<string, number>, total: number, nextGate?: Island) {
+  setProgress(save: SaveData, best: Record<string, number>, total: number, nextGate: Island | undefined, isOpen: (island: Island) => boolean) {
     this.save = save;
     this.best = best;
     this.total = total;
@@ -259,7 +259,7 @@ export class Screens {
     goal.textContent = nextGate ? `${nextGate.gate - total} more ★ to open ${nextGate.name}` : "Every island is open!";
     for (const island of islands) {
       const label = this.labelEls.get(island.id)!;
-      const open = save.settings.openAll || total >= island.gate;
+      const open = isOpen(island);
       const got = islandStars(island, best);
       label.classList.toggle("locked", !open);
       label.innerHTML = open
@@ -340,7 +340,7 @@ export class Screens {
         <h3>Difficulty</h3>
         <div class="seg">${DIFF.map(
           (d) => `<button data-act="difficulty" data-value="${d.id}" aria-pressed="${c.difficulty === d.id}">
-            <b>${d.name}</b><small>${c.mode === "piano" ? d.hint.replace(/\d lanes · /, "") : c.mode === "words" ? WORD_HINT[d.id] : c.mode === "tap" ? TAP_HINT[d.id] : c.mode === "lanes" ? `${laneLabels(d.id === "easy" ? 4 : 6, c.laneKeys).join(" ")}` : d.hint}</small>
+            <b>${d.name}</b><small>${c.mode === "piano" ? d.hint.replace(/\d lanes · /, "") : c.mode === "words" ? WORD_HINT[d.id] : c.mode === "tap" ? TAP_HINT[d.id] : c.mode === "lanes" ? `${laneLabels(lanesFor(d.id === "easy" ? 4 : 6, c.laneKeys), c.laneKeys).join(" ")}` : d.hint}</small>
             <span class="seg-stars">${stars(rec(d.id, c.mode)?.stars ?? 0)}</span></button>`,
         ).join("")}</div>
         <h3>Keys</h3>
@@ -362,7 +362,11 @@ export class Screens {
         <label class="toggle"><input type="checkbox" data-act="practice" ${c.practice ? "checked" : ""}>
           <span><b>Practice</b> — the road waits for each note. No score, no stars.</span></label>
         <label class="speed" ${c.practice ? "" : "hidden"}>Practice speed <input type="range" min="0.5" max="1" step="0.05" value="${c.speed}" data-el="speed"> <output>${Math.round(c.speed * 100)}%</output></label>
-        <div class="setup-best">${current ? `Best <b>${current.score.toLocaleString("en-US")}</b> · ${current.rank} · ${Math.round(current.accuracy * 100)}%${current.fullCombo ? " · 👑 Full combo" : ""}` : "Not cleared yet at this setting."}</div>
+        <div class="setup-best">${
+          current && current.score > 0 // practice-only records have plays but no run
+            ? `Best <b>${current.score.toLocaleString("en-US")}</b> · ${current.rank} · ${Math.round(current.accuracy * 100)}%${current.bestRank !== current.rank ? ` · <span>Top rank ${current.bestRank}</span>` : ""}${current.fullCombo ? " · 👑 Full combo" : ""}`
+            : "Not cleared yet at this setting."
+        }</div>
         <button class="btn btn-big btn-sun" data-act="go">▶ ${c.practice ? "Practice" : "Play"}</button>
       </div>`;
     const speed = this.panel.querySelector<HTMLInputElement>('[data-el="speed"]');
@@ -396,7 +400,7 @@ export class Screens {
       <header class="modal-head"><h2>📖 Songbook</h2><button class="btn btn-icon" data-act="close-songbook" aria-label="Close">✕</button></header>
       <div class="book">
         <section class="book-island mine"><h3>My songs</h3>
-          <p class="small">Import a MIDI or MusicXML file — Encore charts it for every difficulty. Files stay on this device.</p>
+          <p class="small">Import a MIDI or MusicXML file — Encore charts it for every difficulty. Files stay on this device and are kept until you close the page.</p>
           ${mine.map((s) => `<button class="book-row" data-act="stage" data-stage="${s.id}"><span><b>${esc(s.title)}</b><small>${esc(s.composer)}</small></span></button>`).join("")}
           <button class="btn btn-small" data-act="import">＋ Import a song</button>
         </section>
@@ -418,7 +422,7 @@ export class Screens {
 
   // ------------------------------------------------------------ results
 
-  showResults(r: Result, info: { title: string; practice: boolean; newBest: boolean; firstClear: boolean; hasNext: boolean; freed: number; tendency: string; extra?: string }) {
+  showResults(r: Result, info: { title: string; practice: boolean; newBest: boolean; firstClear: boolean; hasNext: boolean; freed: number; tendency: string; calibrate?: boolean; extra?: string }) {
     const accuracy = Math.round(r.accuracy * 1000) / 10;
     this.results.innerHTML = `<div class="modal-card results-card ${info.practice ? "practice" : ""}">
       <span class="results-kicker">${info.practice ? "Practice complete" : info.firstClear ? "Stage cleared!" : "Results"}</span>
@@ -439,7 +443,10 @@ export class Screens {
           <div class="j-good"><span>Good</span><b>${r.counts.good}</b></div>
           <div class="j-miss"><span>Miss</span><b>${r.counts.miss}</b></div>
         </div>
-        <p class="results-tip">${esc(info.tendency)}</p>${info.extra ? `<p class="results-extra">${esc(info.extra)}</p>` : ""}`
+        <p class="results-tip">${esc(info.tendency)}</p>${
+          // A steady offset is often the device (Bluetooth audio), not the player.
+          info.calibrate ? '<p class="results-calibrate"><button class="btn btn-small" data-act="calibrate">🎯 Calibrate timing</button></p>' : ""
+        }${info.extra ? `<p class="results-extra">${esc(info.extra)}</p>` : ""}`
       }
       <p class="results-freed">♪ ${info.freed} stillnotes freed</p>
       <div class="results-actions">

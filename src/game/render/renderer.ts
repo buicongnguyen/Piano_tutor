@@ -108,16 +108,28 @@ export class Renderer {
     this.resize(this.width, this.height);
   }
 
+  /** Show another scene. The post chain is reused: only its render pass is re-pointed. */
   attach(scene: THREE.Scene, camera: THREE.PerspectiveCamera) {
     this.scene = scene;
     this.camera = camera;
-    this.build();
+    if (this.renderPass) {
+      this.renderPass.scene = scene;
+      this.renderPass.camera = camera;
+    } else this.build();
     this.resize(this.width, this.height);
   }
 
+  private renderPass?: RenderPass;
+  private bloomValues: [number, number, number] = [0.4, 0.5, 0.82];
+  private gradeValues: [number, number, number] = [1.08, 1.05, 0.28];
+  onViewport?: (height: number, pixelRatio: number) => void;
+
   private build() {
+    // EffectComposer.dispose() leaves its passes (and bloom's 11 render targets) alive.
+    for (const pass of this.composer?.passes ?? []) (pass as { dispose?: () => void }).dispose?.();
     this.composer?.dispose();
     this.composer = undefined;
+    this.renderPass = undefined;
     this.bloom = undefined;
     this.finish = undefined;
     const q = QUALITY[this.quality];
@@ -128,7 +140,8 @@ export class Renderer {
       samples: q.msaa,
     });
     const composer = new EffectComposer(this.renderer, target);
-    composer.addPass(new RenderPass(this.scene, this.camera));
+    this.renderPass = new RenderPass(this.scene, this.camera);
+    composer.addPass(this.renderPass);
     composer.addPass(new ShaderPass(SanitizeShader));
     if (q.bloom) {
       this.bloom = new UnrealBloomPass(new THREE.Vector2(size.x / 2, size.y / 2), 0.4, 0.45, 1.0);
@@ -138,6 +151,9 @@ export class Renderer {
     this.finish = new ShaderPass(FinishShader);
     composer.addPass(this.finish);
     this.composer = composer;
+    // A quality change must keep the current scene's look.
+    this.setBloom(...this.bloomValues);
+    this.setGrade(...this.gradeValues);
   }
 
   get pixelRatio() {
@@ -159,10 +175,13 @@ export class Renderer {
       const size = this.renderer.getDrawingBufferSize(new THREE.Vector2());
       this.finish?.uniforms.resolution.value.set(size.x, size.y);
     }
+    // Point sprites are sized in device pixels: tell particle systems (adaptive scale too).
+    this.onViewport?.(this.height, this.pixelRatio);
   }
 
   /** Theme bloom. Thresholds sit above 1 so only lights and emissives glow, never sunlit ivory. */
   setBloom(strength: number, radius = 0.5, threshold = 0.82) {
+    this.bloomValues = [strength, radius, threshold];
     if (!this.bloom) return;
     this.bloom.strength = strength * 0.7;
     this.bloom.radius = radius;
@@ -170,6 +189,7 @@ export class Renderer {
   }
 
   setGrade(saturation: number, contrast = 1.05, vignette = 0.28) {
+    this.gradeValues = [saturation, contrast, vignette];
     const u = this.finish?.uniforms;
     if (!u) return;
     u.saturation.value = saturation;

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { LANE_KEYS, laneCodes, laneForKey, laneForMidi, laneLabels } from "./input";
+import { LANE_KEYS, laneCodes, laneForKey, laneForMidi, laneLabels, lanesFor } from "./input";
 
 describe("input mapping", () => {
   it("maps home-row keys to arcade lanes", () => {
@@ -11,6 +11,8 @@ describe("input mapping", () => {
 
   it("supports ASDF (left hand) and JKL; (right hand) lane keys", () => {
     expect(laneLabels(4, "asdf")).toEqual(["A", "S", "D", "F"]);
+    // One hand, four fingers: one-hand presets stay at four lanes on every difficulty.
+    expect([lanesFor(6, "asdf"), lanesFor(6, "jkl"), lanesFor(6, "dfjk"), lanesFor(4, "dfjk")]).toEqual([4, 4, 6, 4]);
     expect(laneCodes(4, "jkl")).toEqual(["KeyJ", "KeyK", "KeyL", "Semicolon"]);
     const asdf = { kind: "lanes" as const, lanes: 4, preset: "asdf" as const };
     expect(["KeyA", "KeyS", "KeyD", "KeyF"].map((k) => laneForKey(k, asdf))).toEqual([0, 1, 2, 3]);
@@ -24,6 +26,10 @@ describe("input mapping", () => {
     expect(laneForKey("KeyQ", words, "A")).toBe(0); // AZERTY: the Q position types A
     expect(laneForKey("KeyZ", words, "z")).toBe(25);
     expect(laneForKey("Digit1", words, "1")).toBeUndefined();
+    // IMEs report "Process" and non-Latin layouts type other scripts: use the key position.
+    expect(laneForKey("KeyH", words, "Process")).toBe(7);
+    expect(laneForKey("KeyA", words, "ф")).toBe(0);
+    expect(laneForKey("KeyP", words, "Process")).toBe(15); // a letter, so never Pause
     expect(laneForKey("KeyP", words)).toBe(15);
     expect(laneForMidi(60, words)).toBeUndefined();
   });
@@ -44,6 +50,9 @@ describe("input mapping", () => {
     expect(laneForKey("KeyA", { ...mode, base: 72 })).toBe(72);
     expect(laneForKey("KeyA", { kind: "piano", base: 48, layout: "home" })).toBe(48);
     expect(laneForKey("KeyJ", { kind: "piano", base: 48, layout: "home" })).toBe(55);
+    // The Z row reaches ten semitones below the base C.
+    expect(laneForKey("KeyZ", mode)).toBe(50);
+    expect(laneForKey("Slash", mode)).toBe(59);
   });
 
   it("passes MIDI keys straight through in piano mode", () => {

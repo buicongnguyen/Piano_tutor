@@ -51,6 +51,7 @@ export class MapScene {
   private yaw = 0;
   private pitch = THREE.MathUtils.degToRad(48);
   mode: "title" | "map" = "title";
+  private tmpSide = new THREE.Vector3();
   readonly particles = new Particles(1800, 1);
   private shows: { x: number; z: number; until: number; next: number }[] = [];
   private titleTime = 0;
@@ -173,6 +174,17 @@ export class MapScene {
   }
 
   private buildStaff(reach: number) {
+    // Rebuilt on every map visit: free the old tubes and materials first.
+    const freed = new Set<unknown>();
+    this.staff.traverse((o) => {
+      const mesh = o as THREE.Mesh;
+      if (!mesh.isMesh) return;
+      for (const r of [mesh.geometry, ...(Array.isArray(mesh.material) ? mesh.material : [mesh.material])])
+        if (!freed.has(r)) {
+          freed.add(r);
+          r.dispose();
+        }
+    });
     this.staff.clear();
     if (!this.curve) return;
     const lit = new THREE.MeshStandardMaterial({ color: "#ffc53d", emissive: "#ff9d00", emissiveIntensity: 0.6, roughness: 0.3, metalness: 0.4 });
@@ -336,8 +348,9 @@ export class MapScene {
       }
       this.ship.update(dt, time, title ? 1 : 0.4 + Math.min(1, Math.abs(this.shipTarget - this.shipAt) * 20));
       if (this.coda) {
-        const side = new THREE.Vector3(1, 0, 0).applyQuaternion(this.ship.root.quaternion);
-        this.coda.root.position.copy(p).add(side.multiplyScalar(6)).add(new THREE.Vector3(0, 2 + Math.sin(time * 2.3) * 0.8, 0));
+        const side = this.tmpSide.set(1, 0, 0).applyQuaternion(this.ship.root.quaternion);
+        this.coda.root.position.copy(p).addScaledVector(side, 6);
+        this.coda.root.position.y += 2 + Math.sin(time * 2.3) * 0.8;
         this.coda.root.quaternion.copy(this.ship.root.quaternion);
         this.coda.update(dt, time, 0, 0.5);
       }

@@ -21,12 +21,14 @@ beacon and pours the colour back into the world.
     phones start in this mode. On a keyboard use **F/J** or the arrow keys.
   - **🎮 Lanes.** Arcade lanes follow the shape of the melody (4 lanes on Easy, 6 on
     Normal and Hard), on **D F J K** (split hands), **A S D F** (left hand) or
-    **J K L ;** (right hand).
+    **J K L ;** (right hand). The one-hand keys always use 4 lanes.
   - **🎹 Real piano.** The road becomes an actual keyboard, so every key is the true note.
+    Laptop keys cover three rows (Z to /, A to ;, and the black keys above).
   - **⌨️ Words.** Each note carries a letter and the letters spell English words.
     Type them to the beat. Easy uses home-row words only (*salad*, *flask*, *glass*),
     Normal uses everyday words, and Hard uses long ones, plus words themed to each island.
-    Keys and gems share touch-typing finger colours, and results show your WPM.
+    Keys and gems share touch-typing finger colours, and results show your WPM next
+    to the song's own pace.
 - **🎵 Keep the song playing** (on by default for Tap and Words). The whole song, melody
   included, plays by itself. Your presses are only judged, so a miss or a wrong key
   just shows on screen and the music never breaks.
@@ -36,6 +38,10 @@ beacon and pours the colour back into the world.
 - **Rhythm-game depth:** Perfect/Great/Good timing, combo multiplier up to ×4,
   hold notes, golden phrases that charge **Encore** (double points, a golden road),
   a Harmony meter that repaints the world, stars, ranks and full-combo crowns.
+  Pressing the wrong key while a note is due shows **✗ WRONG KEY** and breaks the
+  combo, so mashing every lane earns no stars.
+- **Difficulty that means something:** Easy keeps to the beat, Normal plays the tune,
+  and Hard adds the accompaniment wherever the melody rests.
 - **Import your own MIDI or MusicXML** and it is charted automatically for every
   difficulty.
 
@@ -68,15 +74,16 @@ headphones lag, use **Settings → Calibrate timing**.
 | 1 | Dawn Meadow | Morning Light, A Little Room to Breathe, Arirang | start |
 | 2 | Starlight Snow Village | Silent Night, O Come All Ye Faithful | 4 ★ |
 | 3 | Festival Hills | Aegukga, Tiến quân ca, The Star-Spangled Banner | 8 ★ |
-| 4 | Ragtime Pier | The Entertainer, Maple Leaf Rag | 13 ★ |
-| 5 | Glasshouse Gardens | Für Elise, Arabesque No. 1, Gymnopédie No. 1, Prelude, Variations d'automne, Flat | 18 ★ |
+| 4 | Glasshouse Gardens | Für Elise, Arabesque No. 1, Gymnopédie No. 1, Prelude, Variations d'automne, Flat | 13 ★ |
+| 5 | Moonlit Harbour | Moonlight Sonata I–III, Clair de lune, Nocturne Op. 9 No. 2 | 18 ★ |
 | 6 | Neon Reef | A1 Listen First, Action Title | 26 ★ |
-| 7 | Moonlit Harbour | Moonlight Sonata I–III, Clair de lune, Nocturne Op. 9 No. 2 | 32 ★ |
+| 7 | Ragtime Pier | The Entertainer, Maple Leaf Rag | 32 ★ |
 | 8 | Season Wheel | Vivaldi, The Four Seasons (12 movements) | 40 ★ |
 | 9 | Carillon Crown | Canon in D (the finale) | 60 ★ |
 
-**Settings → Open all islands** turns on free play. Songs longer than about two and a
-half minutes play as an excerpt that ends at a natural breath.
+**Settings → Open all islands** turns on free play. An island you have already played
+stays open. Songs longer than about two and a half minutes play as an excerpt that ends
+at a natural breath.
 
 ## Development
 
@@ -115,7 +122,8 @@ Pushing to `main` runs the tests, builds and deploys to GitHub Pages.
   names the game relies on. Rebuild with `node scripts/blender.mjs -b --factory-startup --python art/encore/build_stage.py`
   (and `build_world.py`, `build_characters.py`, `render_portraits.py`).
 
-Design notes: [docs/ENCORE_DESIGN.md](docs/ENCORE_DESIGN.md). Classic studio
+Design notes: [docs/ENCORE_DESIGN.md](docs/ENCORE_DESIGN.md). Code and logic review:
+[docs/ENCORE_REVIEW.md](docs/ENCORE_REVIEW.md). Classic studio
 documentation: [docs/CLASSIC_STUDIO.md](docs/CLASSIC_STUDIO.md).
 
 ## Credits and licences

@@ -6,7 +6,7 @@ import type { Difficulty } from "./chart";
 
 // Home-row only: the first thing a typing class teaches.
 export const HOME_ROW_WORDS = [
-  "a", "ad", "ah", "as", "add", "ads", "aha", "all", "ash", "ask", "dad", "fad", "gag", "gal", "gas", "had", "has",
+  "a", "ad", "ah", "as", "fa", "ha", "la", "add", "ads", "aha", "all", "ash", "ask", "dad", "fad", "gag", "gal", "gas", "had", "has",
   "lad", "lag", "sad", "adds", "alas", "asks", "dads", "dash", "fads", "fall", "flag", "gala", "glad", "half", "hall",
   "hash", "lads", "lags", "lash", "lass", "sash", "falls", "flags", "flash", "flask", "glass", "halls", "salad",
   "salsa", "shall", "slash", "salads", "flasks", "alfalfa",
@@ -55,7 +55,9 @@ export const THEME_WORDS: Record<string, string[]> = {
   crown: ["crown", "castle", "bell", "tower", "cloud", "canon", "hush"],
 };
 
-const LENGTHS: Record<Difficulty, [number, number]> = { easy: [2, 5], normal: [3, 6], hard: [5, 9] };
+const LENGTHS: Record<Difficulty, [number, number]> = { easy: [2, 5], normal: [3, 5], hard: [5, 9] };
+const BREAK = 1.0; // seconds: any gap this long ends a word
+const MAX_SPAN = 3; // seconds: a longer word stops feeling like one burst
 
 export type Word = { text: string; first: number; last: number }; // indices into the note list
 
@@ -75,63 +77,88 @@ export function hashText(text: string) {
 
 function bank(difficulty: Difficulty, theme?: string) {
   const base = difficulty === "easy" ? HOME_ROW_WORDS : difficulty === "normal" ? COMMON_WORDS : [...LONG_WORDS, ...COMMON_WORDS];
-  const themed = difficulty === "easy" ? [] : THEME_WORDS[theme ?? ""] ?? [];
+  const known = new Set(base);
+  // Island words not already in the bank; they are rationed in assignWords.
+  const themed = new Set(difficulty === "easy" ? [] : (THEME_WORDS[theme ?? ""] ?? []).filter((w) => !known.has(w)));
   const byLength = new Map<number, string[]>();
-  for (const w of [...base, ...themed, ...themed]) {
+  for (const w of new Set([...base, ...themed])) {
     const list = byLength.get(w.length) ?? [];
     list.push(w);
     byLength.set(w.length, list);
   }
-  return byLength;
+  return { byLength, themed };
 }
 
 /**
  * Split a run of onset times into words. Breaths in the music (gaps clearly
- * longer than the usual note spacing) always end a word, so each word is typed
- * as one flowing burst. Deterministic for a given seed.
+ * longer than the nearby note spacing, or any gap of a second or more) always
+ * end a word, so each word is typed as one flowing burst. Deterministic for a
+ * given seed.
  */
 export function assignWords(times: number[], difficulty: Difficulty, seed: number, theme?: string): Word[] {
   const words: Word[] = [];
   if (!times.length) return words;
   const random = rng(seed);
-  const byLength = bank(difficulty, theme);
+  const { byLength, themed } = bank(difficulty, theme);
   const [minLen, maxLen] = LENGTHS[difficulty];
   const gaps = times.slice(1).map((t, i) => t - times[i]);
-  const sorted = [...gaps].sort((a, b) => a - b);
-  const median = sorted[Math.floor(sorted.length / 2)] ?? 0.5;
-  const breath = Math.max(median * 1.6, median + 0.3);
-  // Segments between breaths.
+  // Breaths are judged against the phrase just played, so a slow verse and a
+  // fast run in the same song each find their own phrase ends.
+  const isBreath = (i: number) => {
+    if (gaps[i] >= BREAK) return true;
+    const near = (i >= 3 ? gaps.slice(Math.max(0, i - 8), i) : gaps.slice(0, 9)).sort((a, b) => a - b);
+    const median = near[Math.floor(near.length / 2)];
+    return gaps[i] >= Math.max(median * 1.6, median + 0.3);
+  };
   const segments: [number, number][] = [];
   let from = 0;
-  gaps.forEach((g, i) => {
-    if (g >= breath) {
+  gaps.forEach((_, i) => {
+    if (isBreath(i)) {
       segments.push([from, i]);
       from = i + 1;
     }
   });
   segments.push([from, times.length - 1]);
+  // A pickup note or two is not a word of its own: join it to its neighbour
+  // unless a real pause (BREAK) separates them.
+  const merged: [number, number][] = [];
+  const short = (s: [number, number]) => s[1] - s[0] + 1 < minLen;
+  for (const seg of segments) {
+    const prev = merged.at(-1);
+    if (prev && (short(seg) || short(prev)) && gaps[prev[1]] < BREAK) prev[1] = seg[1];
+    else merged.push([seg[0], seg[1]]);
+  }
   const recent: string[] = [];
+  let sinceThemed = 4; // island words are seasoning: at most about one in five
   const pick = (length: number) => {
-    // The exact length if the bank has it, else the nearest shorter one.
+    const last = recent.at(-1);
+    // Every few words, offer an island word when one fits.
+    const island = sinceThemed >= 4 && random() < 0.4;
+    // The exact length if the bank has it, else the nearest shorter one; never
+    // the same word twice in a row when anything else fits.
     for (let l = length; l >= 1; l--) {
-      const list = byLength.get(l);
-      if (!list?.length) continue;
+      let list = (byLength.get(l) ?? []).filter((w) => w !== last && (sinceThemed >= 4 || !themed.has(w)));
+      if (!list.length) continue;
+      if (island && list.some((w) => themed.has(w))) list = list.filter((w) => themed.has(w));
       const fresh = list.filter((w) => !recent.includes(w));
       const pool = fresh.length ? fresh : list;
       const word = pool[Math.floor(random() * pool.length)];
+      sinceThemed = themed.has(word) ? 0 : sinceThemed + 1;
       recent.push(word);
       if (recent.length > 10) recent.shift();
       return word;
     }
-    return "a";
+    return last ?? "a"; // only a one-letter slot after the only one-letter word
   };
-  for (const [a, b] of segments) {
+  for (const [a, b] of merged) {
     let i = a;
     while (i <= b) {
       const left = b - i + 1;
       let length = minLen + Math.floor(random() * (maxLen - minLen + 1));
       if (left - length > 0 && left - length < minLen) length = left - minLen >= minLen ? left - minLen : left; // no stranded tail
       length = Math.max(1, Math.min(length, left));
+      // Slow notes: keep a word within a few seconds so it still reads as one word.
+      while (length > 1 && times[i + length - 1] - times[i] > MAX_SPAN) length--;
       const text = pick(length);
       words.push({ text, first: i, last: i + text.length - 1 });
       i += text.length;

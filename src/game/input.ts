@@ -13,6 +13,8 @@ export const LANE_PRESETS: Record<LanePreset, { name: string; 4: string[]; 6: st
   asdf: { name: "A S D F · left hand", 4: ["A", "S", "D", "F"], 6: ["A", "S", "D", "F", "G", "H"] },
   jkl: { name: "J K L ; · right hand", 4: ["J", "K", "L", ";"], 6: ["H", "J", "K", "L", ";", "'"] },
 };
+/** One-hand presets always use four lanes: a hand has four fingers on the home row. */
+export const lanesFor = (lanes: number, preset: LanePreset = "dfjk") => (preset === "dfjk" ? lanes : 4);
 const CODE: Record<string, string> = { ";": "Semicolon", "'": "Quote" };
 export const laneLabels = (lanes: number, preset: LanePreset = "dfjk") =>
   LANE_PRESETS[preset]?.[lanes === 4 ? 4 : 6] ?? LANE_PRESETS.dfjk[6];
@@ -42,11 +44,13 @@ export function laneForKey(code: string, mode: InputMode, key?: string): number 
   if (mode.kind === "tap") return TAP_KEYS[code];
   if (mode.kind === "words") {
     if (key && /^[a-z]$/i.test(key)) return key.toLowerCase().charCodeAt(0) - 97;
+    // IMEs ("Process"), Cyrillic, Greek…: fall back to the QWERTY position the toy keyboard shows.
     const m = /^Key([A-Z])$/.exec(code);
-    return m && !key ? m[1].charCodeAt(0) - 65 : undefined;
+    return m ? m[1].charCodeAt(0) - 65 : undefined;
   }
   const octave = Math.round(mode.base / 12) - 1;
-  return computerNote(code, octave, 2, mode.layout === "home" ? "home" : "classic");
+  // Three rows: the Z row adds the ten semitones below the home rows.
+  return computerNote(code, octave, 3, mode.layout === "home" ? "home" : "classic");
 }
 
 export function laneForMidi(midi: number, mode: InputMode): number | undefined {
@@ -195,7 +199,11 @@ export class Input {
       this.midiName = names.join(", ");
       return names;
     };
-    access.onstatechange = () => attach();
+    access.onstatechange = (e) => {
+      // An unplugged keyboard never sends its note-offs: let go of everything.
+      if ((e as MIDIConnectionEvent).port?.state === "disconnected") this.releaseAll();
+      attach();
+    };
     return attach();
   }
 

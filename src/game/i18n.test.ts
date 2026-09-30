@@ -59,3 +59,18 @@ it("translates dynamic UI and restores English without changing typing targets o
   expect(select.value).toBe("en");
   stop();
 });
+
+it("keeps dollar signs in untranslated text literally (song titles)", () => {
+  expect(t("Cash $$ Money", "vi")).toBe("Cash $$ Money");
+  expect(t("  Rock $& Roll ", "vi")).toBe("  Rock $& Roll ");
+  expect(t("♪ 12 stillnotes freed", "vi")).toBe("♪ Đã giải phóng 12 nốt nhạc");
+});
+
+it("translates the new judge and record labels", () => {
+  expect(t("✗ WRONG KEY", "vi")).toBe("✗ SAI PHÍM");
+  expect(t("Top rank S+", "vi")).toBe("Hạng cao nhất S+");
+  expect(t("ENTER", "vi")).toBe("ENTER");
+  expect(t("⌨️ 31 WPM · song pace 40 WPM · 9 of 12 words typed perfectly", "vi")).toBe(
+    "⌨️ 31 từ/phút · nhịp bài 40 từ/phút · Gõ đúng 9 trong 12 từ",
+  );
+});

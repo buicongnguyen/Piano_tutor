@@ -16,6 +16,7 @@ const TAP_W = 2.3; // Tap mode: two wide lanes
 const KEY_W = 0.46; // real-piano white key width
 const PAD_LEN = 2.4;
 const BLACK = new Set([1, 3, 6, 8, 10]);
+const ASSIST_TINT = new THREE.Color("#9aa3c7");
 
 // Words mode: a toy QWERTY keyboard. Keys and gems share the colour of the
 // finger that types them (touch-typing zones), so the colours teach fingering.
@@ -199,6 +200,8 @@ export class Stage {
   private noteState: Uint8Array = new Uint8Array(0); // 0 waiting, 1 hit, 2 miss, 3 holding
   private missAt = new Float32Array(0);
   private assistFired = new Set<number>();
+  private barKeys?: Set<string>; // per chart, reset in setup
+  private lineColor?: THREE.Color;
   private gemGlow = { value: 0.55 };
   private halfWidth = 4;
   private firstKey = 48;
@@ -260,6 +263,8 @@ export class Stage {
     this.options = options;
     this.noteState = new Uint8Array(chart.notes.length);
     this.assistFired.clear();
+    this.barKeys = undefined;
+    this.lineColor = undefined;
     this.missAt = new Float32Array(chart.notes.length);
     this.particles.density = options.quality;
     this.particles.clear();
@@ -830,7 +835,7 @@ export class Stage {
 
   // ------------------------------------------------------------ frame
 
-  update(dt: number, songTime: number, state: { encore: number; encoreActive: boolean; harmony: number; holding: Set<number> }) {
+  update(dt: number, songTime: number, state: { encore: number; encoreActive: boolean; harmony: number; holding: ReadonlySet<number> }) {
     const chart = this.chart,
       o = this.options;
     if (!chart || !o) return;
@@ -929,7 +934,7 @@ export class Stage {
     cam.lookAt(look);
   }
 
-  private updateNotes(t: number, ups: number, holding: Set<number>) {
+  private updateNotes(t: number, ups: number, holding: ReadonlySet<number>) {
     const chart = this.chart!,
       o = this.options!;
     const gems = this.gems!,
@@ -1021,7 +1026,8 @@ export class Stage {
       let y = 0.24 + (key.black ? 0.24 : 0);
       let s = appear;
       if (st === 2) {
-        const since = t - this.missAt[i];
+        // After a resume rewinds the clock, a fresh miss must not float up or swell.
+        const since = Math.max(0, t - this.missAt[i]);
         y -= since * 2.2;
         s *= Math.max(0, 1 - since * 1.6);
         if (s <= 0.01) continue;
@@ -1045,7 +1051,7 @@ export class Stage {
         gems.setMatrixAt(gi, m.matrix);
         this.noteColor(n);
         if (st === 2) this.color.setRGB(0.3, 0.3, 0.36);
-        else if (assist) this.color.lerp(new THREE.Color("#9aa3c7"), 0.65);
+        else if (assist) this.color.lerp(ASSIST_TINT, 0.65);
         gems.setColorAt(gi++, this.color);
         if (st !== 2) shadow(key.x, zHead, width, s);
         badge(key.x, y + 0.72, zHead + 0.05, s, n.lane);
@@ -1088,10 +1094,10 @@ export class Stage {
     const chart = this.chart!;
     const lines = this.beatLines!;
     const m = this.tmp;
-    const bars = new Set(chart.bars.map((b) => b.toFixed(3)));
+    const bars = (this.barKeys ??= new Set(chart.bars.map((b) => b.toFixed(3))));
     let n = 0;
     const width = this.halfWidth * 2 - 0.5;
-    const line = new THREE.Color(this.theme!.road.line);
+    const line = (this.lineColor ??= new THREE.Color(this.theme!.road.line));
     for (const b of chart.beats) {
       const z = -(b - t) * ups;
       if (z > 0.2) continue;
@@ -1196,6 +1202,9 @@ export class Stage {
         if (sharedMats.has(m) || freed.has(m)) continue;
         freed.add(m);
         (m as THREE.MeshBasicMaterial).map?.dispose();
+        // Shader materials keep textures in uniforms (the words-mode letter atlas).
+        for (const u of Object.values((m as THREE.ShaderMaterial).uniforms ?? {}))
+          if ((u as { value?: unknown }).value instanceof THREE.Texture) (u.value as THREE.Texture).dispose();
         m.dispose();
       }
     });

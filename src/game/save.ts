@@ -5,12 +5,13 @@ import type { LanePreset } from "./input";
 import type { Result } from "./judge";
 
 export type StageRecord = {
-  stars: number;
-  score: number;
+  stars: number; // most stars ever earned
+  score: number; // best score; `rank` and `accuracy` come from that same run
   accuracy: number;
   rank: Result["rank"];
+  bestRank: Result["rank"]; // best rank of any run (may differ from the best-score run)
   fullCombo: boolean;
-  plays: number;
+  plays: number; // practice runs included
 };
 
 export type Settings = {
@@ -75,6 +76,8 @@ const num = (v: unknown, lo: number, hi: number, d: number) =>
 const pick = <T extends string>(v: unknown, options: readonly T[], d: T): T =>
   options.includes(v as T) ? (v as T) : d;
 const RANKS = ["S+", "S", "A", "B", "C", "D"] as const;
+/** 0 is the best rank. */
+export const rankOrder = (rank: Result["rank"]) => RANKS.indexOf(rank);
 
 export function parseSave(text: string | null, touch = false): SaveData {
   const out = emptySave(touch);
@@ -97,6 +100,7 @@ export function parseSave(text: string | null, touch = false): SaveData {
         score: Math.round(num(r.score, 0, 1e9, 0)),
         accuracy: num(r.accuracy, 0, 1, 0),
         rank: pick(r.rank, RANKS, "D"),
+        bestRank: pick(r.bestRank, RANKS, pick(r.rank, RANKS, "D")),
         fullCombo: r.fullCombo === true,
         plays: Math.round(num(r.plays, 0, 1e6, 0)),
       };
@@ -162,15 +166,19 @@ export function recordRun(
   if (practice) {
     save.records[key] = prior
       ? { ...prior, plays }
-      : { stars: 0, score: 0, accuracy: 0, rank: "D", fullCombo: false, plays };
+      : { stars: 0, score: 0, accuracy: 0, rank: "D", bestRank: "D", fullCombo: false, plays };
     return { newBest: false, firstClear: false, starsGained: 0 };
   }
   const newBest = !prior || result.score > prior.score;
+  // Score, rank and accuracy describe one run (the best-scoring one), so the
+  // setup card never mixes a high score with another run's accuracy.
+  const best = newBest ? result : prior!;
   save.records[key] = {
     stars: Math.max(prior?.stars ?? 0, result.stars),
-    score: Math.max(prior?.score ?? 0, result.score),
-    accuracy: Math.max(prior?.accuracy ?? 0, result.accuracy),
-    rank: newBest ? result.rank : prior!.rank,
+    score: best.score,
+    accuracy: best.accuracy,
+    rank: best.rank,
+    bestRank: prior && rankOrder(prior.bestRank) <= rankOrder(result.rank) ? prior.bestRank : result.rank,
     fullCombo: (prior?.fullCombo ?? false) || result.fullCombo,
     plays,
   };

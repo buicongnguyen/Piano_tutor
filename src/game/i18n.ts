@@ -50,6 +50,7 @@ export function t(text: string, lang: Language = language): string {
           "nốt. Khi sẵn sàng, hãy chơi để giành sao!",
         )
         .replace(/^Best$/, "Kỷ lục")
+        .replace(/^Top rank (S\+|[SABCD])$/, "Hạng cao nhất $1")
         .replace(/^(\d+) \/ (\d+) stars$/, "$1 / $2 sao")
         .replace(/^Island (\d+)/, "Đảo $1");
     value = value
@@ -62,6 +63,7 @@ export function t(text: string, lang: Language = language): string {
         "Bạn thường chơi muộn $1 ms. Hãy nhìn các viên ngọc từ xa hơn một chút.",
       )
       .replace(/^(\d+) WPM$/, "$1 từ/phút")
+      .replace(/^song pace (\d+) WPM$/, "nhịp bài $1 từ/phút")
       .replace(
         /^(\d+) of (\d+) words typed perfectly$/,
         "Gõ đúng $1 trong $2 từ",
@@ -81,7 +83,8 @@ export function t(text: string, lang: Language = language): string {
         (_, name, n) => `${t(name, lang)}, đang khóa: cần ${n} sao`,
       );
   }
-  return text.replace(s, value);
+  // A function replacement: "$&", "$$" etc. in titles must stay literal.
+  return text.replace(s, () => value);
 }
 
 /** Translate only rendered UI text/accessible labels, never input values or game data.
