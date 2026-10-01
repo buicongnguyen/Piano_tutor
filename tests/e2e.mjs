@@ -74,11 +74,12 @@ await check("boots to the title with every kit loaded and no errors", async () =
   const { page, context, errors } = await open();
   const kits = await page.evaluate(() => {
     const k = window.__encore.app.kits;
-    return { stage: k.stage?.size ?? 0, world: k.world?.size ?? 0, chars: k.chars?.size ?? 0 };
+    return { stage: k.stage?.size ?? 0, world: k.world?.size ?? 0, chars: k.chars?.size ?? 0, fish: k.fish?.size ?? 0 };
   });
   assert.ok(kits.stage >= 13, `stage kit roots ${kits.stage}`);
   assert.ok(kits.world >= 30, `world kit roots ${kits.world}`);
   assert.equal(kits.chars, 3);
+  assert.equal(kits.fish, 7);
   assert.ok(await page.isVisible(".title-screen"));
   assert.deepEqual(errors, []);
   await context.close();
@@ -433,6 +434,42 @@ await check("stars open the next island with a toast", async () => {
   assert.ok(!(await page.getAttribute('.island-label[data-island="snow"]', "class")).includes("locked"));
   assert.deepEqual(errors, []);
   await context.close();
+});
+
+await check("fish schools swim beside the road and leap on Perfects", async () => {
+  const { page, errors } = await open();
+  await enterMap(page);
+  await page.evaluate(() => window.__encore.play("arirang", "normal", "lanes"));
+  await page.waitForFunction(() => window.__encore.state() === "play", null, { timeout: 60000 });
+  const start = await page.evaluate(() => {
+    const shoals = window.__encore.app.world.shoals;
+    window.__splashes = 0;
+    const splash = shoals.onSplash;
+    shoals.onSplash = (...a) => (window.__splashes++, splash?.(...a));
+    window.__encore.autoplay(true);
+    const sim = shoals.sim;
+    return {
+      fish: sim.fish.length,
+      meshes: shoals.group.children.map((m) => ({ name: m.name, instanced: !!m.isInstancedMesh, count: m.count })),
+      roadHalf: window.__encore.app.stage.roadHalf,
+      xs: sim.fish.map((f) => f.x),
+    };
+  });
+  assert.ok([18, 36, 60].includes(start.fish), `fish ${start.fish}`);
+  // Meadow: minnows and koi, each species one instanced mesh.
+  assert.deepEqual(start.meshes.map((m) => m.name).sort(), ["Fish_Koi", "Fish_Minnow"]);
+  assert.ok(start.meshes.every((m) => m.instanced));
+  assert.equal(start.meshes.reduce((n, m) => n + m.count, 0), start.fish);
+  await page.waitForTimeout(gpu ? 9000 : 15000);
+  const after = await page.evaluate(() => {
+    const sim = window.__encore.app.world.shoals.sim;
+    return { xs: sim.fish.map((f) => f.x), shown: sim.fish.filter((f) => f.show > 0.5).length, splashes: window.__splashes, inner: sim.inner };
+  });
+  assert.ok(after.xs.some((x, i) => Math.abs(x - start.xs[i]) > 0.5), "fish swim");
+  assert.ok(after.xs.every((x) => Math.abs(x) >= after.inner - 1.01), "never under the road");
+  assert.ok(after.shown > 0, "some fish are showing");
+  assert.ok(after.splashes >= 2, `Perfects made fish leap (${after.splashes} splashes)`);
+  assert.deepEqual(errors, []);
 });
 
 await check("gameplay frames never go black (bloom NaN guard)", async () => {

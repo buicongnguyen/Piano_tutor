@@ -249,6 +249,9 @@ export class PlaySession {
         case "hit":
           this.conductor.hit(ev.note);
           this.stage.hit(ev.note, ev.judgement);
+          // A Perfect makes a fish leap beside the road, on the side of the key.
+          if (ev.judgement === "perfect" && !this.setup.reducedMotion)
+            this.world.shoals.leap(this.sideOf(ev.note.lane));
           if (!this.judge.practice) {
             const pos = this.stage.screenOf(ev.note.lane, innerWidth, innerHeight);
             this.hud.judgement(ev.judgement, pos.x, pos.y, ev.delta);
@@ -256,6 +259,7 @@ export class PlaySession {
           break;
         case "miss":
           this.stage.miss(ev.note);
+          this.world.shoals.scatter(); // the fish nearby dart away
           {
             const pos = this.stage.screenOf(ev.note.lane, innerWidth, innerHeight);
             this.hud.judgement("miss", pos.x, pos.y, 0);
@@ -284,9 +288,11 @@ export class PlaySession {
         case "golden":
           this.hud.golden(ev.complete);
           if (ev.complete) this.bank.blip("star", 7);
+          if (ev.complete && !this.setup.reducedMotion) this.world.shoals.wave();
           break;
         case "combo":
           this.stage.celebrate(ev.combo);
+          if (!this.setup.reducedMotion) this.world.shoals.wave(); // a school leaps in a ripple
           this.onCheer?.();
           this.hud.milestone(ev.combo);
           this.bank.blip("combo");
@@ -301,6 +307,14 @@ export class PlaySession {
           break;
       }
     }
+  }
+
+  /** Which side of the road a lane is on: -1 left, 1 right, 0 either (piano, words). */
+  private sideOf(lane: number) {
+    if (this.chart.mode === "tap") return lane === 0 ? -1 : 1;
+    if (this.chart.mode !== "lanes") return 0;
+    const mid = (this.chart.lanes - 1) / 2;
+    return lane < mid ? -1 : lane > mid ? 1 : 0;
   }
 
   practiceHint() {

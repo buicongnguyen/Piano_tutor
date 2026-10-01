@@ -5,6 +5,7 @@ import * as THREE from "three";
 import { applyHush, hushUniforms, materialsOf, ownAllMaterials, spawn, type Kit } from "./assets";
 import { Hush } from "./characters";
 import { Environment } from "./env";
+import { Shoals } from "./shoals";
 import type { Theme } from "./themes";
 
 export type Pivots = { spin: THREE.Object3D[]; wheels: THREE.Object3D[]; blades: THREE.Object3D[]; bells: THREE.Object3D[] };
@@ -70,14 +71,19 @@ export class World {
 
   private hushChar?: Hush;
   private hushAway = 0;
+  /** Fish schools in the sea beside the road (drawn instanced; see shoals.ts). */
+  readonly shoals: Shoals;
 
   constructor(
     readonly scene: THREE.Scene,
     readonly kit?: Kit,
     charKit?: Kit,
+    fishKit?: Kit,
   ) {
     this.env = new Environment(scene);
     scene.add(this.group);
+    this.shoals = new Shoals(fishKit, this.hush);
+    scene.add(this.shoals.group);
     if (charKit) {
       // The Hush broods over the destination until the music drives it off.
       this.hushChar = new Hush(charKit);
@@ -92,6 +98,7 @@ export class World {
     this.clear();
     this.theme = theme;
     this.env.apply(theme);
+    this.shoals.build(theme, seed, roadHalfWidth, density);
     const kit = this.kit;
     if (!kit) return;
     const random = rng(seed);
@@ -244,6 +251,7 @@ export class World {
     this.hush.uGlow.value = 0.25 + 0.75 * Math.min(1, harmony * 0.8 + progress * 0.4 + encore);
     this.drift += roadSpeed * 0.3 * dt;
     this.env.update(time, this.drift * 3, this.colour);
+    this.shoals.update(dt, time, roadSpeed * 0.3, harmony, encore);
     for (const i of this.islets) {
       i.z += roadSpeed * 0.3 * dt;
       if (i.z > 40) i.z -= this.isletSpan;
@@ -282,6 +290,7 @@ export class World {
 
   clear() {
     this.hushAway = 0;
+    this.shoals.clear();
     for (const m of this.copies.values()) m.dispose(); // private copies from the last build
     this.copies = new Map();
     this.group.clear();

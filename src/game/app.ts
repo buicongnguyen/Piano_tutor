@@ -45,7 +45,7 @@ export class App {
   readonly dialogue: Dialogue;
   readonly music: MenuMusic;
   save: SaveData;
-  kits: { stage?: Kit; world?: Kit; chars?: Kit } = {};
+  kits: { stage?: Kit; world?: Kit; chars?: Kit; fish?: Kit } = {};
   map?: MapScene;
   stage?: Stage;
   world?: World;
@@ -100,21 +100,29 @@ export class App {
   async boot(progress: (p: number, text: string) => void) {
     void loadKeyboardLayout(); // labels keys as printed on the player's keyboard (AZERTY…)
     progress(0.1, "Unpacking the Encore…");
-    const [stage, world, chars] = await Promise.allSettled([
+    const [stage, world, chars, fish] = await Promise.allSettled([
       loadKit("stage-kit.glb"),
       loadKit("world-kit.glb"),
       loadKit("characters.glb"),
+      loadKit("fish-kit.glb"),
     ]);
     this.kits = {
       stage: stage.status === "fulfilled" ? stage.value : undefined,
       world: world.status === "fulfilled" ? world.value : undefined,
       chars: chars.status === "fulfilled" ? chars.value : undefined,
+      fish: fish.status === "fulfilled" ? fish.value : undefined,
     };
     progress(0.7, "Painting the Sky Isles…");
     this.map = new MapScene(this.kits.world, this.kits.chars);
     this.map.ship?.setLacquer(SKINS.find((k) => k.id === this.settings.skin)?.color ?? "#e8282f");
     this.stage = new Stage(this.kits.stage ?? new Map());
-    this.world = new World(this.stage.scene, this.kits.world, this.kits.chars);
+    this.world = new World(this.stage.scene, this.kits.world, this.kits.chars, this.kits.fish);
+    // Fish break the water with the stage's own splash rings and droplets.
+    const stageFx = this.stage;
+    this.world.shoals.onSplash = (x, y, z, color, landing) => {
+      stageFx.rings.spawn(x, y, z, color, landing ? 1.5 : 1.1, landing ? 0.55 : 0.45);
+      stageFx.particles.burst(x, y + 0.1, z, color, landing ? 12 : 8, landing ? 0.7 : 0.5);
+    };
     if (this.kits.chars) {
       this.coda = new Coda(this.kits.chars);
       this.stage.scene.add(this.coda.root);

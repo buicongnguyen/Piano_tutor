@@ -18,7 +18,7 @@ General rules for every kit:
 - Emissive materials use `emit` so bloom picks them up. Their names contain **Glow** or
   **Light** so the runtime can find and animate them.
 - Budgets are decimal bytes in `public/models`: stage-kit ≤ 450 KB, world-kit ≤ 2,600 KB,
-  characters ≤ 1,300 KB. Most props should stay under 3k triangles and landmarks under 14k.
+  characters ≤ 1,300 KB, fish-kit ≤ 160 KB. Most props should stay under 3k triangles and landmarks under 14k.
 - Review with `art/encore/preview.py`. It renders a labelled contact sheet under the
   shared lights.
 
@@ -65,6 +65,22 @@ Props are placed by per-island recipes. Required roots (height ranges are guides
 
 Foliage materials are named **`Foliage`**, **`Foliage Deep`** or **`Blossom`**. The runtime may
 retint them per season. The desaturation shader treats every non-glow world material alike.
+
+## fish-kit.glb (runtime: `src/game/render/shoals.ts`)
+
+Roots: `Fish_Minnow`, `Fish_Koi`, `Fish_Gold`, `Fish_Clown`, `Fish_Neon`, `Fish_Ice`,
+`Fish_Moon`. `THEME_FISH` in `shoals.ts` names the fish of each island's sea.
+
+- Each fish is 1.0 m long with its origin at the body centre. The head faces -Y in
+  Blender (+Z in three.js) and the tail tip sits at the opposite end.
+- Keep each fish between 100 and 450 triangles. The runtime merges a species into one
+  geometry (material colour × baked AO in vertex colours) and draws every fish of that
+  species as one instanced mesh. It bends the body in the vertex shader, holding the
+  head still and swinging the tail, so no tail pivot or rig is needed.
+- Colour carries the read from the chase camera: bold bands, patches and stripes on a
+  plain body. Faces take their material by position (`paint` in `build_fish.py`).
+- Glowing parts use materials whose names contain **Glow** (`Fish Neon Glow`,
+  `Fish Moon Glow`). They shine through the water tint and pick up bloom.
 
 ## characters.glb (runtime: `src/game/characters.ts`)
 

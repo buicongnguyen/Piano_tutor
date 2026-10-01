@@ -167,6 +167,18 @@ piano, like the player's own notes, so every difficulty sounds like the whole pi
   and bar arches. Scenery scrolls past with parallax. The destination island (beacon,
   landmarks and houses) grows on the horizon. Props squash on the beat, and combo
   milestones fire fireworks.
+- **Fish**: schools of toy fish swim in the sea beside the road. Each island has its own:
+  minnows and koi in the meadow, goldfish at the festival, clownfish at the pier and
+  glowing neon tetras on the reef. Harbour moon fish carry lantern spots, and every
+  night fish glows softly. A Perfect makes a fish leap on the key's side of the road.
+  A combo milestone or a golden phrase sends a whole school over in a ripple, and a miss
+  scatters the fish nearby. The fish come back as Harmony rises and turn gold during
+  Encore. The idea comes from the Zoo Garden pond fish. Steering with a capped turn
+  rate (`shoal-sim.ts`) makes them swim in curves. Each species is one instanced mesh
+  with the swim bend in its vertex shader (`render/shoals.ts`). The fish sit in a thin
+  layer tinted toward the water colour, which reads as "under the surface" with no
+  transparency. Sixty fish cost two draw calls and about 0.02 ms of CPU per frame.
+  Graphics quality sets the count: 18, 36 or 60.
 - **Feedback**: keys depress and glow, lane-coloured bursts and a shockwave ring
   play on each hit, judgement text pops, the multiplier badge pulses, misses thud and
   flash the lane.

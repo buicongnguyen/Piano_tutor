@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { FISH_SPECIES, THEME_FISH } from "./render/shoals";
 import { THEMES } from "./render/themes";
 
 // Runtime contracts from art/encore/CONTRACTS.md: names the game looks up, and byte budgets.
@@ -70,6 +71,27 @@ describe("asset contracts", () => {
         if (r && /^(Coda|Hush|Ship)_(Wing[LR]|Eye[LR]|Flag|Body|Cap|Lid|Prop[LR]|Balloon)$/.test(kit.json.nodes[i].name ?? ""))
           expect(Math.abs(r[3]), kit.json.nodes[i].name).toBeCloseTo(1, 5);
       }
+  });
+
+  it("fish kit has every species the seas ask for, each tiny enough to instance", () => {
+    const kit = read("fish-kit.glb");
+    expect(kit.bytes).toBeLessThanOrEqual(160_000);
+    expect(kit.json.images ?? []).toHaveLength(0);
+    const needed = new Set(Object.values(THEME_FISH).flat());
+    for (const theme of Object.keys(THEMES)) expect(THEME_FISH[theme as keyof typeof THEME_FISH]?.length, theme).toBeGreaterThan(0);
+    for (const name of [...FISH_SPECIES, ...needed]) expect(kit.roots.has(name), name).toBe(true);
+    const accessors = (kit.json as unknown as { accessors: { count: number }[] }).accessors;
+    for (const name of FISH_SPECIES) {
+      // A few hundred triangles each: the whole sea of fish is one or two draw calls.
+      const tris = [...kit.namesUnder(name)]
+        .map((n) => kit.json.nodes.find((node) => node.name === n)!)
+        .flatMap((node) => (node.mesh === undefined ? [] : kit.json.meshes[node.mesh].primitives))
+        .reduce((sum, prim) => sum + accessors[(prim as unknown as { indices: number }).indices].count / 3, 0);
+      expect(tris, name).toBeGreaterThan(100);
+      expect(tris, name).toBeLessThanOrEqual(450);
+    }
+    expect([...kit.materialsUnder("Fish_Neon")].some((m) => /Glow/.test(m))).toBe(true);
+    expect([...kit.materialsUnder("Fish_Moon")].some((m) => /Glow/.test(m))).toBe(true);
   });
 
   it("ships every dialogue portrait", () => {

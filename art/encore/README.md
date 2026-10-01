@@ -9,6 +9,7 @@ base colours from `palette.py`, and baked ambient occlusion is stored in `COLOR_
 | Stage | `build_stage.py` | `public/models/stage-kit.glb` | Arcade lane pads, real piano keys, keybed cabinet, note gems, gold star gems, hold tails, piano-key curbs, metronome bar arches, clef lamp posts |
 | World | `build_world.py` (+ `world_*.py`) | `public/models/world-kit.glb` | Floating island base, trees for every season, houses, glasshouse, beacon lighthouse, windmill, ferris wheel, carillon tower, neon tower, festival props, clouds, stillnote crystals ([WORLD_KIT.md](WORLD_KIT.md)) |
 | Characters | `build_characters.py` (+ `char_lib.py`) | `public/models/characters.glb` | Coda, the Hush, the Encore airship ([CHARACTERS.md](CHARACTERS.md)) |
+| Fish | `build_fish.py` | `public/models/fish-kit.glb` | Seven toy fish for the seas beside the Piano Road: minnow, koi, goldfish, clownfish, neon tetra, ice fish and glowing moon fish |
 | Portraits | `render_portraits.py` | `public/art/portraits/*.png`, `public/art/keyart.jpg` | Dialogue portraits (six expressions) and the key art |
 
 Shared modules:
