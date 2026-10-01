@@ -22,25 +22,36 @@ describe("fish schools", () => {
     const sim = make();
     run(sim, 2);
     const span = sim.near - sim.far;
+    // Track the worst case and assert once: ~170k expect() calls made this test slow under load.
+    let maxStep = 0,
+      maxTurn = 0,
+      minX = Infinity,
+      maxX = 0,
+      minZ = Infinity,
+      maxZ = -Infinity;
     for (let i = 0; i < 60 * 40; i++) {
       const before = sim.fish.map((f) => ({ x: f.x, z: f.z, h: f.heading }));
       sim.update(DT, 3, 1);
       sim.fish.forEach((f, k) => {
         const b = before[k];
         const dz = f.z - b.z;
-        const wrapped = Math.abs(Math.abs(dz) - span) < 10;
-        if (!wrapped) {
-          // No teleports: one frame moves a fish a few centimetres, never metres.
-          expect(Math.hypot(f.x - b.x, dz)).toBeLessThan(0.2);
-          // A capped turn rate: curves, not snaps.
-          expect(Math.abs(Math.atan2(Math.sin(f.heading - b.h), Math.cos(f.heading - b.h)))).toBeLessThan(0.11);
+        if (Math.abs(Math.abs(dz) - span) >= 10) {
+          // Not a wrap: one frame moves a fish centimetres, and turns are curves, not snaps.
+          maxStep = Math.max(maxStep, Math.hypot(f.x - b.x, dz));
+          maxTurn = Math.max(maxTurn, Math.abs(Math.atan2(Math.sin(f.heading - b.h), Math.cos(f.heading - b.h))));
         }
-        expect(Math.abs(f.x)).toBeGreaterThanOrEqual(sim.inner - 1 - 1e-9); // never under the road
-        expect(Math.abs(f.x)).toBeLessThan(sim.outer + 5);
-        expect(f.z).toBeGreaterThan(sim.far - 12);
-        expect(f.z).toBeLessThan(sim.near + 12);
+        minX = Math.min(minX, Math.abs(f.x));
+        maxX = Math.max(maxX, Math.abs(f.x));
+        minZ = Math.min(minZ, f.z);
+        maxZ = Math.max(maxZ, f.z);
       });
     }
+    expect(maxStep).toBeLessThan(0.2);
+    expect(maxTurn).toBeLessThan(0.11);
+    expect(minX).toBeGreaterThanOrEqual(sim.inner - 1 - 1e-9); // never under the road
+    expect(maxX).toBeLessThan(sim.outer + 5);
+    expect(minZ).toBeGreaterThan(sim.far - 12);
+    expect(maxZ).toBeLessThan(sim.near + 12);
   });
 
   it("brings fish back as Harmony rises", () => {

@@ -42,7 +42,11 @@ beacon and pours the colour back into the world.
   combo, so mashing every lane earns no stars.
 - **A living sea:** schools of toy fish swim beside the road. They leap when you hit a
   Perfect, ripple over on combo milestones, scatter when you miss and glow at night.
-  They're smooth on phones too: each species is drawn in a single instanced call.
+  They're smooth on phones too: each species is drawn in a single instanced call. Foam laps
+  around every island, and gulls wheel over the sea.
+- **Smooth on phones:** scenery is baked into a few draws per island, phones get light materials
+  and a leaner glow, and a phone stage draws about 130 calls (it was 355). See
+  [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
 - **Difficulty that means something:** Easy keeps to the beat, Normal plays the tune,
   and Hard adds the accompaniment wherever the melody rests.
 - **Import your own MIDI or MusicXML** and it is charted automatically for every

@@ -472,6 +472,49 @@ await check("fish schools swim beside the road and leap on Perfects", async () =
   assert.deepEqual(errors, []);
 });
 
+await check("phone budget: baked scenery, light materials and few draw calls", async () => {
+  // A lasting guard for the phone pass: the stage was 355 real draws before baking.
+  const { page, context, errors } = await open({ width: 390, height: 844 }, { isMobile: true, hasTouch: true, deviceScaleFactor: 2 });
+  await page.evaluate(() => window.__encore.app.save.seen.push("intro"));
+  await page.tap(".title-play", { force: true });
+  await page.waitForFunction(() => window.__encore.state() === "map", null, { timeout: 30000 });
+  await page.waitForTimeout(1500);
+  const map = await page.evaluate(() => window.__encore.app.renderer.renderer.info.render.calls);
+  await page.evaluate(() => window.__encore.play("fur-elise", "normal", "tap"));
+  await page.waitForFunction(() => window.__encore.state() === "play", null, { timeout: 60000 });
+  await page.evaluate(() => window.__encore.autoplay(true));
+  await page.waitForTimeout(4000);
+  const r = await page.evaluate(() => {
+    const a = window.__encore.app;
+    let standard = 0;
+    a.stage.scene.traverse((o) => {
+      if (o.isMesh) for (const m of [].concat(o.material)) if (m.isMeshStandardMaterial) standard++;
+    });
+    const isletMeshes = a.world.group.children.map((c) => {
+      let n = 0;
+      c.traverseVisible((o) => o.isMesh && n++);
+      return n;
+    });
+    return {
+      quality: a.quality,
+      calls: a.renderer.renderer.info.render.calls, // the whole frame: scene and post passes
+      standard,
+      isletMeshes: Math.max(...isletMeshes),
+      antialias: a.renderer.renderer.getContext().getContextAttributes().antialias,
+      foam: a.world.foam.mesh.count,
+    };
+  });
+  assert.notEqual(r.quality, "high", "phones start below high");
+  assert.equal(r.standard, 0, "phone tiers draw no physically based materials");
+  assert.equal(r.antialias, false, "no canvas MSAA on a DPR 2 screen");
+  assert.ok(r.calls <= 170, `stage draws ${r.calls} (budget 170)`);
+  assert.ok(map <= 130, `map draws ${map} (budget 130)`);
+  assert.ok(r.isletMeshes <= 30, `an islet or the destination holds ${r.isletMeshes} meshes: baking regressed`);
+  assert.ok(r.foam >= 6, `shore foam rings: ${r.foam}`);
+  assert.deepEqual(errors, []);
+  await context.close();
+});
+
 await check("gameplay frames never go black (bloom NaN guard)", async () => {
   const { page, context, errors } = await open();
   await enterMap(page);

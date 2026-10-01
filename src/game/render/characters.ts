@@ -2,6 +2,18 @@
 // Encore airship. Pivots are the contract names in art/encore/CONTRACTS.md.
 import * as THREE from "three";
 import { spawn, type Kit } from "./assets";
+import { bakeStatic, type BakeMaterials } from "./bake";
+
+/**
+ * Merge each moving part's meshes into one draw per finish (and the rest of the
+ * body into the root): the rig still animates its pivots, at a fraction of the draws.
+ */
+function bakeRig(root: THREE.Object3D, parts: (THREE.Object3D | undefined)[]) {
+  const pivots = parts.filter((p): p is THREE.Object3D => !!p);
+  const materials: BakeMaterials = new Map();
+  for (const p of pivots) bakeStatic(p, pivots.filter((q) => q !== p), materials);
+  bakeStatic(root, pivots, materials);
+}
 
 const find = (root: THREE.Object3D, name: string) => {
   let hit: THREE.Object3D | undefined;
@@ -33,6 +45,7 @@ export class Coda {
     this.wingR = find(this.root, "Coda_WingR");
     this.flag = find(this.root, "Coda_Flag");
     this.eyes = ["Coda_EyeL", "Coda_EyeR"].map((n) => find(this.root, n)).filter(Boolean) as THREE.Object3D[];
+    bakeRig(this.root, [this.body, this.wingL, this.wingR, this.flag, ...this.eyes]);
   }
 
   /** A happy flap-and-hop (combo milestones, results). */
@@ -68,6 +81,7 @@ export class Hush {
     this.body = find(this.root, "Hush_Body");
     this.cap = find(this.root, "Hush_Cap");
     this.eyes = ["Hush_EyeL", "Hush_EyeR"].map((n) => find(this.root, n)).filter(Boolean) as THREE.Object3D[];
+    bakeRig(this.root, [this.body, this.cap, ...this.eyes]);
   }
 
   /** sleepiness 0 (awake) .. 1 (asleep). */

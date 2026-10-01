@@ -19,6 +19,7 @@ import type { Result } from "./judge";
 import { MenuMusic } from "./menu-music";
 import { approachFor, PlaySession } from "./play";
 import { loadKit, type Kit } from "./render/assets";
+import { LITE, liteKit } from "./render/lite";
 import { MapScene } from "./render/mapscene";
 import { autoQuality, QUALITY, Renderer, type QualityKey } from "./render/renderer";
 import { Stage } from "./render/stage";
@@ -100,6 +101,8 @@ export class App {
   async boot(progress: (p: number, text: string) => void) {
     void loadKeyboardLayout(); // labels keys as printed on the player's keyboard (AZERTY…)
     progress(0.1, "Unpacking the Encore…");
+    // Phones (medium/low): light materials, decided once from the starting quality.
+    LITE.on = this.quality !== "high";
     const [stage, world, chars, fish] = await Promise.allSettled([
       loadKit("stage-kit.glb"),
       loadKit("world-kit.glb"),
@@ -112,8 +115,10 @@ export class App {
       chars: chars.status === "fulfilled" ? chars.value : undefined,
       fish: fish.status === "fulfilled" ? fish.value : undefined,
     };
+    if (LITE.on) for (const kit of [this.kits.stage, this.kits.world, this.kits.chars]) liteKit(kit);
     progress(0.7, "Painting the Sky Isles…");
     this.map = new MapScene(this.kits.world, this.kits.chars);
+    this.map.addGulls(this.reducedMotion);
     this.map.ship?.setLacquer(SKINS.find((k) => k.id === this.settings.skin)?.color ?? "#e8282f");
     this.stage = new Stage(this.kits.stage ?? new Map());
     this.world = new World(this.stage.scene, this.kits.world, this.kits.chars, this.kits.fish);
@@ -127,11 +132,13 @@ export class App {
       this.coda = new Coda(this.kits.chars);
       this.stage.scene.add(this.coda.root);
     }
-    // Warm-up environment reflections for glossy toys.
-    const pmrem = new THREE.PMREMGenerator(this.renderer.renderer);
-    const env = pmrem.fromScene(roomEnvironment(), 0.04).texture;
-    this.map.scene.environment = env;
-    this.stage.scene.environment = env;
+    // Warm-up environment reflections for glossy toys (only physically based materials use them).
+    if (!LITE.on) {
+      const pmrem = new THREE.PMREMGenerator(this.renderer.renderer);
+      const env = pmrem.fromScene(roomEnvironment(), 0.04).texture;
+      this.map.scene.environment = env;
+      this.stage.scene.environment = env;
+    }
     (this.map.scene as THREE.Scene & { environmentIntensity: number }).environmentIntensity = 0.55;
     (this.stage.scene as THREE.Scene & { environmentIntensity: number }).environmentIntensity = 0.38;
     this.refreshMap();

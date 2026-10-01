@@ -38,9 +38,29 @@ const SanitizeShader = {
     }`,
 };
 
-const FinishShader = {
-  uniforms: {
-    tDiffuse: { value: null },
+
+const FINISH_GLSL = /* glsl */ `
+{ // Colour grade, vignette, hit flash and scene fade (formerly a separate pass).
+  vec3 col = gl_FragColor.rgb;
+  float l = dot(col, vec3(0.2126, 0.7152, 0.0722));
+  col = mix(vec3(l), col, saturation);
+  col = (col - 0.5) * contrast + 0.5;
+  vec2 v = vUv - 0.5; v.x *= resolution.x / resolution.y;
+  col *= 1.0 - vignette * smoothstep(0.4, 1.1, length(v));
+  col = mix(col, flashColor, flash * (0.35 + 0.65 * smoothstep(0.2, 0.9, length(v))));
+  col = mix(col, vec3(0.02, 0.02, 0.06), fade);
+  gl_FragColor = vec4(clamp(col, 0.0, 1.0), 1.0);
+}`;
+
+/**
+ * three's OutputPass (tone mapping + sRGB) with the finishing grade folded in:
+ * one full-screen pass and no intermediate buffer instead of two passes.
+ */
+type FinishingPass = OutputPass & { uniforms: Record<string, THREE.IUniform> };
+
+function finishingPass(): FinishingPass {
+  const pass = new OutputPass() as FinishingPass;
+  Object.assign(pass.uniforms, {
     resolution: { value: new THREE.Vector2(1, 1) },
     saturation: { value: 1.08 },
     contrast: { value: 1.05 },
@@ -48,23 +68,22 @@ const FinishShader = {
     flash: { value: 0 },
     flashColor: { value: new THREE.Color("#ffffff") },
     fade: { value: 0 },
-  },
-  vertexShader: /* glsl */ `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
-  fragmentShader: /* glsl */ `
-    uniform sampler2D tDiffuse; uniform vec2 resolution; uniform float saturation, contrast, vignette, flash, fade; uniform vec3 flashColor;
-    varying vec2 vUv;
-    void main(){
-      vec3 col = texture2D(tDiffuse, vUv).rgb;
-      float l = dot(col, vec3(0.2126, 0.7152, 0.0722));
-      col = mix(vec3(l), col, saturation);
-      col = (col - 0.5) * contrast + 0.5;
-      vec2 v = vUv - 0.5; v.x *= resolution.x / resolution.y;
-      col *= 1.0 - vignette * smoothstep(0.4, 1.1, length(v));
-      col = mix(col, flashColor, flash * (0.35 + 0.65 * smoothstep(0.2, 0.9, length(v))));
-      col = mix(col, vec3(0.02, 0.02, 0.06), fade);
-      gl_FragColor = vec4(clamp(col, 0.0, 1.0), 1.0);
-    }`,
-};
+  });
+  const m = pass.material as THREE.RawShaderMaterial;
+  const merged = m.fragmentShader
+    .replace(
+      "varying vec2 vUv;",
+      `varying vec2 vUv;
+uniform vec2 resolution;
+uniform float saturation, contrast, vignette, flash, fade;
+uniform vec3 flashColor;`,
+    )
+    .replace(/(gl_FragColor = sRGBTransferOETF\( gl_FragColor \);\s*#endif)/, `$1
+${FINISH_GLSL}`);
+  if (!merged.includes("flashColor, flash")) throw Error("finishing pass: OutputShader changed shape");
+  m.fragmentShader = merged;
+  return pass;
+}
 
 export class Renderer {
   readonly renderer: THREE.WebGLRenderer;
@@ -73,7 +92,7 @@ export class Renderer {
   camera?: THREE.PerspectiveCamera;
   private composer?: EffectComposer;
   bloom?: UnrealBloomPass;
-  finish?: ShaderPass;
+  finish?: FinishingPass;
   private scale = 1;
   private frameTimes: number[] = [];
   width = 1;
@@ -82,7 +101,10 @@ export class Renderer {
   constructor(readonly canvas: HTMLCanvasElement) {
     this.renderer = new THREE.WebGLRenderer({
       canvas,
-      antialias: true,
+      // Canvas MSAA only smooths the full-screen post passes once a composer is on, and
+      // on dense phone screens (DPR >= 2) jaggies are too small to see: save the memory
+      // and bandwidth there. High quality antialiases its own render target instead.
+      antialias: (devicePixelRatio || 1) < 2,
       alpha: false,
       powerPreference: "high-performance",
       preserveDrawingBuffer: /[?&]capture/.test(location.search),
@@ -112,6 +134,7 @@ export class Renderer {
   attach(scene: THREE.Scene, camera: THREE.PerspectiveCamera) {
     this.scene = scene;
     this.camera = camera;
+    this.grace = 2; // loading a scene hitches: don't read it as a slow device
     if (this.renderPass) {
       this.renderPass.scene = scene;
       this.renderPass.camera = camera;
@@ -145,10 +168,14 @@ export class Renderer {
     composer.addPass(new ShaderPass(SanitizeShader));
     if (q.bloom) {
       this.bloom = new UnrealBloomPass(new THREE.Vector2(size.x / 2, size.y / 2), 0.4, 0.45, 1.0);
+      if (this.quality !== "high") {
+        // Phones: glow buffers at a quarter of the screen (three halves whatever it is given).
+        const setSize = this.bloom.setSize.bind(this.bloom);
+        this.bloom.setSize = (w: number, h: number) => setSize(w / 2, h / 2);
+      }
       composer.addPass(this.bloom);
     }
-    composer.addPass(new OutputPass());
-    this.finish = new ShaderPass(FinishShader);
+    this.finish = finishingPass();
     composer.addPass(this.finish);
     this.composer = composer;
     // A quality change must keep the current scene's look.
@@ -209,8 +236,15 @@ export class Renderer {
   }
 
   /** Lower internal resolution when frames run long; raise it again when there's headroom. */
+  private grace = 0;
+
   adapt(dt: number) {
     if (document.hidden) return;
+    if (this.grace > 0) {
+      this.grace -= dt;
+      this.frameTimes.length = 0;
+      return;
+    }
     this.frameTimes.push(dt);
     if (this.frameTimes.length < 90) return;
     const avg = this.frameTimes.reduce((a, b) => a + b, 0) / this.frameTimes.length;

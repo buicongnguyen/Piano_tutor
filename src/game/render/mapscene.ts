@@ -2,8 +2,12 @@
 // sea joined by a five-line musical-staff trail, the Encore airship with Coda,
 // Hush fog over locked islands, and a camera that orbits, pans and swoops.
 import * as THREE from "three";
+import { stdMaterial } from "./lite";
 import { islands, type Island } from "../campaign";
 import { applyHush, hushUniforms, materialsOf, ownAllMaterials, spawn, type HushUniforms, type Kit } from "./assets";
+import { bakeStatic } from "./bake";
+import { createFlock } from "./flock";
+import { ShoreFoam, waterlineRadius, type Waterline } from "./foam";
 import { Coda, Hush, Ship } from "./characters";
 import { Environment } from "./env";
 import { Particles } from "./fx";
@@ -31,6 +35,7 @@ type IslandView = {
   proxy: THREE.Mesh;
   state: "locked" | "open" | "restored";
   sat: number;
+  water?: Waterline; // the base's waterline, for the shore foam ring
 };
 
 export class MapScene {
@@ -45,6 +50,12 @@ export class MapScene {
   private curve?: THREE.CatmullRomCurve3;
   private shipAt = 0; // curve parameter
   private shipTarget = 0;
+  /** Foam around every island where it meets the sea: one instanced draw. */
+  private foam = new ShoreFoam(16, { width: 2.4, color: "#ffffff", opacity: 0.85 });
+  /** Gulls circling the island the ship is at (or heading to): one draw, motion on the GPU. */
+  private gulls?: ReturnType<typeof createFlock>;
+  private readonly gullAt = new THREE.Vector3();
+  private readonly gullTo = new THREE.Vector3();
   private focus = new THREE.Vector3();
   private focusTarget = new THREE.Vector3();
   private distance = 118;
@@ -79,6 +90,7 @@ export class MapScene {
         base.scale.setScalar(1.05);
         root.add(base);
       }
+      const water = base ? waterlineRadius(base, SEA_LEVEL) : undefined; // before baking merges the base
       const place = (name: string, px: number, pz: number, s = 1, ry = 0) => {
         const prop = spawn(kit, name);
         if (!prop) return;
@@ -138,9 +150,19 @@ export class MapScene {
       proxy.position.y = 4;
       proxy.userData.island = island.id;
       root.add(proxy);
+      // One draw per finish instead of one per prop material; each island keeps its
+      // own baked materials so its Hush colour can drain and return on its own.
+      bakeStatic(root, [...pivots.spin, ...pivots.wheels, ...pivots.blades, ...pivots.bells, ...fog, ...(crystal ? [crystal] : []), proxy], new Map());
+      applyHush(root, hush);
       this.scene.add(root);
-      this.views.push({ island, root, hush, fog, crystal, pivots, proxy, state: "locked", sat: 0.2 });
+      this.views.push({ island, root, hush, fog, crystal, pivots, proxy, state: "locked", sat: 0.2, water });
     }
+    // Shore foam: each island's waterline, measured from its own baked geometry.
+    this.views.forEach((v, i) => {
+      const w = v.water;
+      if (w && Math.min(w.rx, w.rz) > 1) this.foam.set(i, v.root.position.x, SEA_LEVEL, v.root.position.z, { rx: w.rx * 1.02, rz: w.rz * 1.02 });
+    });
+    this.scene.add(this.foam.mesh);
     // The staff trail through the islands in campaign order.
     const points = islands.map((i) => new THREE.Vector3(i.map[0] * SCALE, 1.2, i.map[1] * SCALE));
     this.curve = new THREE.CatmullRomCurve3(points, false, "centripetal");
@@ -187,8 +209,8 @@ export class MapScene {
     });
     this.staff.clear();
     if (!this.curve) return;
-    const lit = new THREE.MeshStandardMaterial({ color: "#ffc53d", emissive: "#ff9d00", emissiveIntensity: 0.6, roughness: 0.3, metalness: 0.4 });
-    const dim = new THREE.MeshStandardMaterial({ color: "#8f96b3", roughness: 0.6, transparent: true, opacity: 0.55 });
+    const lit = stdMaterial({ color: "#ffc53d", emissive: "#ff9d00", emissiveIntensity: 0.6, roughness: 0.3, metalness: 0.4 });
+    const dim = stdMaterial({ color: "#8f96b3", roughness: 0.6, transparent: true, opacity: 0.55 });
     const split = reach / (islands.length - 1);
     for (let line = 0; line < 5; line++) {
       const offset = (line - 2) * 0.8;
@@ -221,7 +243,7 @@ export class MapScene {
       const line = [-2, -1, 0, 1, 2][(i * 7) % 5];
       const note = new THREE.Mesh(
         head,
-        new THREE.MeshStandardMaterial({ color: colors[i % colors.length], roughness: 0.25, emissive: colors[i % colors.length], emissiveIntensity: 0.3 }),
+        stdMaterial({ color: colors[i % colors.length], roughness: 0.25, emissive: colors[i % colors.length], emissiveIntensity: 0.3 }),
       );
       note.scale.set(1.25, 0.7, 1);
       note.position.copy(p).add(side.multiplyScalar(line * 0.55 * 0.5 * 2));
@@ -301,7 +323,24 @@ export class MapScene {
 
   // ------------------------------------------------------------ frame
 
+  /** Gulls over the current island (call once; `quiet` for reduced motion). */
+  addGulls(quiet = false) {
+    if (this.gulls) return;
+    const at = this.views[0]?.root.position ?? new THREE.Vector3();
+    this.gullAt.set(at.x, SEA_LEVEL, at.z);
+    this.gulls = createFlock("gull", { count: 9, center: this.gullAt, radius: [16, 30], height: [16, 26], size: 2.4, seed: 5, quiet });
+    this.scene.add(this.gulls.mesh);
+  }
+
   update(dt: number, time: number) {
+    this.foam.update(time);
+    if (this.gulls) {
+      // Glide over to the island the ship is heading for.
+      const v = this.views[Math.round(this.shipTarget * (islands.length - 1))];
+      if (v) this.gullAt.lerp(this.gullTo.set(v.root.position.x, SEA_LEVEL, v.root.position.z), Math.min(1, dt * 0.6));
+      this.gulls.uniforms.uCenter.value.copy(this.gullAt);
+      this.gulls.update(time);
+    }
     // Island colour: locked islands drain grey under the Hush fog.
     for (const v of this.views) {
       const target = this.mode === "title" || v.state === "restored" ? 1 : v.state === "open" ? 0.62 : 0.12;

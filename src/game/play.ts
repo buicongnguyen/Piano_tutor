@@ -143,7 +143,7 @@ export class PlaySession {
       assist: this.assist,
       keyRange,
     });
-    world.build(setup.theme, hash(setup.stageId), stage.roadHalf, setup.quality);
+    world.build(setup.theme, hash(setup.stageId), stage.roadHalf, setup.quality, setup.reducedMotion);
     input.setMode(
       mode === "lanes"
         ? { kind: "lanes", lanes: this.chart.lanes, preset: setup.laneKeys }

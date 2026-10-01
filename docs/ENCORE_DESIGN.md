@@ -179,6 +179,11 @@ piano, like the player's own notes, so every difficulty sounds like the whole pi
   layer tinted toward the water colour, which reads as "under the surface" with no
   transparency. Sixty fish cost two draw calls and about 0.02 ms of CPU per frame.
   Graphics quality sets the count: 18, 36 or 60.
+- **Shore foam and gulls**: foam rings lap where every islet, boat and map island meets the
+  sea, all in one instanced draw. A GPU-only flock circles over the sea beside the road ahead,
+  anchored in course space so it drifts past and wraps. It is swallows in snowy themes and
+  moonlit gulls at night. On the map, gulls glide to the island the ship is heading for. See
+  [PERFORMANCE.md](PERFORMANCE.md) for what everything costs.
 - **Feedback**: keys depress and glow, lane-coloured bursts and a shockwave ring
   play on each hit, judgement text pops, the multiplier badge pulses, misses thud and
   flash the lane.

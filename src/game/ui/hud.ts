@@ -21,6 +21,7 @@ const LABEL: Record<string, string> = { perfect: "PERFECT!", great: "GREAT", goo
 export class Hud {
   readonly root: HTMLElement;
   private shownScore = 0;
+  private lastScoreShown = -1;
   private pops: HTMLElement[] = [];
   private popIndex = 0;
   private last: Partial<HudState> = {};
@@ -79,6 +80,8 @@ export class Hud {
   begin(info: { title: string; difficulty: string; mode: string; practice: boolean; lanes: number; notes: number; excerpt: boolean; assisted: number; keepMelody?: boolean; touch?: boolean }) {
     this.root.hidden = false;
     this.shownScore = 0;
+    this.lastScoreShown = -1;
+    this.written.clear(); // a new stage rewrites every HUD value once
     this.last = {};
     this.el.title.textContent = info.title;
     const bits = [
@@ -107,12 +110,24 @@ export class Hud {
     this.root.hidden = true;
   }
 
+  // Last values written to the DOM: a frame touches only what changed (style writes,
+  // class toggles and number formatting all cost on a phone's main thread).
+  private written = new Map<string, string | boolean>();
+  private put(key: string, value: string | boolean, write: () => void) {
+    if (this.written.get(key) === value) return;
+    this.written.set(key, value);
+    write();
+  }
+
   update(s: HudState) {
     // Roll the score toward its target.
     this.shownScore += (s.score - this.shownScore) * 0.25;
     if (Math.abs(s.score - this.shownScore) < 1) this.shownScore = s.score;
-    const score = Math.round(this.shownScore).toLocaleString("en-US");
-    if (this.el.score.textContent !== score) this.el.score.textContent = score;
+    const rounded = Math.round(this.shownScore);
+    if (rounded !== this.lastScoreShown) {
+      this.lastScoreShown = rounded;
+      this.el.score.textContent = rounded.toLocaleString("en-US");
+    }
     if (s.multiplier !== this.last.multiplier) {
       this.el.mult.textContent = `×${s.multiplier}`;
       this.el.mult.className = `hud-mult x${s.multiplier}`;
@@ -123,20 +138,31 @@ export class Hud {
       this.el.combo.classList.toggle("show", s.combo >= 5);
       if (s.combo > (this.last.combo ?? 0)) this.bump(this.el.combo);
     }
-    this.el.harmony.style.transform = `scaleX(${s.harmony.toFixed(3)})`;
-    this.el.encore.style.transform = `scaleX(${s.encore.toFixed(3)})`;
+    const harmony = s.harmony.toFixed(3),
+      encore = s.encore.toFixed(3),
+      progress = s.progress.toFixed(4);
+    this.put("harmony", harmony, () => (this.el.harmony.style.transform = `scaleX(${harmony})`));
+    this.put("encore", encore, () => (this.el.encore.style.transform = `scaleX(${encore})`));
+    this.put("progress", progress, () => (this.el.progressFill.style.transform = `scaleX(${progress})`));
     const ready = s.encore >= 0.5 && !s.encoreActive;
-    this.el.encoreBox.classList.toggle("ready", ready);
-    this.el.encoreBox.classList.toggle("active", s.encoreActive);
-    this.el.encoreBtn.classList.toggle("show", ready);
-    this.root.classList.toggle("encore-on", s.encoreActive);
-    this.el.progressFill.style.transform = `scaleX(${s.progress.toFixed(4)})`;
+    this.put("ready", ready, () => {
+      this.el.encoreBox.classList.toggle("ready", ready);
+      this.el.encoreBtn.classList.toggle("show", ready);
+    });
+    this.put("active", s.encoreActive, () => {
+      this.el.encoreBox.classList.toggle("active", s.encoreActive);
+      this.root.classList.toggle("encore-on", s.encoreActive);
+    });
     this.stars ??= [...this.root.querySelectorAll<HTMLElement>("[data-star]")];
-    this.stars.forEach((star, i) => star.classList.toggle("lit", s.accuracy >= STAR_ACCURACY[i] && s.progress > 0.05));
+    this.stars.forEach((star, i) => {
+      const lit = s.accuracy >= STAR_ACCURACY[i] && s.progress > 0.05;
+      this.put(`star${i}`, lit, () => star.classList.toggle("lit", lit));
+    });
     if (s.hint !== this.last.hint) this.el.hint.textContent = s.hint;
-    this.el.hint.classList.toggle("waiting", s.waiting);
+    this.put("waiting", s.waiting, () => this.el.hint.classList.toggle("waiting", s.waiting));
     this.last = s;
   }
+
 
   judgement(kind: "perfect" | "great" | "good" | "miss" | "wrong", x: number, y: number, delta: number) {
     const pop = this.pops[this.popIndex++ % this.pops.length];

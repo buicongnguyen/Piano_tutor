@@ -2,6 +2,7 @@
 // beat lines, bar arches and lamps, and all hit feedback. World dressing
 // (islets, destination island, characters) lives in world.ts.
 import * as THREE from "three";
+import { stdMaterial } from "./lite";
 import { isArcade, type Chart, type ChartNote } from "../chart";
 import { noteName } from "../../music";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
@@ -193,14 +194,26 @@ export class Stage {
   private beatLines?: THREE.InstancedMesh;
   private curbs?: THREE.InstancedMesh;
   private arches: THREE.Object3D[] = [];
-  private lamps: THREE.Object3D[] = [];
+  /** Road lamps: one InstancedMesh per lamp part; `local` places the part inside a lamp. */
+  private lampParts: { mesh: THREE.InstancedMesh; local: THREE.Matrix4 }[] = [];
+  private readonly lampMatrix = new THREE.Matrix4();
+  private readonly lampPart = new THREE.Matrix4();
+  private readonly lampQ = new THREE.Quaternion();
+  private readonly lampAxis = new THREE.Vector3(0, 1, 0);
+  private readonly lampPos = new THREE.Vector3();
+  private readonly lampScale = new THREE.Vector3(1, 1, 1);
   private beams: THREE.Mesh<THREE.PlaneGeometry, THREE.ShaderMaterial>[] = [];
   private hitLine?: THREE.Mesh;
   private labels: THREE.Mesh[] = [];
   private noteState: Uint8Array = new Uint8Array(0); // 0 waiting, 1 hit, 2 miss, 3 holding
   private missAt = new Float32Array(0);
   private assistFired = new Set<number>();
-  private barKeys?: Set<string>; // per chart, reset in setup
+  private isBar?: Uint8Array; // per beat: does a bar start here (per chart, reset in setup)
+  // Loop cursors: the first beat / note that can still be on the road. Song time only
+  // moves forward within a stage, so per-frame loops skip what has already passed.
+  private lineFrom = 0;
+  private noteFrom = 0;
+  private cursorTime = -Infinity;
   private lineColor?: THREE.Color;
   private gemGlow = { value: 0.55 };
   private halfWidth = 4;
@@ -263,7 +276,10 @@ export class Stage {
     this.options = options;
     this.noteState = new Uint8Array(chart.notes.length);
     this.assistFired.clear();
-    this.barKeys = undefined;
+    this.isBar = undefined;
+    this.lineFrom = 0;
+    this.noteFrom = 0;
+    this.cursorTime = -Infinity;
     this.lineColor = undefined;
     this.missAt = new Float32Array(chart.notes.length);
     this.particles.density = options.quality;
@@ -320,7 +336,7 @@ export class Stage {
         const color = new THREE.Color(FINGER_COLORS[k.finger]);
         const root = new THREE.Group();
         root.position.set(k.x, 0, k.z);
-        const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.3, metalness: 0 });
+        const mat = stdMaterial({ color, roughness: 0.3, metalness: 0 });
         const cap = new THREE.Mesh(capGeo, mat);
         cap.position.y = -0.03;
         root.add(cap);
@@ -328,7 +344,7 @@ export class Stage {
         this.addLabel(k.ch.toUpperCase(), 0, 0.13, 0.02, 0.46, k.finger === 2 || k.finger === 3 ? "#1b1733" : "#ffffff", undefined, root);
         // Home-row bumps on F and J, like a real keyboard.
         if (k.ch === "f" || k.ch === "j") {
-          const bump = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.03, 0.04), new THREE.MeshStandardMaterial({ color: "#ffffff", roughness: 0.4 }));
+          const bump = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.03, 0.04), stdMaterial({ color: "#ffffff", roughness: 0.4 }));
           bump.position.set(0, 0.135, 0.2);
           root.add(bump);
         }
@@ -496,8 +512,8 @@ export class Stage {
     this.road = new THREE.Mesh(geometry, material);
     this.content.add(this.road);
     // Chunky side skirts below the deck edge.
-    const skirtMat = new THREE.MeshStandardMaterial({ color: theme.road.side, roughness: 0.35 });
-    const trimMat = new THREE.MeshStandardMaterial({ color: theme.road.trim, roughness: 0.3, metalness: 0.6 });
+    const skirtMat = stdMaterial({ color: theme.road.side, roughness: 0.35 });
+    const trimMat = stdMaterial({ color: theme.road.trim, roughness: 0.3, metalness: 0.6 });
     for (const side of [-1, 1]) {
       const skirt = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.9, ROAD_FAR), skirtMat);
       skirt.position.set(side * (this.halfWidth + 0.2), -0.47, -ROAD_FAR / 2);
@@ -507,7 +523,7 @@ export class Stage {
     }
     const under = new THREE.Mesh(
       new THREE.BoxGeometry(this.halfWidth * 2, 0.8, ROAD_FAR),
-      new THREE.MeshStandardMaterial({ color: new THREE.Color(theme.road.deck).multiplyScalar(0.55), roughness: 0.6 }),
+      stdMaterial({ color: new THREE.Color(theme.road.deck).multiplyScalar(0.55), roughness: 0.6 }),
     );
     // Stops at the hit line: a pressed key dips below the deck and must never be hidden by it.
     under.position.set(0, -0.45, -ROAD_FAR / 2 - 0.05);
@@ -515,7 +531,7 @@ export class Stage {
     // Hit line: a glowing bar where the notes land.
     this.hitLine = new THREE.Mesh(
       new THREE.BoxGeometry(this.halfWidth * 2 - 0.2, 0.08, 0.16),
-      new THREE.MeshStandardMaterial({ color: "#ffffff", emissive: theme.road.line, emissiveIntensity: 1.4, roughness: 0.3 }),
+      stdMaterial({ color: "#ffffff", emissive: theme.road.line, emissiveIntensity: 1.4, roughness: 0.3 }),
     );
     this.hitLine.position.set(0, 0.05, -0.1);
     this.content.add(this.hitLine);
@@ -537,7 +553,7 @@ export class Stage {
           material = (mesh.material as THREE.MeshStandardMaterial).clone();
         }
       });
-      return { geometry: geometry ?? fallback, material: material ?? new THREE.MeshStandardMaterial({ color: "#ffffff" }) };
+      return { geometry: geometry ?? fallback, material: material ?? stdMaterial({ color: "#ffffff" }) };
     };
     const count = Math.max(1, chart.notes.length);
     const cap = Math.min(count, 700);
@@ -632,7 +648,7 @@ export class Stage {
     // Piano-key curbs along both edges (white blocks with raised black keys).
     const curbProto = kit.get("CurbBlock");
     let curbGeometry: THREE.BufferGeometry = new THREE.BoxGeometry(0.6, 0.35, 1);
-    let curbMaterial: THREE.Material = new THREE.MeshStandardMaterial({ color: "#ffffff" });
+    let curbMaterial: THREE.Material = stdMaterial({ color: "#ffffff" });
     curbProto?.traverse((o) => {
       const mesh = o as THREE.Mesh;
       if (mesh.isMesh) {
@@ -659,14 +675,22 @@ export class Stage {
       this.arches.push(arch);
       this.content.add(arch);
     }
-    this.lamps = [];
-    for (let i = 0; i < 24; i++) {
-      const lamp = spawn(kit, "RoadLamp");
-      if (!lamp) break;
-      lamp.visible = false;
-      if (i % 2) lamp.scale.x = -1;
-      this.lamps.push(lamp);
-      this.content.add(lamp);
+    // Lamps: up to 24 on the road at once, each part ONE instanced draw (was 24 clones).
+    this.lampParts = [];
+    const lamp = spawn(kit, "RoadLamp");
+    if (lamp) {
+      lamp.updateMatrixWorld(true);
+      lamp.traverse((o) => {
+        const mesh = o as THREE.Mesh;
+        if (!mesh.isMesh) return;
+        const im = new THREE.InstancedMesh(mesh.geometry, (mesh.material as THREE.Material).clone(), 24);
+        im.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+        im.count = 0;
+        im.frustumCulled = false; // spread along the road
+        im.name = "RoadLamp";
+        this.content.add(im);
+        this.lampParts.push({ mesh: im, local: mesh.matrixWorld.clone() });
+      });
     }
   }
 
@@ -840,6 +864,8 @@ export class Stage {
       o = this.options;
     if (!chart || !o) return;
     this.songTime = songTime;
+    if (songTime < this.cursorTime) this.lineFrom = this.noteFrom = 0; // time went back: rescan
+    this.cursorTime = songTime;
     const ups = this.unitsPerSong;
     const reduced = o.reducedMotion;
     // Beat pulse from the chart's beat grid.
@@ -974,7 +1000,8 @@ export class Stage {
     const scaleLanes =
       this.chart!.mode === "lanes" ? LANE_W * 0.92 : this.chart!.mode === "tap" ? 1.5 : this.chart!.mode === "words" ? 0.62 : KEY_W * 1.15;
     const groupX = new Map<number, [number, number, number]>(); // group -> min x, max x, z
-    for (let i = 0; i < chart.notes.length; i++) {
+    while (this.noteFrom < chart.notes.length && chart.notes[this.noteFrom].end < t - 1.2 && chart.notes[this.noteFrom].time < t - 1.2) this.noteFrom++;
+    for (let i = this.noteFrom; i < chart.notes.length; i++) {
       const n = chart.notes[i];
       if (n.end < t - 1.2 && n.time < t - 1.2) continue;
       if (n.time > horizon) break;
@@ -1094,16 +1121,22 @@ export class Stage {
     const chart = this.chart!;
     const lines = this.beatLines!;
     const m = this.tmp;
-    const bars = (this.barKeys ??= new Set(chart.bars.map((b) => b.toFixed(3))));
+    if (!this.isBar) {
+      const bars = new Set(chart.bars.map((b) => b.toFixed(3)));
+      this.isBar = Uint8Array.from(chart.beats, (b) => (bars.has(b.toFixed(3)) ? 1 : 0));
+    }
+    const isBar = this.isBar;
     let n = 0;
     const width = this.halfWidth * 2 - 0.5;
     const line = (this.lineColor ??= new THREE.Color(this.theme!.road.line));
-    for (const b of chart.beats) {
+    while (this.lineFrom < chart.beats.length && -(chart.beats[this.lineFrom] - t) * ups > 0.2) this.lineFrom++;
+    for (let i = this.lineFrom; i < chart.beats.length; i++) {
+      const b = chart.beats[i];
       const z = -(b - t) * ups;
       if (z > 0.2) continue;
       if (z < -ROAD_VIEW - 20) break;
       if (n >= lines.instanceMatrix.count) break;
-      const bar = bars.has(b.toFixed(3));
+      const bar = isBar[i] === 1;
       m.position.set(0, 0.015, z);
       m.rotation.set(0, 0, 0);
       m.scale.set(width, bar ? 1.4 : 0.8, bar ? 0.16 : 0.06);
@@ -1119,37 +1152,44 @@ export class Stage {
 
   private updateDressing(t: number, ups: number) {
     const chart = this.chart!;
-    // Curbs: a scrolling piano keyboard along each edge.
+    // Curbs: a scrolling piano keyboard along each edge. The pattern repeats every 7
+    // keys, so the instances are written ONCE and the whole mesh slides back by the
+    // scroll offset (it used to rewrite ~520 instances, colours included, every frame).
     const curbs = this.curbs!;
-    const length = curbs.userData.length as number;
     const m = this.tmp;
-    const offset = (t * ups) % 7;
-    let n = 0;
-    const pattern = [1, 1, 0, 1, 1, 1, 0]; // black key after these whites
-    for (const side of [-1, 1]) {
-      const x = side * (this.halfWidth + 0.62);
-      for (let k = 0; k < length; k++) {
-        const z = -k + offset - 3;
-        if (z > 3 || n + 2 > curbs.instanceMatrix.count) continue;
-        m.position.set(x, -0.12, z);
-        m.rotation.set(0, 0, 0);
-        m.scale.set(1, 1, 0.94);
-        m.updateMatrix();
-        curbs.setMatrixAt(n, m.matrix);
-        curbs.setColorAt(n++, this.color.set("#fff8ea"));
-        const idx = ((k % 7) + 7) % 7;
-        if (pattern[idx]) {
-          m.position.set(x, 0.08, z - 0.5);
-          m.scale.set(0.62, 1.05, 0.5);
+    if (!curbs.userData.built) {
+      const length = curbs.userData.length as number;
+      const pattern = [1, 1, 0, 1, 1, 1, 0]; // black key after these whites
+      const white = new THREE.Color("#fff8ea"),
+        black = new THREE.Color("#1b1733");
+      let n = 0;
+      for (const side of [-1, 1]) {
+        const x = side * (this.halfWidth + 0.62);
+        // From k = 1: with the offset (< 7) added, no curb comes nearer than z = 3.
+        for (let k = 1; k < length; k++) {
+          if (n + 2 > curbs.instanceMatrix.count) break;
+          const z = -k - 3;
+          m.position.set(x, -0.12, z);
+          m.rotation.set(0, 0, 0);
+          m.scale.set(1, 1, 0.94);
           m.updateMatrix();
           curbs.setMatrixAt(n, m.matrix);
-          curbs.setColorAt(n++, this.color.set("#1b1733"));
+          curbs.setColorAt(n++, white);
+          if (pattern[((k % 7) + 7) % 7]) {
+            m.position.set(x, 0.08, z - 0.5);
+            m.scale.set(0.62, 1.05, 0.5);
+            m.updateMatrix();
+            curbs.setMatrixAt(n, m.matrix);
+            curbs.setColorAt(n++, black);
+          }
         }
       }
+      curbs.count = n;
+      curbs.instanceMatrix.needsUpdate = true;
+      if (curbs.instanceColor) curbs.instanceColor.needsUpdate = true;
+      curbs.userData.built = true;
     }
-    curbs.count = n;
-    curbs.instanceMatrix.needsUpdate = true;
-    if (curbs.instanceColor) curbs.instanceColor.needsUpdate = true;
+    curbs.position.z = (((t * ups) % 7) + 7) % 7;
 
     // Arches every 4 bars; lamps every bar.
     const beatLen = chart.beats.length > 1 ? chart.beats[1] - chart.beats[0] : 0.5;
@@ -1168,17 +1208,21 @@ export class Stage {
     }
     for (; a < this.arches.length; a++) this.arches[a].visible = false;
     let l = 0;
-    for (let i = 0; i < chart.bars.length && l + 1 < this.lamps.length; i++) {
+    const lampMax = this.lampParts[0]?.mesh.instanceMatrix.count ?? 0;
+    for (let i = 0; i < chart.bars.length && l + 1 < lampMax; i++) {
       const z = -(chart.bars[i] - t) * ups;
       if (z > 8 || z < -200) continue;
       for (const side of [-1, 1]) {
-        const lamp = this.lamps[l++];
-        lamp.visible = true;
-        lamp.position.set(side * (this.halfWidth + 1.3), -0.1, z);
-        lamp.rotation.y = side > 0 ? Math.PI : 0;
+        this.lampQ.setFromAxisAngle(this.lampAxis, side > 0 ? Math.PI : 0);
+        this.lampMatrix.compose(this.lampPos.set(side * (this.halfWidth + 1.3), -0.1, z), this.lampQ, this.lampScale);
+        for (const part of this.lampParts) part.mesh.setMatrixAt(l, this.lampPart.multiplyMatrices(this.lampMatrix, part.local));
+        l++;
       }
     }
-    for (; l < this.lamps.length; l++) this.lamps[l].visible = false;
+    for (const part of this.lampParts) {
+      part.mesh.count = l;
+      part.mesh.instanceMatrix.needsUpdate = true;
+    }
   }
 
   dispose() {
@@ -1213,7 +1257,7 @@ export class Stage {
     this.keys = [];
     this.keyByLane.clear();
     this.arches = [];
-    this.lamps = [];
+    this.lampParts = [];
     this.beams = [];
   }
 }
