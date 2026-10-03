@@ -1,6 +1,7 @@
 // GPU-light effects: one pooled additive particle cloud (sparks, fireworks,
 // confetti, weather) and pooled shockwave rings.
 import * as THREE from "three";
+import { uploadPrefix } from "./upload";
 import type { Weather } from "./themes";
 
 const pointsVertex = /* glsl */ `
@@ -40,6 +41,7 @@ export class Particles {
   readonly points: THREE.Points;
   private pool: Particle[];
   private cursor = 0;
+  private active = new Set<number>();
   private geometry: THREE.BufferGeometry;
   private pos: Float32Array;
   private tint: Float32Array;
@@ -52,6 +54,7 @@ export class Particles {
       size: 1, r: 1, g: 1, b: 1, gravity: 0, drag: 0, spin: 0, scroll: 0,
     }));
     this.geometry = new THREE.BufferGeometry();
+    this.geometry.setDrawRange(0, 0);
     this.pos = new Float32Array(capacity * 3);
     this.tint = new Float32Array(capacity * 4);
     this.size = new Float32Array(capacity);
@@ -78,6 +81,7 @@ export class Particles {
   }
 
   spawn(p: Partial<Particle> & { x: number; y: number; z: number }) {
+    this.active.add(this.cursor);
     const slot = this.pool[this.cursor];
     this.cursor = (this.cursor + 1) % this.capacity;
     Object.assign(slot, {
@@ -149,34 +153,36 @@ export class Particles {
 
   update(dt: number, roadSpeed = 0) {
     const pos = this.pos, tint = this.tint, size = this.size;
-    for (let i = 0; i < this.capacity; i++) {
-      const p = this.pool[i];
-      if (!p.alive) {
-        size[i] = 0;
-        continue;
-      }
+    let count = 0;
+    // Pool slots keep stable identities; the GPU buffer packs only living particles.
+    for (const id of this.active) {
+      const p = this.pool[id];
       p.life += dt;
       if (p.life >= p.max) {
         p.alive = false;
-        size[i] = 0;
+        this.active.delete(id);
         continue;
       }
       const k = Math.exp(-p.drag * dt);
       p.vx *= k; p.vy = p.vy * k + p.gravity * dt; p.vz *= k;
       p.x += p.vx * dt; p.y += p.vy * dt; p.z += (p.vz + p.scroll * roadSpeed) * dt;
+      const i = count++;
       pos[i * 3] = p.x; pos[i * 3 + 1] = p.y; pos[i * 3 + 2] = p.z;
       const t = p.life / p.max;
       const fade = t < 0.1 ? t / 0.1 : 1 - Math.pow((t - 0.1) / 0.9, 1.6);
       tint[i * 4] = p.r; tint[i * 4 + 1] = p.g; tint[i * 4 + 2] = p.b; tint[i * 4 + 3] = fade;
       size[i] = p.size * (1 - t * 0.35);
     }
-    this.geometry.attributes.position.needsUpdate = true;
-    this.geometry.attributes.tint.needsUpdate = true;
-    this.geometry.attributes.size.needsUpdate = true;
+    this.geometry.setDrawRange(0, count);
+    uploadPrefix(this.geometry.attributes.position as THREE.BufferAttribute, count);
+    uploadPrefix(this.geometry.attributes.tint as THREE.BufferAttribute, count);
+    uploadPrefix(this.geometry.attributes.size as THREE.BufferAttribute, count);
   }
 
   clear() {
-    for (const p of this.pool) p.alive = false;
+    for (const id of this.active) this.pool[id].alive = false;
+    this.active.clear();
+    this.geometry.setDrawRange(0, 0);
   }
 }
 

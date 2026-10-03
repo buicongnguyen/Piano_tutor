@@ -129,7 +129,10 @@ export class Conductor {
         this.smoothPerf = 0;
       }
     }
-    const horizon = this.waiting ?? this.rawTime() + LOOKAHEAD * this.speed;
+    // Queue against the processing clock. The heard clock trails it by output
+    // latency and is only appropriate for visuals, input judging and practice gates.
+    const processingTime = this.anchorSong + (ctx.currentTime - this.anchorCtx) * this.speed;
+    const horizon = this.waiting ?? processingTime + LOOKAHEAD * this.speed;
     while (this.next < this.events.length) {
       const e = this.events[this.next];
       // Never schedule at/beyond an uncleared gate, even before the clock reaches it.

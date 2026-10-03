@@ -2,6 +2,8 @@
 // beat lines, bar arches and lamps, and all hit feedback. World dressing
 // (islets, destination island, characters) lives in world.ts.
 import * as THREE from "three";
+import { beatIndexAt } from "../timeline";
+import { uploadPrefix } from "./upload";
 import { stdMaterial } from "./lite";
 import { isArcade, type Chart, type ChartNote } from "../chart";
 import { noteName } from "../../music";
@@ -869,11 +871,7 @@ export class Stage {
     const ups = this.unitsPerSong;
     const reduced = o.reducedMotion;
     // Beat pulse from the chart's beat grid.
-    let beatIndex = -1;
-    for (let i = 0; i < chart.beats.length; i++) {
-      if (chart.beats[i] > songTime) break;
-      beatIndex = i;
-    }
+    const beatIndex = beatIndexAt(chart.beats, songTime);
     if (beatIndex !== this.lastBeat && beatIndex >= 0) {
       this.lastBeat = beatIndex;
       this.beatPulse = 1;
@@ -1100,11 +1098,11 @@ export class Stage {
       chords.setMatrixAt(chi++, m.matrix);
     }
     shadows.count = si;
-    shadows.instanceMatrix.needsUpdate = true;
+    uploadPrefix(shadows.instanceMatrix, si);
     if (letters && letterAttr) {
       letters.count = li;
-      letters.instanceMatrix.needsUpdate = true;
-      letterAttr.needsUpdate = true;
+      uploadPrefix(letters.instanceMatrix, li);
+      uploadPrefix(letterAttr, li);
     }
     gems.count = gi;
     golds.count = goi;
@@ -1112,8 +1110,8 @@ export class Stage {
     caps.count = ci;
     chords.count = chi;
     for (const mesh of [gems, golds, tails, caps, chords]) {
-      mesh.instanceMatrix.needsUpdate = true;
-      if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+      uploadPrefix(mesh.instanceMatrix, mesh.count);
+      if (mesh.instanceColor) uploadPrefix(mesh.instanceColor, mesh.count);
     }
   }
 
@@ -1146,8 +1144,8 @@ export class Stage {
       lines.setColorAt(n++, this.color.copy(line).multiplyScalar((bar ? 0.9 : 0.35) * fade));
     }
     lines.count = n;
-    lines.instanceMatrix.needsUpdate = true;
-    if (lines.instanceColor) lines.instanceColor.needsUpdate = true;
+    uploadPrefix(lines.instanceMatrix, n);
+    if (lines.instanceColor) uploadPrefix(lines.instanceColor, n);
   }
 
   private updateDressing(t: number, ups: number) {

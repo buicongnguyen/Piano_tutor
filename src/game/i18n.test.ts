@@ -74,3 +74,9 @@ it("translates the new judge and record labels", () => {
     "⌨️ 31 từ/phút · nhịp bài 40 từ/phút · Gõ đúng 9 trong 12 từ",
   );
 });
+
+it("translates hit streaks and milestone celebrations", () => {
+  expect(t("HIT STREAK", "vi")).toBe("LIÊN TIẾP");
+  expect(t("ON FIRE!", "vi")).toBe("BÙNG CHÁY!");
+  expect(t("25 IN A ROW!", "vi")).toBe("25 NỐT LIÊN TIẾP!");
+});

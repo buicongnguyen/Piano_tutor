@@ -4,14 +4,14 @@ import { Conductor } from "./conductor";
 import { Judge } from "./judge";
 import type { SoundBank } from "./sound";
 
-// A fake audio clock: heard time equals context time; nothing actually sounds.
-function fakeBank() {
+// Fake processing/output clocks; zero latency is the default for existing scenarios.
+function fakeBank(latency = 0) {
   const notes: { midi: number; at: number; duration: number }[] = [];
   let now = 0;
   const bank = {
     ctx: { get currentTime() { return now; } },
     get now() { return now; },
-    heardAt: () => now,
+    heardAt: () => now - latency,
     note: (midi: number, at: number, duration: number) => {
       notes.push({ midi, at, duration });
       return () => undefined;
@@ -178,4 +178,50 @@ describe("conductor", () => {
     c.resume(2);
     expect(c.time()).toBeCloseTo(before - 2 - 0.1, 1); // resume schedules 100 ms ahead
   });
+});
+
+for (const latency of [0.08, 0.18, 0.25]) {
+  for (const speed of [0.5, 1]) {
+    it(`schedules ahead with ${latency * 1000}ms output latency at speed ${speed}`, () => {
+      const { bank, notes, advance } = fakeBank(latency);
+      const melody = [note(0, 1), note(1, 1.5, 1)];
+      const ch = chart(melody);
+      const c = new Conductor(bank, ch, { speed, practice: false, offsetMs: 75, approach: 1, auto: melody, keepMelody: true });
+      c.start();
+      advance(0.1 + (0.5 - c.startTime) / speed - 0.1);
+      c.update(false);
+      expect(notes).toHaveLength(1);
+      expect(notes[0].at - bank.now).toBeCloseTo(0.1, 6);
+      // Walk the rest of the song. Even a slow output device must not drop notes.
+      for (let i = 0; i < 600; i++) { advance(1 / 60); c.update(false); }
+      expect(notes).toHaveLength(ch.accompaniment.length + melody.length);
+      const scheduled = [...ch.accompaniment, ...melody].sort((a, b) => a.time - b.time);
+      notes.forEach((n, i) => expect(n.at).toBeCloseTo(0.1 + (scheduled[i].time - c.startTime) / speed, 6));
+    });
+  }
+}
+
+it("keeps the visual clock behind processing time on a delayed output", () => {
+  const { bank, advance } = fakeBank(0.25);
+  const c = new Conductor(bank, chart([note(0, 1)]), { speed: 1, practice: false, offsetMs: 50, approach: 1 });
+  c.start();
+  advance(1);
+  expect(c.time()).toBeCloseTo(c.startTime + 1 - 0.1 - 0.25 - 0.05, 6);
+});
+
+it("retains practice gates on delayed audio and sounds the cleared melody", () => {
+  const { bank, notes, advance } = fakeBank(0.25);
+  const melody = [note(0, 1), note(1, 2.5, 1)];
+  const c = new Conductor(bank, chart(melody), { speed: 1, practice: true, offsetMs: 0, approach: 1, auto: melody, keepMelody: true });
+  let gate: number | undefined = 1;
+  c.gate = () => gate;
+  c.start();
+  for (let i = 0; i < 360; i++) { advance(1 / 60); c.update(false); }
+  expect(c.waiting).toBe(1);
+  expect(notes.map(n => n.midi)).toEqual([48]);
+  gate = 2.5;
+  c.update(false);
+  expect(c.waiting).toBeUndefined();
+  expect(notes.at(-1)?.midi).toBe(60);
+  expect(notes.at(-1)!.at - bank.now).toBeCloseTo(0.02, 6);
 });

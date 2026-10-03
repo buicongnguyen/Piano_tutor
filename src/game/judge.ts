@@ -13,6 +13,14 @@ export const ENCORE_READY = 0.5;
 const ENCORE_DRAIN = 0.25 / 8; // gauge per real second while active (8 s per quarter)
 const WRONG_HARMONY = -0.04;
 
+function starsFor(accuracy: number, hitRate: number, practice: boolean) {
+  if (practice) return 0;
+  let stars = hitRate >= STAR_ACCURACY[0] - 1e-9 || accuracy >= STAR_ACCURACY[0] - 1e-9 ? 1 : 0;
+  for (let i = 1; i < STAR_ACCURACY.length; i++)
+    if (accuracy >= STAR_ACCURACY[i] - 1e-9) stars++;
+  return stars;
+}
+
 export type NoteState = {
   judgement?: Judgement;
   delta?: number; // real seconds, negative = early
@@ -258,6 +266,15 @@ export class Judge {
     return this.cursor >= this.notes.length && this.holding.size === 0;
   }
 
+  /** The current rating uses the same penalties and first-star rule as results. */
+  get liveStars() {
+    const c = this.counts;
+    const hits = c.perfect + c.great + c.good;
+    const played = hits + c.miss + this.wrong;
+    const weighted = c.perfect * WEIGHT.perfect + c.great * WEIGHT.great + c.good * WEIGHT.good;
+    return played ? starsFor(weighted / played, hits / played, this.practice) : 0;
+  }
+
   result(): Result {
     const total = this.scored;
     const weighted =
@@ -271,10 +288,7 @@ export class Judge {
     const hitRate = played ? hits / played : 0;
     // The first star rewards hitting the notes (a steadily late player still earns
     // it); the second and third reward timing.
-    const stars = this.practice
-      ? 0
-      : (hitRate >= STAR_ACCURACY[0] - 1e-9 || accuracy >= STAR_ACCURACY[0] - 1e-9 ? 1 : 0) +
-        STAR_ACCURACY.slice(1).filter((a) => accuracy >= a - 1e-9).length;
+    const stars = starsFor(accuracy, hitRate, this.practice);
     const fullCombo = total > 0 && hits === total && this.wrong === 0 && this.holdsDropped === 0;
     const rank: Result["rank"] =
       total && this.counts.perfect === total && this.wrong === 0

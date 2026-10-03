@@ -95,6 +95,21 @@ void main(){
   #include <fog_fragment>
 }`;
 
+const calmWaterFragment = /* glsl */ `
+uniform vec3 deep, shallow, sky;
+uniform float hush;
+varying vec3 vWorld;
+#include <fog_pars_fragment>
+void main(){
+  float dist = length(cameraPosition.xz - vWorld.xz);
+  vec3 col = mix(shallow, deep, 0.24 + smoothstep(20.0, 260.0, dist) * 0.55);
+  col = mix(col, sky, smoothstep(80.0, 420.0, dist) * 0.3);
+  float l = dot(col, vec3(0.2126, 0.7152, 0.0722));
+  col = mix(vec3(l) * vec3(0.9, 0.93, 1.05), col, hush);
+  gl_FragColor = vec4(col, 1.0);
+  #include <fog_fragment>
+}`;
+
 export class Environment {
   readonly group = new THREE.Group();
   readonly sky: THREE.Mesh<THREE.SphereGeometry, THREE.ShaderMaterial>;
@@ -130,7 +145,7 @@ export class Environment {
       new THREE.PlaneGeometry(1600, 1600, 1, 1),
       new THREE.ShaderMaterial({
         vertexShader: waterVertex,
-        fragmentShader: waterFragment,
+        fragmentShader: matchMedia("(pointer: coarse)").matches ? calmWaterFragment : waterFragment,
         fog: true,
         uniforms: THREE.UniformsUtils.merge([
           THREE.UniformsLib.fog,

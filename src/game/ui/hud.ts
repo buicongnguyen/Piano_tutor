@@ -11,10 +11,16 @@ export type HudState = {
   encore: number;
   encoreActive: boolean;
   progress: number;
-  accuracy: number;
+  stars: number;
   waiting: boolean;
   hint: string;
 };
+
+/** Highest celebration reached, including several simultaneous hits in one frame. */
+export function streakMilestone(combo: number) {
+  if (combo >= 100) return Math.floor(combo / 50) * 50;
+  return combo >= 50 ? 50 : combo >= 25 ? 25 : combo >= 10 ? 10 : 0;
+}
 
 const LABEL: Record<string, string> = { perfect: "PERFECT!", great: "GREAT", good: "GOOD", miss: "MISS", wrong: "✗ WRONG KEY" };
 
@@ -29,6 +35,7 @@ export class Hud {
   onEncore?: () => void;
   private el: Record<string, HTMLElement> = {};
   private stars?: HTMLElement[];
+  private animationVersions = new WeakMap<HTMLElement, boolean>();
 
   constructor(parent: HTMLElement) {
     this.root = document.createElement("div");
@@ -56,7 +63,11 @@ export class Hud {
         <div class="hud-meter encore" data-el="encoreBox"><span>ENCORE</span><div class="bar"><i data-el="encore"></i></div>
           <em data-el="encoreReady">SPACE</em></div>
       </div>
-      <div class="hud-combo" data-el="combo"><b data-el="comboNum">0</b><span>COMBO</span></div>
+      <div class="hud-combo" data-el="combo" data-tier="0">
+        <i class="streak-ring" data-el="streakRing" aria-hidden="true"></i>
+        <b data-el="comboNum">0</b><span>HIT STREAK</span>
+        <em data-el="streakTag">KEEP GOING!</em>
+      </div>
       <div class="hud-pops" data-el="pops"></div>
       <div class="hud-count" data-el="count"></div>
       <div class="hud-banner" data-el="banner"></div>
@@ -77,7 +88,7 @@ export class Hud {
     }
   }
 
-  begin(info: { title: string; difficulty: string; mode: string; practice: boolean; lanes: number; notes: number; excerpt: boolean; assisted: number; keepMelody?: boolean; touch?: boolean }) {
+  begin(info: { title: string; difficulty: string; mode: string; practice: boolean; lanes: number; notes: number; excerpt: boolean; assisted: number; keepMelody?: boolean; touch?: boolean; reducedMotion?: boolean }) {
     this.root.hidden = false;
     this.shownScore = 0;
     this.lastScoreShown = -1;
@@ -101,6 +112,13 @@ export class Hud {
     this.el.nextWords.textContent = "";
     this.el.badges.textContent = bits.join(" · ");
     this.root.classList.toggle("practice", info.practice);
+    this.root.classList.toggle("reduced-motion", !!info.reducedMotion);
+    this.root.classList.toggle("words-mode", info.mode === "words");
+    this.el.combo.classList.remove("show");
+    this.el.combo.dataset.tier = "0";
+    this.el.comboNum.textContent = "0";
+    this.el.streakTag.textContent = "KEEP GOING!";
+    this.el.streakRing.className = "streak-ring";
     this.el.score.textContent = "0";
     this.el.hint.textContent = "";
     this.el.banner.className = "hud-banner";
@@ -135,8 +153,18 @@ export class Hud {
     }
     if (s.combo !== this.last.combo) {
       this.el.comboNum.textContent = String(s.combo);
-      this.el.combo.classList.toggle("show", s.combo >= 5);
-      if (s.combo > (this.last.combo ?? 0)) this.bump(this.el.combo);
+      this.el.combo.classList.toggle("show", s.combo > 0);
+      const tier = s.combo >= 100 ? 4 : s.combo >= 50 ? 3 : s.combo >= 25 ? 2 : s.combo >= 10 ? 1 : 0;
+      this.put("streakTier", String(tier), () => {
+        this.el.combo.dataset.tier = String(tier);
+        this.el.streakTag.textContent = ["KEEP GOING!", "NICE RHYTHM!", "ON FIRE!", "UNSTOPPABLE!", "LEGENDARY!"][tier];
+      });
+      const previous = this.last.combo ?? 0;
+      if (s.combo > previous) {
+        this.bump(this.el.comboNum);
+        const milestone = streakMilestone(s.combo);
+        if (milestone > streakMilestone(previous)) this.milestone(milestone);
+      } else this.el.streakRing.classList.remove("go");
     }
     const harmony = s.harmony.toFixed(3),
       encore = s.encore.toFixed(3),
@@ -155,7 +183,7 @@ export class Hud {
     });
     this.stars ??= [...this.root.querySelectorAll<HTMLElement>("[data-star]")];
     this.stars.forEach((star, i) => {
-      const lit = s.accuracy >= STAR_ACCURACY[i] && s.progress > 0.05;
+      const lit = i < s.stars && s.progress > 0.05;
       this.put(`star${i}`, lit, () => star.classList.toggle("lit", lit));
     });
     if (s.hint !== this.last.hint) this.el.hint.textContent = s.hint;
@@ -171,8 +199,7 @@ export class Hud {
     pop.className = `hud-pop ${kind}`;
     pop.style.left = `${x}px`;
     pop.style.top = `${y}px`;
-    void pop.offsetWidth;
-    pop.classList.add("go");
+    this.restartAnimation(pop, "popup");
   }
 
   /** Words mode: the current word, letter by letter, and what comes next. */
@@ -198,8 +225,7 @@ export class Hud {
     const el = this.el.count;
     el.textContent = text;
     el.className = "hud-count";
-    void el.offsetWidth;
-    el.classList.add("go");
+    this.restartAnimation(el, "count");
   }
 
   /** Stage title card during the fly-in. */
@@ -208,12 +234,12 @@ export class Hud {
     // Song titles are data, not UI copy: the translator must leave them alone.
     el.innerHTML = `<small>${place.replace(/[<>&]/g, "")}</small><span translate="no">${title.replace(/[<>&]/g, "")}</span>`;
     el.className = "hud-banner intro";
-    void el.offsetWidth;
-    el.classList.add("go");
+    this.restartAnimation(el, "banner");
   }
 
   milestone(combo: number) {
-    this.banner(`${combo} COMBO!`, "combo");
+    this.banner(`${combo} IN A ROW!`, "combo");
+    this.restartAnimation(this.el.streakRing, "streakBurst");
   }
 
   golden(complete: boolean) {
@@ -233,13 +259,19 @@ export class Hud {
     const el = this.el.banner;
     el.textContent = text;
     el.className = `hud-banner ${kind}`;
-    void el.offsetWidth;
-    el.classList.add("go");
+    this.restartAnimation(el, "banner");
+  }
+
+  // Identical alternate keyframes restart the animation at style resolution time.
+  // No geometry read is needed in the input handler, and CSS reduced motion still applies.
+  private restartAnimation(el: HTMLElement, name: string, className = "go") {
+    const alternate = !this.animationVersions.get(el);
+    this.animationVersions.set(el, alternate);
+    el.style.animationName = alternate ? `${name}-again` : name;
+    el.classList.add(className);
   }
 
   private bump(el: HTMLElement) {
-    el.classList.remove("bump");
-    void el.offsetWidth;
-    el.classList.add("bump");
+    this.restartAnimation(el, "bump", "bump");
   }
 }

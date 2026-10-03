@@ -239,3 +239,34 @@ describe("judge", () => {
     expect(r).toMatchObject({ accuracy: 0, stars: 0, fullCombo: false, total: 0 });
   });
 });
+
+
+it("live stars and results both penalize wrong keys", () => {
+  const j = new Judge(chart([1, 2, 3, 4]));
+  expect(j.liveStars).toBe(0);
+  for (const n of j.notes) {
+    j.press(n.lane, n.time);
+    j.press((n.lane + 1) % 4, n.time);
+  }
+  expect(j.liveStars).toBe(0);
+  expect(j.liveStars).toBe(j.result().stars);
+});
+
+it("live stars reward consistently Good hits just like results", () => {
+  const j = new Judge(chart([1, 2, 3, 4]));
+  for (const n of j.notes) j.press(n.lane, n.time + 0.12);
+  expect(j.counts.good).toBe(4);
+  expect(j.liveStars).toBe(1);
+  expect(j.liveStars).toBe(j.result().stars);
+});
+
+it("live stars exclude assisted notes and stay off during practice", () => {
+  const ch = chart([1, 2]);
+  const j = new Judge(ch, { skip: [1] });
+  j.press(0, 1);
+  expect(j.liveStars).toBe(3);
+  expect(j.liveStars).toBe(j.result().stars);
+  const practice = new Judge(ch, { practice: true });
+  practice.press(0, 1);
+  expect(practice.liveStars).toBe(0);
+});

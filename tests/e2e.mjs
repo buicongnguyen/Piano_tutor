@@ -576,6 +576,81 @@ await check("Vietnamese language switches, persists and fits phone settings", as
   await context.close();
 });
 
+await check("phone hit streak counts, resets, fits Words mode and respects motion settings", async () => {
+  const { page, context, errors } = await open({ width: 390, height: 844 }, { isMobile: true, hasTouch: true, deviceScaleFactor: 2 });
+  await page.evaluate(() => {
+    const a = window.__encore.app;
+    a.save.seen.push("intro");
+    // This check targets judging and UI, without waiting for external sample downloads.
+    a.bank.pianoState = "ready";
+    a.bank.loadPiano = async () => true;
+  });
+  await page.tap(".title-play", { force: true });
+  await page.waitForFunction(() => window.__encore.state() === "map");
+  await page.evaluate(() => window.__encore.play("fur-elise", "easy", "tap"));
+  const hits = await page.evaluate(() => {
+    const a = window.__encore.app, s = a.session;
+    let time = s.chart.notes[0].time;
+    s.conductor.time = () => time;
+    const hit = (n) => {
+      time = n.time;
+      s.pressLane(n.lane, true, n.time);
+      s.pressLane(n.lane, false, n.time + 0.02);
+      s.update(1 / 60);
+    };
+    hit(s.chart.notes[0]);
+    const first = document.querySelector('[data-el="comboNum"]').textContent;
+    for (const n of s.chart.notes.slice(1, 25)) hit(n);
+    s.paused = true;
+    return {
+      first, combo: s.judge.combo,
+      count: document.querySelector('[data-el="comboNum"]').textContent,
+      banner: document.querySelector('.hud-banner').textContent,
+      water: a.world.env.water.material.fragmentShader,
+    };
+  });
+  assert.equal(hits.first, "1");
+  assert.equal(hits.combo, 25);
+  assert.equal(hits.count, "25");
+  assert.equal(hits.banner, "25 IN A ROW!");
+  assert.ok(!hits.water.includes("uniform float time"), "phone water has no wave animation");
+  const bounds = await page.locator(".hud-combo").boundingBox();
+  assert.ok(bounds.x >= 0 && bounds.x + bounds.width <= 390 && bounds.y + bounds.height < 300);
+  const reset = await page.evaluate(() => {
+    const s = window.__encore.app.session;
+    s.paused = false;
+    s.conductor.time = () => s.chart.notes[25].time + 0.5;
+    s.update(1 / 60);
+    s.paused = true;
+    return { combo: s.judge.combo, visible: document.querySelector('.hud-combo').classList.contains('show') };
+  });
+  assert.deepEqual(reset, { combo: 0, visible: false });
+  await page.evaluate(async () => {
+    const a = window.__encore.app;
+    a.save.settings.motion = "reduced";
+    await window.__encore.play("fur-elise", "easy", "words");
+    const s = a.session, n = s.chart.notes[0];
+    s.conductor.time = () => n.time;
+    s.pressLane(n.lane, true, n.time);
+    s.update(1 / 60);
+    s.paused = true;
+    a.hud.milestone(10);
+  });
+  assert.equal(await page.locator('[data-el="comboNum"]').textContent(), "1", "retry starts a new streak");
+  assert.equal(await page.locator('.streak-ring').evaluate(e => getComputedStyle(e).display), "none", "game reduced motion hides the ring");
+  assert.ok(await page.locator('[data-el="comboNum"]').evaluate(e => parseFloat(getComputedStyle(e).animationDuration) < 0.001));
+  const overlap = await page.evaluate(() => {
+    const a = document.querySelector('.hud-combo').getBoundingClientRect(), b = document.querySelector('.hud-words').getBoundingClientRect();
+    return !(a.right <= b.left || a.left >= b.right || a.bottom <= b.top || a.top >= b.bottom);
+  });
+  assert.equal(overlap, false);
+  await page.evaluate(() => window.__encore.app.hud.root.classList.remove('reduced-motion'));
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  assert.equal(await page.locator('.streak-ring').evaluate(e => getComputedStyle(e).display), "none", "system reduced motion hides the ring");
+  assert.deepEqual(errors, []);
+  await context.close();
+});
+
 await browser.close();
 server?.kill();
 const failed = results.filter((r) => !r.ok);

@@ -1,4 +1,5 @@
 import { shell } from "./shell";
+import { NoteIndex } from "./note-index";
 import { mountJourney } from "./journey-ui";
 import { mountGeneratedSheet } from "./generated-sheet";
 import { mountKeyboard } from "./keyboard";
@@ -17,7 +18,6 @@ import { parseXml, parseMidi, noteName, type Piece } from "./music";
 import { morningLight, roomToBreathe } from "./exercises";
 import {
   Player,
-  activeAt,
   instruments,
   instrumentTips,
   type InstrumentId,
@@ -70,6 +70,7 @@ let current: Piece,
   osmd: OpenSheetMusicDisplay | undefined,
   view = "sheet",
   loadId = 0;
+let noteIndex = new NoteIndex([]);
 let resizeGenerated: (() => void) | undefined;
 const time = (s: number) =>
   `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
@@ -215,6 +216,7 @@ async function select(p: Piece) {
   const id = ++loadId;
   player.load(p);
   current = p;
+  noteIndex = new NoteIndex(p.notes);
   journey?.setPiece(p);
   updatePracticeControls();
   const leftCount = p.notes.filter((n) => n.hand === "left").length,
@@ -477,19 +479,20 @@ $("#download").onclick = () => {
 $("#sample").onclick = async () => {
   const b = $<HTMLButtonElement>("#sample");
   b.disabled = true;
-  $("#sound-label").textContent = "Loading instrument samples…";
-  $("#lcd-voice").textContent = "LOADING SOUND…";
+  frameText("#sound-label", "Loading instrument samples…");
+  frameText("#lcd-voice", "LOADING SOUND…");
   try {
     await player.loadGrand();
-    $("#sound-label").textContent =
-      `${player.instrumentLabel} · sampled · polyphonic`;
+    frameText(
+      "#sound-label",
+      `${player.instrumentLabel} · sampled · polyphonic`,
+    );
     b.textContent = "Sound ready";
-    $("#lcd-voice").textContent = player.instrumentLabel.toUpperCase();
+    frameText("#lcd-voice", player.instrumentLabel.toUpperCase());
   } catch {
-    $("#sound-label").textContent =
-      "Sample download unavailable · synth active";
+    frameText("#sound-label", "Sample download unavailable · synth active");
     b.disabled = false;
-    $("#lcd-voice").textContent = "SYNTH PIANO";
+    frameText("#lcd-voice", "SYNTH PIANO");
   }
 };
 const keys = mountKeyboard(player);
@@ -537,8 +540,7 @@ function roll(t: number) {
   const dark = document.documentElement.dataset.theme === "dark";
   ctx.fillStyle = dark ? "#17231f" : "#f7f8f4";
   ctx.fillRect(0, 0, w, h);
-  const low = Math.min(...current.notes.map((n) => n.midi)) - 2,
-    high = Math.max(...current.notes.map((n) => n.midi)) + 2;
+  const [low, high] = noteIndex.range;
   const yFor = (m: number) => h - 20 - ((m - low) / (high - low)) * (h - 40);
   for (let m = 24; m <= 108; m += 12) {
     if (m < low || m > high) continue;
@@ -562,8 +564,7 @@ function roll(t: number) {
     ctx.lineTo(x, h);
     ctx.stroke();
   }
-  for (const n of current.notes) {
-    if (n.time + n.duration < start || n.time > start + span) continue;
+  for (const n of noteIndex.between(start, start + span)) {
     const x = ((n.time - start) / span) * w,
       y = yFor(n.midi);
     ctx.fillStyle =
@@ -579,13 +580,30 @@ function roll(t: number) {
   ctx.fillStyle = "#b88647";
   ctx.fillRect(((t - start) / span) * w, 0, 2, h);
 }
+const frameNodes = new Map<string, HTMLElement>();
+function frameNode<T extends HTMLElement = HTMLElement>(selector: string): T {
+  let node = frameNodes.get(selector);
+  if (!node) {
+    node = $(selector);
+    frameNodes.set(selector, node);
+  }
+  return node as T;
+}
+function frameText(selector: string, text: string) {
+  const node = frameNode(selector);
+  if (node.textContent !== text) node.textContent = text;
+}
 setInterval(() => player.tick(), 25);
 function frame() {
   journey.frame();
   if (current) {
     const t = Math.min(current.duration, player.now());
+    // Read canvas dimensions before the frame's DOM writes.
+    roll(t);
+    // One bounded query feeds the waterfall, hand filter and upcoming-key guide.
+    const nearbyNotes = noteIndex.between(t - 0.65, t + 8);
     drawWaterfall(
-      journey.active ? journey.targets : current.notes,
+      journey.active ? journey.targets : nearbyNotes,
       t,
       player.playing || journey.active,
     );
@@ -605,20 +623,24 @@ function frame() {
         cursorIndex++;
       }
     }
-    $("#elapsed").textContent = time(t);
-    $<HTMLInputElement>("#seek").value = String(t);
-    $("#play").innerHTML = player.preparing
+    frameText("#elapsed", time(t));
+    const seek = frameNode<HTMLInputElement>("#seek");
+    const seekValue = String(t);
+    if (seek.value !== seekValue) seek.value = seekValue;
+    const playLabel = player.preparing
       ? "× <span>Cancel loading</span>"
       : player.playing
         ? "Ⅱ <span>Pause</span>"
         : "▶ <span>Play</span>";
-    $("#loop-range").textContent = `${time(player.a)}–${time(player.b)}`;
-    const active = player.playing ? activeAt(current.notes, t) : [];
+    const playButton = frameNode("#play");
+    if (playButton.innerHTML !== playLabel) playButton.innerHTML = playLabel;
+    frameText("#loop-range", `${time(player.a)}–${time(player.b)}`);
+    const active = player.playing ? noteIndex.activeAt(t) : [];
     const practiceNotes = journey.active
       ? journey.targets
       : player.practiceHand
-        ? current.notes.filter((n) => n.hand === player.practiceHand)
-        : current.notes;
+        ? nearbyNotes.filter((n) => n.hand === player.practiceHand)
+        : nearbyNotes;
     updateComputerKeyboard(
       (player.practiceHand
         ? active.filter((n) => n.hand === player.practiceHand)
@@ -632,46 +654,58 @@ function frame() {
         "sounding",
         active.some((n) => n.midi === m),
       );
-    $("#active-notes").textContent = active.length
-      ? active.map((n) => noteName(n.midi)).join(" · ")
-      : "Ready when you are";
-    $("#lcd-notes").textContent = active.length
-      ? active.map((n) => noteName(n.midi)).join(" · ")
-      : "Ready to play";
-    $("#lcd-time").textContent = time(t);
-    $("#lcd-state").textContent = player.playing ? "PLAYING" : "READY";
+    frameText(
+      "#active-notes",
+      active.length
+        ? active.map((n) => noteName(n.midi)).join(" · ")
+        : "Ready when you are",
+    );
+    frameText(
+      "#lcd-notes",
+      active.length
+        ? active.map((n) => noteName(n.midi)).join(" · ")
+        : "Ready to play",
+    );
+    frameText("#lcd-time", time(t));
+    frameText("#lcd-state", player.playing ? "PLAYING" : "READY");
     const soundLabels = {
       synth: "Selected sound loads when you press Play",
       loading: "Loading instrument samples…",
       grand: `${player.instrumentLabel} · sampled · polyphonic`,
       fallback: "Sample download unavailable · synth active",
     };
-    $("#sound-label").textContent =
+    frameText(
+      "#sound-label",
       player.originalInstruments && player.ensembleStatus
         ? player.ensembleStatus
-        : soundLabels[player.soundState];
-    $("#original-instruments").setAttribute(
-      "aria-pressed",
-      String(player.originalInstruments),
+        : soundLabels[player.soundState],
     );
-    $("#lcd-voice").textContent =
+    const original = frameNode("#original-instruments");
+    const pressed = String(player.originalInstruments);
+    if (original.getAttribute("aria-pressed") !== pressed)
+      original.setAttribute("aria-pressed", pressed);
+    frameText(
+      "#lcd-voice",
       player.originalInstruments && player.ensembleStatus
         ? "MIDI ENSEMBLE"
         : player.soundState === "grand"
           ? player.instrumentLabel.toUpperCase()
           : player.soundState === "loading"
             ? "LOADING GRAND…"
-            : "SYNTH PIANO";
-    const sample = $<HTMLButtonElement>("#sample");
-    sample.disabled =
+            : "SYNTH PIANO",
+    );
+    const sample = frameNode<HTMLButtonElement>("#sample");
+    const disabled =
       player.soundState === "grand" || player.soundState === "loading";
-    sample.textContent =
+    if (sample.disabled !== disabled) sample.disabled = disabled;
+    frameText(
+      "#sample",
       player.soundState === "grand"
         ? "Sound ready"
         : player.soundState === "loading"
           ? "Loading sound…"
-          : "Load sound";
-    roll(t);
+          : "Load sound",
+    );
   }
   updateCrystalEffects();
   requestAnimationFrame(frame);

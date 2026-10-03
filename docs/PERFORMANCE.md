@@ -74,3 +74,27 @@ Each detail costs one draw and almost no CPU:
   call `window.__encore.play(...)`.
 - Uncapped GPU cost per system: use `render-cost.mjs` from the `lightweight-game-objects` skill.
   It syncs with a 1-pixel `readPixels`, because `gl.finish` doesn't wait in Chrome.
+
+
+## Follow-up: mobile water and frame-loop work (2026-10-04)
+
+- Touch devices use calm water with the same theme palette and fog. The water shader
+  omits the moving noise waves, procedural glints and wave-normal calculations;
+  desktop devices retain animated water. Graphics presets remain as configured.
+- Particle simulation visits only active pool slots and packs those particles into
+  the draw buffer. Empty pools submit no particles and perform no buffer uploads.
+- Note, hold, letter, shadow and beat-line buffers upload only their populated prefix.
+- Beat lookup uses binary search, including after a seek or pause rewind. The classic
+  studio indexes note windows, caches pitch ranges and filters hands within visible ranges;
+  overlapping held notes remain visible even when their onset is outside the window.
+- HUD feedback restarts via equivalent alternate CSS keyframes, without synchronous
+  geometry reads. The studio caches persistent UI nodes and writes only changed values.
+- The conductor schedules from the processing audio clock. Output-latency compensation
+  remains on the visual/judgement clock and practice gates. Previously, output latency
+  consumed the 150 ms lookahead and could make valid notes look like a stalled backlog.
+
+Validation: 242 unit tests and the production build pass. A deterministic 60 Hz audio
+simulation with 250 ms output latency now schedules all 21 notes on time (previously
+zero). In Chromium with CPU throttled 4x, a batch of 20 hit/combo updates caused zero
+synchronous layouts, compared with 40 before. These checks are not a physical-phone
+benchmark; rendering speed still depends on the device, browser and selected graphics.

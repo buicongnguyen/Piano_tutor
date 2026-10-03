@@ -2,6 +2,12 @@
 import { STORY } from "./story";
 import { viStory } from "./vi-story";
 export const vi: Record<string, string> = {
+  "HIT STREAK": "LIÊN TIẾP",
+  "KEEP GOING!": "TIẾP TỤC NÀO!",
+  "NICE RHYTHM!": "ĐÚNG NHỊP LẮM!",
+  "ON FIRE!": "BÙNG CHÁY!",
+  "UNSTOPPABLE!": "KHÔNG THỂ CẢN!",
+  "LEGENDARY!": "HUYỀN THOẠI!",
   relaxed: "thư thả",
   "the melody": "giai điệu",
   chords: "hợp âm",

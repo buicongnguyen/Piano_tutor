@@ -33,6 +33,7 @@ export function t(text: string, lang: Language = language): string {
         .replace(/^(\d+) lanes$/, "$1 làn")
         .replace(/^(\d+) assisted$/, "$1 nốt hỗ trợ")
         .replace(/^(\d+) COMBO!$/, "$1 NỐT LIÊN TIẾP!")
+        .replace(/^(\d+) IN A ROW!$/, "$1 NỐT LIÊN TIẾP!")
         .replace(/^Next: /, "Tiếp theo: ")
         .replace("◀ Left", "◀ Trái")
         .replace("Right ▶", "Phải ▶")

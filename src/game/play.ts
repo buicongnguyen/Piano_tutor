@@ -1,6 +1,7 @@
 // One run of a stage: chart + judge + conductor + input + 3D stage + HUD.
 import type { Piece } from "../music";
 import { noteName } from "../music";
+import { beatIndexAt } from "./timeline";
 import { buildChart, LANES, laptopBase, pianoWindow, type Chart, type Difficulty, type KeyMode } from "./chart";
 import { Conductor } from "./conductor";
 import { laneCodes, laneForKey, laneLabels, lanesFor, type Input, type LaneEvent, type LanePreset } from "./input";
@@ -173,6 +174,7 @@ export class PlaySession {
       assisted: this.assist.size,
       keepMelody: setup.keepMelody,
       touch: setup.touch,
+      reducedMotion: setup.reducedMotion,
     });
   }
 
@@ -294,7 +296,6 @@ export class PlaySession {
           this.stage.celebrate(ev.combo);
           if (!this.setup.reducedMotion) this.world.shoals.wave(); // a school leaps in a ripple
           this.onCheer?.();
-          this.hud.milestone(ev.combo);
           this.bank.blip("combo");
           break;
         case "encore":
@@ -382,7 +383,7 @@ export class PlaySession {
       encore: this.judge.encore,
       encoreActive: this.judge.encoreActive,
       progress: this.progress,
-      accuracy: this.liveAccuracy(),
+      stars: this.judge.liveStars,
       waiting: this.conductor.waiting !== undefined,
       hint: this.judge.practice ? this.practiceHint() : "",
     });
@@ -465,16 +466,9 @@ export class PlaySession {
     return bits.join(" · ");
   }
 
-  private liveAccuracy() {
-    const c = this.judge.counts;
-    const judged = c.perfect + c.great + c.good + c.miss;
-    return judged ? (c.perfect + c.great * 0.8 + c.good * 0.5) / judged : 1;
-  }
-
   private beatPhase(t: number) {
     const beats = this.chart.beats;
-    let i = 0;
-    while (i < beats.length - 1 && beats[i + 1] <= t) i++;
+    const i = Math.max(0, beatIndexAt(beats, t));
     const len = beats[i + 1] !== undefined ? beats[i + 1] - beats[i] : 0.5;
     const phase = (t - (beats[i] ?? 0)) / Math.max(0.1, len);
     return Math.max(0, 1 - phase * 3);

@@ -40,6 +40,8 @@ beacon and pours the colour back into the world.
   a Harmony meter that repaints the world, stars, ranks and full-combo crowns.
   Pressing the wrong key while a note is due shows **✗ WRONG KEY** and breaks the
   combo, so mashing every lane earns no stars.
+- **Hit streaks:** a counter from your first hit, colour tiers and celebrations at
+  10, 25, 50, 100 and every 50 beyond. Lightweight feedback respects reduced motion.
 - **A living sea:** schools of toy fish swim beside the road. They leap when you hit a
   Perfect, ripple over on combo milestones, scatter when you miss and glow at night.
   They're smooth on phones too: each species is drawn in a single instanced call. Foam laps

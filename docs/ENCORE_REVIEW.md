@@ -127,3 +127,37 @@ and, where it can be tested, a regression test.
 - Chart sizes were checked across the campaign with a probe over the real MIDI files.
   These are simulated checks: nobody has played the new tiers on a real phone or MIDI
   keyboard yet.
+
+
+## Mobile performance and hit-streak review — 2026-10-04
+
+Reviewed the pending audio-clock, water, particle, instance-upload, beat-search,
+classic-studio note-index and HUD changes, including their gameplay integration.
+
+- Accompaniment must be queued from the audio processing clock, not the delayed
+  speaker clock. The scheduling fix retains the heard clock for input/visual timing
+  and caps queued events at practice gates. Tests cover 80–250 ms output latency,
+  playback speed, gate release, pauses and stalled frames.
+- Indexed note windows retain overlapping sustained notes and work after backward
+  seeks. Particle pool reuse, expiry and clearing keep the active draw count correct;
+  populated buffer ranges retain the existing instance-capacity guards.
+- Phone water omits animated wave noise and normals. Desktop water and the existing
+  quality governor retain their behavior. Streak feedback uses transform/opacity
+  animations without forcing synchronous layout reads.
+- **Live stars disagreed with results.** The HUD ignored wrong-key penalties and the
+  first-star reward for consistently hitting Good notes. Both now use the same star
+  rules; the live calculation considers judged notes only, and practice stays unscored.
+- **The new streak effect ignored the game's reduced-motion setting.** Each run now
+  passes that preference to the HUD, suppressing the ring and shortening the counter
+  pulse. System reduced-motion preferences remain supported.
+- The streak reads the existing judge combo: hits increase it; misses, wrong keys
+  and sufficiently early hold releases break it. Retry clears the display. Milestones
+  handle simultaneous hits crossing a threshold and continue every 50 after 100.
+
+Checks cover the production build, unit suite, full GPU browser suite and a dedicated
+phone streak scenario: first hit, 25-hit milestone, miss/reset, retry, Words-mode
+placement, calm water, and both reduced-motion preferences. Browser emulation is not
+a physical-phone performance measurement.
+
+Validation for this revision: 249 unit tests and all 17 GPU browser scenarios pass
+on the production build; TypeScript and the production build also pass.
