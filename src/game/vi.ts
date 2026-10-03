@@ -2,6 +2,9 @@
 import { STORY } from "./story";
 import { viStory } from "./vi-story";
 export const vi: Record<string, string> = {
+  "Stillnote original": "Sáng tác gốc của Stillnote",
+  "Korean traditional": "Dân gian Hàn Quốc",
+  "Stillnote Encore — 3D game view": "Stillnote Encore — khung nhìn game 3D",
   "HIT STREAK": "LIÊN TIẾP",
   "KEEP GOING!": "TIẾP TỤC NÀO!",
   "NICE RHYTHM!": "ĐÚNG NHỊP LẮM!",

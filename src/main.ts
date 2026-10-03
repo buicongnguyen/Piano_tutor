@@ -9,6 +9,8 @@ import { openScorePicker } from "./import-picker";
 import { hasBothHands } from "./practice";
 import { findDiscoverSongs } from "./discover";
 import { mountTheme } from "./theme";
+import { mountLanguage, languageControl } from "./game/i18n";
+import "./studio-vi";
 import { mountWaterfall } from "./waterfall";
 import { mountCrystalEffects } from "./crystal-effects";
 import { mountComputerKeyboard } from "./computer-keyboard";
@@ -28,6 +30,8 @@ const player = new Player();
 const library = [morningLight(), roomToBreathe()];
 $("#app").innerHTML = shell;
 mountTheme($<HTMLSelectElement>("#theme"));
+$(".header-actions").insertAdjacentHTML("afterbegin", languageControl);
+mountLanguage($("#app"));
 const pianoOptions = $<HTMLDetailsElement>("#piano-options");
 document.addEventListener("click", (event) => {
   if (event.target instanceof Node && !pianoOptions.contains(event.target))

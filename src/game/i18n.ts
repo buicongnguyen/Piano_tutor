@@ -14,13 +14,19 @@ export function readLanguage(
   return browser.toLowerCase().startsWith("vi") ? "vi" : "en";
 }
 let language: Language = "en";
+const rules: ((text: string) => string | undefined)[] = [];
+/** Extra pattern rules for pages that bring their own copy (the classic studio). */
+export function addRule(rule: (text: string) => string | undefined) {
+  rules.push(rule);
+}
 export function t(text: string, lang: Language = language): string {
   if (lang === "en") return text;
   const s = text.trim();
-  let value = vi[s];
+  let value: string | undefined = vi[s];
+  if (!value) for (const rule of rules) if ((value = rule(s))) break;
   if (!value) {
     // Buttons keep their icons; combined HUD badges keep their separators.
-    const icon = /^([▶↺⌂⚙📖🎹🎮⌨️👆🎵＋✨🎯🔓]+[\s\u00a0]*)(.+)$/u.exec(s);
+    const icon = /^([▶↺⌂⚙📖🎹🎮⌨️👆🎵＋✨🎯🔓🔒]+[\s\u00a0]*)(.+)$/u.exec(s);
     if (icon) value = icon[1] + t(icon[2], lang);
     else if (s.includes(" · "))
       value = s
@@ -50,6 +56,7 @@ export function t(text: string, lang: Language = language): string {
           /^notes\. When you're ready, play it for stars!$/,
           "nốt. Khi sẵn sàng, hãy chơi để giành sao!",
         )
+        .replace(/^to open it \(you have (\d+)\)\.$/, "để mở (bạn đang có $1).")
         .replace(/^Best$/, "Kỷ lục")
         .replace(/^Top rank (S\+|[SABCD])$/, "Hạng cao nhất $1")
         .replace(/^(\d+) \/ (\d+) stars$/, "$1 / $2 sao")
