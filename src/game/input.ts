@@ -76,6 +76,8 @@ export class Input {
     addEventListener("keydown", (e) => this.keydown(e));
     addEventListener("keyup", (e) => this.keyup(e));
     addEventListener("blur", () => this.releaseAll());
+addEventListener('pagehide', () => this.releaseAll());
+addEventListener('mobile-game-interruption', () => this.releaseAll());
     document.addEventListener("visibilitychange", () => {
       if (document.hidden) this.releaseAll();
     });

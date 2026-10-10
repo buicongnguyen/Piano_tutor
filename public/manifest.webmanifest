@@ -1,0 +1,10 @@
+{
+  "name": "Stillnote Encore",
+  "short_name": "Stillnote Encore",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#172528",
+  "theme_color": "#172528"
+}

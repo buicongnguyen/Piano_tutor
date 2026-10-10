@@ -410,6 +410,18 @@ export function mountJourney(
     },
     true,
   );
+window.addEventListener('pagehide', (event) => {
+      if (event.target === window)
+        cancel(
+          "Challenge paused because the window lost focus. Restart when ready.",
+        );
+    }, true);
+window.addEventListener('mobile-game-interruption', (event) => {
+      if (event.target === window)
+        cancel(
+          "Challenge paused because the window lost focus. Restart when ready.",
+        );
+    }, true);
   document.addEventListener(
     "visibilitychange",
     () => {

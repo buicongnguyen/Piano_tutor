@@ -30,6 +30,8 @@ export function mountKeyboard(player: Player) {
   };
   player.onSilence.add(releaseAll);
   window.addEventListener("blur", releaseAll);
+window.addEventListener('pagehide', releaseAll);
+window.addEventListener('mobile-game-interruption', releaseAll);
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) releaseAll();
   });

@@ -209,6 +209,9 @@ export class App {
         void this.start();
       }
     });
+    addEventListener("blur", () => this.pause());
+    addEventListener("pagehide", () => this.pause());
+    addEventListener("mobile-game-interruption", () => this.pause());
     document.addEventListener("visibilitychange", () => {
       if (document.hidden) this.pause();
     });

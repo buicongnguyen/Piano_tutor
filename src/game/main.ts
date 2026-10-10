@@ -1,3 +1,4 @@
+import './../mobile-game-init.mjs';
 import "./game.css";
 import { App } from "./app";
 import { mountLanguage } from "./i18n";

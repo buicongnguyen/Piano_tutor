@@ -1,3 +1,4 @@
+import './mobile-game-init.mjs';
 import { shell } from "./shell";
 import { NoteIndex } from "./note-index";
 import { mountJourney } from "./journey-ui";
