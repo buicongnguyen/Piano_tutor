@@ -16,6 +16,8 @@ export type ConductorOptions = {
   approach: number; // seconds a note takes to travel the road (for the lead-in)
   auto?: ChartNote[]; // notes played for the player (assisted, or the whole melody)
   keepMelody?: boolean; // the melody plays itself, so hits add no second copy
+  /** An uploaded recording: it IS the music, so nothing is synthesized under it. */
+  backing?: AudioBuffer;
 };
 
 type Scheduled = { time: number; midi: number; duration: number; velocity: number; program?: number; gain: number };
@@ -53,7 +55,7 @@ export class Conductor {
     }));
     for (const n of options.auto ?? [])
       acc.push({ time: n.time, midi: n.midi, duration: n.sound, velocity: Math.max(0.42, n.velocity), program: undefined, gain: 0.95 });
-    this.events = acc.sort((a, b) => a.time - b.time);
+    this.events = options.backing ? [] : acc.sort((a, b) => a.time - b.time);
     this.anchorSong = this.startTime;
   }
 
@@ -82,6 +84,35 @@ export class Conductor {
     this.anchorCtx = ctx.currentTime + 0.1;
     this.state = "playing";
     this.smoothPerf = 0;
+    this.startBacking();
+  }
+
+  private backingNode?: AudioBufferSourceNode;
+
+  /** (Re)start the recording at the current anchor: song time = seconds into the file. */
+  private startBacking() {
+    this.stopBacking();
+    const ctx = this.bank.ctx,
+      buffer = this.options.backing;
+    if (!ctx || !buffer || !this.bank.music) return;
+    const src = ctx.createBufferSource();
+    src.buffer = buffer;
+    src.playbackRate.value = this.speed; // practice slows the recording too
+    src.connect(this.bank.music);
+    const offset = Math.max(0, this.anchorSong);
+    const when = this.anchorCtx + Math.max(0, -this.anchorSong) / this.speed; // after the lead-in
+    if (offset < buffer.duration) src.start(Math.max(ctx.currentTime, when), offset);
+    this.backingNode = src;
+  }
+
+  private stopBacking() {
+    try {
+      this.backingNode?.stop();
+    } catch {
+      /* not started */
+    }
+    this.backingNode?.disconnect();
+    this.backingNode = undefined;
   }
 
   pause() {
@@ -89,6 +120,7 @@ export class Conductor {
     this.anchorSong = this.rawTime();
     this.state = "paused";
     this.bank.stopAll();
+    this.stopBacking();
     this.live.clear();
   }
 
@@ -101,12 +133,14 @@ export class Conductor {
     this.anchorCtx = (this.bank.ctx?.currentTime ?? 0) + 0.1;
     this.state = "playing";
     this.smoothPerf = 0;
+    this.startBacking();
   }
 
   stop() {
     if (this.state === "playing") this.anchorSong = this.rawTime();
     this.state = "ended";
     this.bank.stopAll();
+    this.stopBacking();
     this.live.clear();
   }
 
@@ -121,12 +155,14 @@ export class Conductor {
       if (gate !== undefined && now >= gate && this.waiting === undefined) {
         // Freeze the clock at the gate; ringing notes keep sounding.
         this.waiting = gate;
+        this.stopBacking(); // a recording can't wait: it resumes from the gate
       } else if (this.waiting !== undefined && (gate === undefined || gate > this.waiting)) {
         // The player cleared the gate: restart the clock from it.
         this.anchorSong = this.waiting;
         this.anchorCtx = ctx.currentTime + 0.02;
         this.waiting = undefined;
         this.smoothPerf = 0;
+        if (this.options.backing) this.startBacking();
       }
     }
     // Queue against the processing clock. The heard clock trails it by output

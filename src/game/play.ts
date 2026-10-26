@@ -121,7 +121,9 @@ export class PlaySession {
       approach,
       // Keep-the-song mode schedules every melody note; otherwise only assisted ones.
       auto: this.chart.notes.filter((n) => setup.keepMelody || this.assist.has(n.id)),
-      keepMelody: setup.keepMelody,
+      // An uploaded recording already holds the melody: hits and misses stay silent over it.
+      keepMelody: setup.keepMelody || !!setup.piece.recording,
+      backing: setup.piece.recording,
     });
     this.conductor.gate = () => this.judge.gate()?.time;
     stage.setup(this.chart, setup.theme, {
@@ -318,6 +320,17 @@ export class PlaySession {
     return lane < mid ? -1 : lane > mid ? 1 : 0;
   }
 
+  private chordAt = 0;
+
+  /** The chord under the song right now (from audio uploads), like a chord chart. */
+  private updateChord(t: number) {
+    const chords = this.setup.piece.chords!;
+    if (this.chordAt >= chords.length || chords[this.chordAt].start > t) this.chordAt = 0;
+    while (this.chordAt < chords.length - 1 && chords[this.chordAt].end <= t) this.chordAt++;
+    const c = chords[this.chordAt];
+    this.hud.chord(c && c.start <= t + 0.05 && t < c.end ? c.name : "");
+  }
+
   practiceHint() {
     const group = this.judge.gateGroup();
     if (!group.length) return "";
@@ -362,6 +375,7 @@ export class PlaySession {
     const beat = this.beatPhase(t);
     this.beat = beat;
     if (this.chart.mode === "words") this.updateWords();
+    if (this.setup.piece.chords) this.updateChord(t);
     this.stage.update(dt, t, {
       encore: this.judge.encore,
       encoreActive: this.judge.encoreActive,

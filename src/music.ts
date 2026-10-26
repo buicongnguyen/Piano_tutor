@@ -22,6 +22,9 @@ export type Piece = {
   beatToSeconds?: (beat: number) => number;
   meter?: number; // Beats per bar from the first time signature (MIDI only).
   trackNames?: string[]; // MIDI track names by index (used to find a named solo line).
+  chords?: { start: number; end: number; name: string }[]; // detected from audio
+  keyName?: string; // e.g. "D minor" (detected from audio)
+  recording?: AudioBuffer; // an uploaded song: played as the backing instead of synthesis
   source?: { url: string; sheetUrl?: string; fileUrl: string; edition: string };
 };
 const names = ["C", "C♯", "D", "D♯", "E", "F", "F♯", "G", "G♯", "A", "A♯", "B"];

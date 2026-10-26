@@ -421,3 +421,15 @@ a { color: var(--sun); }
 .language-control select { max-width: 100%; padding: 7px 10px; border-radius: 10px; font: inherit; }
 html[lang="vi"] .btn { white-space: normal; }
 html[lang="vi"] .title-hint { letter-spacing: normal; }
+
+/* Chord badge for uploaded songs (bold ring, like a chord chart). */
+.hud-chord {
+  position: absolute; right: max(14px, env(safe-area-inset-right)); top: 34%;
+  width: clamp(64px, 11vw, 112px); aspect-ratio: 1; border-radius: 50%;
+  display: grid; place-items: center;
+  font: 800 clamp(1.3rem, 3.6vw, 2.4rem)/1 var(--display); color: #ff6a55;
+  background: radial-gradient(circle at 50% 40%, #2a1214, #140a0c 70%);
+  border: 3px solid #ff6a55; box-shadow: 0 6px 24px #0008, 0 0 18px #ff6a5544;
+  pointer-events: none;
+}
+.hud-chord[hidden] { display: none; }

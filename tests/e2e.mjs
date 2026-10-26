@@ -515,6 +515,78 @@ await check("phone budget: baked scenery, light materials and few draw calls", a
   await context.close();
 });
 
+await check("audio upload: a recording becomes notes, chords and a playable stage", async () => {
+  const { page, errors } = await open();
+  await enterMap(page);
+  // Synthesize a known song in the page: C - Am - F - G (two beats each at 120 BPM),
+  // a block chord plus a bass note per change, and a stepwise melody on top. Encode as WAV.
+  const result = await page.evaluate(async () => {
+    const rate = 22050, beat = 0.5, ctx = new OfflineAudioContext(1, Math.ceil(rate * 9), rate);
+    const tone = (midi, at, dur, gain) => {
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = "triangle";
+      o.frequency.value = 440 * 2 ** ((midi - 69) / 12);
+      g.gain.setValueAtTime(0, at);
+      g.gain.linearRampToValueAtTime(gain, at + 0.01);
+      g.gain.exponentialRampToValueAtTime(gain * 0.3, at + dur * 0.9);
+      g.gain.linearRampToValueAtTime(0, at + dur);
+      o.connect(g).connect(ctx.destination);
+      o.start(at);
+      o.stop(at + dur + 0.02);
+    };
+    const prog = [[48, 60, 64, 67], [45, 57, 60, 64], [41, 57, 60, 65], [43, 55, 59, 62]];
+    const melody = [76, 74, 72, 74, 76, 76, 77, 79, 76, 72, 69, 72, 74, 71, 67, 71];
+    for (let rep = 0; rep < 2; rep++)
+      prog.forEach((c, i) => {
+        const at = 0.5 + rep * 4 + i * 2 * beat;
+        c.forEach((m, k) => tone(m, at, 2 * beat * 0.95, k === 0 ? 0.16 : 0.07));
+      });
+    for (let rep = 0; rep < 2; rep++) melody.forEach((m, i) => tone(m, 0.5 + rep * 4 + i * 0.25 * 2 * beat * 0.5 * 2 / 2, 0.24, 0.12));
+    const audio = await ctx.startRendering();
+    // 16-bit PCM WAV
+    const pcm = audio.getChannelData(0), buf = new ArrayBuffer(44 + pcm.length * 2), v = new DataView(buf);
+    const w = (o, str) => [...str].forEach((ch, i) => v.setUint8(o + i, ch.charCodeAt(0)));
+    w(0, "RIFF"); v.setUint32(4, 36 + pcm.length * 2, true); w(8, "WAVE"); w(12, "fmt ");
+    v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true); v.setUint32(24, rate, true);
+    v.setUint32(28, rate * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true); w(36, "data"); v.setUint32(40, pcm.length * 2, true);
+    pcm.forEach((x, i) => v.setInt16(44 + i * 2, Math.max(-1, Math.min(1, x * 1.6)) * 32767, true));
+    const file = new File([buf], "progression.wav", { type: "audio/wav" });
+    await window.__encore.app.importAudio(file);
+    const mine = window.__encore.app.mine.at(-1);
+    if (!mine) return { error: "no stage" };
+    const p = mine.piece;
+    return {
+      notes: p.notes.length,
+      pitches: [...new Set(p.notes.map((n) => n.midi % 12))].sort((a, b) => a - b),
+      melodyTop: Math.max(...p.notes.filter((n) => n.hand === "right").map((n) => n.midi)),
+      chords: p.chords.map((c) => c.name),
+      key: p.keyName,
+      composer: p.composer,
+      recording: !!p.recording,
+    };
+  });
+  assert.ok(!result.error, result.error);
+  console.log(`    detected: ${result.notes} notes, key ${result.key}, chords ${result.chords.join(" ")}`);
+  assert.ok(result.notes >= 20, `notes ${result.notes}`);
+  for (const pc of [0, 4, 7, 9, 5, 2, 11]) assert.ok(result.pitches.includes(pc), `pitch class ${pc} in ${result.pitches}`);
+  assert.ok(result.melodyTop >= 76, `melody on top: ${result.melodyTop}`);
+  for (const name of ["C", "Am", "F", "G"]) assert.ok(result.chords.includes(name), `${name} in ${result.chords}`);
+  assert.match(result.key, /^(C major|A minor)$/);
+  assert.ok(result.recording);
+  // Play it: the recording is the backing, and the chord badge follows the song.
+  await page.waitForSelector('.setup [data-act="go"]');
+  await page.click('.setup [data-act="go"]');
+  await page.waitForFunction(() => window.__encore.state() === "play", null, { timeout: 60000 });
+  await page.waitForFunction(() => !document.querySelector(".hud-chord").hidden, null, { timeout: 15000 });
+  const playing = await page.evaluate(() => ({
+    backing: !!window.__encore.app.session.conductor.backingNode,
+    chord: document.querySelector(".hud-chord").textContent,
+  }));
+  assert.ok(playing.backing, "the recording plays as the backing");
+  assert.ok(["C", "Am", "F", "G"].includes(playing.chord), `chord badge ${playing.chord}`);
+  assert.deepEqual(errors.filter((e) => !/tensorflow|tfjs|backend/i.test(e)), []);
+});
+
 await check("gameplay frames never go black (bloom NaN guard)", async () => {
   const { page, context, errors } = await open();
   await enterMap(page);

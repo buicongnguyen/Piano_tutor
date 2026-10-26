@@ -400,7 +400,7 @@ export class Screens {
       <header class="modal-head"><h2>📖 Songbook</h2><button class="btn btn-icon" data-act="close-songbook" aria-label="Close">✕</button></header>
       <div class="book">
         <section class="book-island mine"><h3>My songs</h3>
-          <p class="small">Import a MIDI or MusicXML file — Encore charts it for every difficulty. Files stay on this device and are kept until you close the page.</p>
+          <p class="small">Import a MIDI or MusicXML file, or upload a recording (MP3, WAV, M4A…): Encore listens for the notes and chords and charts it for every difficulty. Files stay on this device and are kept until you close the page.</p>
           ${mine.map((s) => `<button class="book-row" data-act="stage" data-stage="${s.id}"><span><b>${esc(s.title)}</b><small>${esc(s.composer)}</small></span></button>`).join("")}
           <button class="btn btn-small" data-act="import">＋ Import a song</button>
         </section>
@@ -412,7 +412,7 @@ export class Screens {
   private pickFile() {
     const input = el("input");
     input.type = "file";
-    input.accept = ".mid,.midi,.xml,.musicxml";
+    input.accept = ".mid,.midi,.xml,.musicxml,.mp3,.wav,.ogg,.oga,.m4a,.aac,.flac,.webm,.opus,audio/*";
     input.onchange = () => {
       const file = input.files?.[0];
       if (file) this.onImport?.(file);

@@ -16,6 +16,7 @@
     "assets:characters": "node scripts/blender.mjs -b --factory-startup --python art/encore/build_characters.py && node scripts/blender.mjs -b --factory-startup --python art/encore/render_portraits.py"
   },
   "dependencies": {
+    "@spotify/basic-pitch": "^1.0.1",
     "@tonejs/midi": "^2.0.28",
     "opensheetmusicdisplay": "^1.9.2",
     "smplr": "^1.0.0",

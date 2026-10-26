@@ -70,6 +70,7 @@ export class Hud {
       </div>
       <div class="hud-pops" data-el="pops"></div>
       <div class="hud-count" data-el="count"></div>
+      <div class="hud-chord" data-el="chord" translate="no" hidden></div>
       <div class="hud-banner" data-el="banner"></div>
       <div class="hud-hint" data-el="hint"></div>
       <div class="hud-tap" data-el="tap" hidden><i data-lane="0"><b>◀</b><span>TAP</span></i><i data-lane="1"><span>TAP</span><b>▶</b></i></div>
@@ -219,6 +220,14 @@ export class Hud {
   /** Light up the touched half of the screen in Tap mode. */
   tapZone(lane: number, down: boolean) {
     this.el.tap.querySelector(`[data-lane="${lane}"]`)?.classList.toggle("on", down);
+  }
+
+  /** Current chord name ("" hides the badge). */
+  chord(name: string) {
+    this.put("chord", name, () => {
+      this.el.chord.hidden = !name;
+      this.el.chord.textContent = name;
+    });
   }
 
   countdown(text: string) {

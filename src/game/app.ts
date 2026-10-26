@@ -20,6 +20,8 @@ import { MenuMusic } from "./menu-music";
 import { approachFor, PlaySession } from "./play";
 import { loadKit, type Kit } from "./render/assets";
 import { LITE, liteKit } from "./render/lite";
+import { AUDIO_TYPES, transcribeAudio } from "../transcribe/transcribe";
+import { transcriptionToPiece } from "../transcribe/toPiece";
 import { MapScene } from "./render/mapscene";
 import { autoQuality, QUALITY, Renderer, type QualityKey } from "./render/renderer";
 import { Stage } from "./render/stage";
@@ -400,6 +402,7 @@ export class App {
   }
 
   async importFile(file: File) {
+    if (AUDIO_TYPES.test(file.name) || file.type.startsWith("audio/")) return this.importAudio(file);
     try {
       if (file.size > 5 * 1024 * 1024) throw Error("That file is over 5 MB.");
       const piece = /\.(mid|midi)$/i.test(file.name)
@@ -412,6 +415,35 @@ export class App {
       this.screens.toast(`♪ <b translate="no">${escapeHtml(stage.title)}</b> is ready to play.`);
     } catch (error) {
       this.screens.toast(`Couldn't read that score: ${escapeHtml((error as Error).message)}`, "warn", 5000);
+    }
+  }
+
+  /** A recording: listen for its notes and chords in the browser, then chart it. */
+  async importAudio(file: File) {
+    if (this.busy) return;
+    this.busy = true;
+    const title = file.name.replace(/\.[^.]+$/, "");
+    const words = { decode: "Listening to your song…", model: "Loading the listening model…", notes: "Finding the notes…", analyse: "Naming the chords…" };
+    try {
+      if (file.size > 40 * 1024 * 1024) throw Error("That recording is over 40 MB.");
+      this.screens.songbook.hidden = true;
+      this.screens.loading.hidden = false;
+      this.screens.setLoading(words.decode, 0);
+      const t = await transcribeAudio(await file.arrayBuffer(), {
+        modelUrl: `${import.meta.env.BASE_URL}models/basic-pitch/model.json`,
+        onProgress: (stage, f) => this.screens.setLoading(words[stage], stage === "model" ? 0.1 + f * 0.8 : stage === "decode" ? 0.05 : 0.95),
+      });
+      const piece = transcriptionToPiece(t, title, `audio-${file.name}-${file.size}`);
+      const { stage } = importedStage(piece);
+      this.mine = [...this.mine.filter((m) => m.stage.id !== stage.id), { stage, piece }];
+      this.screens.loading.hidden = true;
+      this.screens.openSetup(undefined, stage);
+      this.screens.toast(`♪ <b translate="no">${escapeHtml(stage.title)}</b>: ${t.notes.length} notes, ${t.chords.length} chord changes in ${escapeHtml(t.key.name)}.`, "", 5200);
+    } catch (error) {
+      this.screens.loading.hidden = true;
+      this.screens.toast(`Couldn't read that recording: ${escapeHtml((error as Error).message)}`, "warn", 6000);
+    } finally {
+      this.busy = false;
     }
   }
 
