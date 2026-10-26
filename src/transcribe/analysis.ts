@@ -170,22 +170,54 @@ export function detectChords(notes: RawNote[], tempo: Tempo, end: number, flats 
 }
 
 /**
- * The melody: at each moment, the highest sounding note (a "skyline"), ignoring
- * very short or very quiet blips. Returns the indices of melody notes.
+ * The melody line: one note (or a rest) per onset, chosen by a Viterbi path that
+ * prefers high, loud notes, small steps and the melody's own register. A greedy
+ * "highest note" skyline jumps to every stray harmonic or chord top in a full mix;
+ * the path keeps a singable line. Returns the indices of melody notes.
  */
 export function melodyLine(notes: RawNote[], minDuration = 0.08, minVelocity = 0.15) {
-  const order = notes.map((_, i) => i).sort((a, b) => notes[a].start - notes[b].start || notes[b].midi - notes[a].midi);
+  const usable = notes.map((n, i) => ({ n, i })).filter(({ n }) => n.duration >= minDuration && n.velocity >= minVelocity);
+  if (!usable.length) return new Set<number>();
+  usable.sort((a, b) => a.n.start - b.n.start || b.n.midi - a.n.midi);
+  // Onset groups (notes within 40 ms).
+  const groups: { n: RawNote; i: number }[][] = [];
+  for (const u of usable) {
+    const g = groups.at(-1);
+    if (g && u.n.start - g[0].n.start < 0.04) g.push(u);
+    else groups.push([u]);
+  }
+  // The register: where the tops of the groups usually sit.
+  const tops = groups.map((g) => g[0].n.midi).sort((a, b) => a - b);
+  const centre = tops[Math.floor(tops.length * 0.6)];
+  type St = { cost: number; pitch: number; back: number; pick: number };
+  const layers: St[][] = [];
+  groups.forEach((g, gi) => {
+    const prev = layers[gi - 1];
+    const options = [...g.map((u, k) => ({ pitch: u.n.midi, vel: u.n.velocity, k })), { pitch: -1, vel: 0, k: -1 }];
+    layers.push(
+      options.map((o) => {
+        const own =
+          o.k < 0
+            ? 1.2 // a rest: allowed, but the line should mostly sound
+            : -0.04 * (o.pitch - centre) - o.vel * 0.8 + (Math.abs(o.pitch - centre) > 12 ? (Math.abs(o.pitch - centre) - 12) * 0.25 : 0);
+        if (!prev) return { cost: own, pitch: o.pitch, back: -1, pick: o.k };
+        let best = Infinity,
+          back = 0;
+        prev.forEach((p, j) => {
+          const leap = p.pitch < 0 || o.pitch < 0 ? 0 : Math.abs(o.pitch - p.pitch);
+          const c = p.cost + own + (leap > 4 ? (leap - 4) * 0.12 : 0) + (leap > 12 ? 1 : 0);
+          if (c < best) [best, back] = [c, j];
+        });
+        return { cost: best, pitch: o.pitch, back, pick: o.k };
+      }),
+    );
+  });
   const melody = new Set<number>();
-  let lastEnd = -Infinity,
-    lastPitch = -1;
-  for (const i of order) {
-    const n = notes[i];
-    if (n.duration < minDuration || n.velocity < minVelocity) continue;
-    const overlapsLast = n.start < lastEnd - 0.03;
-    if (overlapsLast && n.midi <= lastPitch) continue; // under the current melody note
-    melody.add(i);
-    lastEnd = n.start + n.duration;
-    lastPitch = n.midi;
+  let j = layers.at(-1)!.reduce((b, s, k, a) => (s.cost < a[b].cost ? k : b), 0);
+  for (let gi = layers.length - 1; gi >= 0; gi--) {
+    const s = layers[gi][j];
+    if (s.pick >= 0) melody.add(groups[gi][s.pick].i);
+    j = Math.max(0, s.back);
   }
   return melody;
 }

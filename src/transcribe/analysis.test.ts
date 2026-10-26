@@ -34,6 +34,14 @@ describe("audio analysis", () => {
     expect(estimateKey(notes).name).toMatch(/^(C major|A minor)$/);
   });
 
+  it("ignores a stray high blip above the tune", () => {
+    const tune = [72, 74, 76, 77, 79, 77, 76, 74].map((m, i) => n(i * 0.5, m, 0.45));
+    const notes = [...tune, n(1.0, 96, 0.1, 0.5), ...tune.map((t) => n(t.start, t.midi - 12, 0.45, 0.5))];
+    const picked = [...melodyLine(notes)].map((i) => notes[i].midi);
+    expect(picked).not.toContain(96);
+    expect(picked.sort()).toEqual([72, 74, 74, 76, 76, 77, 77, 79]);
+  });
+
   it("keeps the top voice as the melody", () => {
     const notes = [...chord(0, [48, 52, 72], 1), n(0.5, 74, 0.5), ...chord(1, [50, 76], 1)];
     const melody = melodyLine(notes);
