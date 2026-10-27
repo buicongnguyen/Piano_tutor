@@ -4,6 +4,7 @@
 // big island and a small rock get the same foam. Adapted from the
 // lightweight-game-objects skill (templates/environment/toon-water.ts).
 import * as THREE from "three";
+import { uploadChangedPrefix } from "./upload";
 
 const NOISE = /* glsl */ `
 float foamHash(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
@@ -117,15 +118,15 @@ void main(){
     this.m.makeScale(w.rx, 1, w.rz).setPosition(x, y + 0.04, z);
     this.mesh.setMatrixAt(i, this.m);
     this.mesh.count = Math.max(this.mesh.count, i + 1);
-    this.mesh.instanceMatrix.needsUpdate = true;
-    this.shore.needsUpdate = true;
+    uploadChangedPrefix(this.mesh.instanceMatrix, this.mesh.count);
+    uploadChangedPrefix(this.shore, this.mesh.count);
   }
 
   /** Move ring `i` (radius unchanged): the per-frame path for drifting islets. */
   move(i: number, x: number, y: number, z: number) {
     this.m.makeScale(this.radius[i * 2], 1, this.radius[i * 2 + 1]).setPosition(x, y + 0.04, z);
     this.mesh.setMatrixAt(i, this.m);
-    this.mesh.instanceMatrix.needsUpdate = true;
+    uploadChangedPrefix(this.mesh.instanceMatrix, this.mesh.count);
   }
 
   update(time: number) {

@@ -10,6 +10,8 @@
     "test": "vitest run",
     "test:e2e": "node tests/e2e.mjs",
     "capture": "node scripts/capture.mjs",
+    "profile:piano": "node scripts/profile-piano.mjs",
+    "profile:performance": "node scripts/profile-performance.mjs",
     "assets": "npm run assets:stage && npm run assets:world && npm run assets:characters",
     "assets:stage": "node scripts/blender.mjs -b --factory-startup --python art/encore/build_stage.py",
     "assets:world": "node scripts/blender.mjs -b --factory-startup --python art/encore/build_world.py",

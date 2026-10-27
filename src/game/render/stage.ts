@@ -3,8 +3,9 @@
 // (islets, destination island, characters) lives in world.ts.
 import * as THREE from "three";
 import { beatIndexAt } from "../timeline";
-import { uploadPrefix } from "./upload";
+import { uploadChangedPrefix as uploadPrefix } from "./upload";
 import { stdMaterial } from "./lite";
+import { KeyBatch } from "./key-batch";
 import { isArcade, type Chart, type ChartNote } from "../chart";
 import { noteName } from "../../music";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
@@ -174,6 +175,7 @@ void main(){
 }`;
 
 export class Stage {
+  private keyBatch?: KeyBatch;
   readonly scene = new THREE.Scene();
   readonly camera = new THREE.PerspectiveCamera(50, 16 / 9, 0.1, 2000);
   readonly particles: Particles;
@@ -409,6 +411,7 @@ export class Stage {
       this.content.add(right);
     }
     this.applySkin(o.skin);
+    if (chart.mode === "piano") this.keyBatch = new KeyBatch(this.content, this.keys.map((key) => key.root));
     // Lane light beams rising from each key when pressed.
     this.beams = [];
     for (const key of this.keys) {
@@ -906,6 +909,7 @@ export class Stage {
         }
       }
     }
+    this.keyBatch?.update();
     for (const beam of this.beams) {
       const key = this.keyByLane.get(beam.userData.lane as number)!;
       beam.material.uniforms.amount.value = Math.min(0.8, key.pressed * 0.22 + key.flash * 0.5);
@@ -1219,7 +1223,7 @@ export class Stage {
     }
     for (const part of this.lampParts) {
       part.mesh.count = l;
-      part.mesh.instanceMatrix.needsUpdate = true;
+      uploadPrefix(part.mesh.instanceMatrix, l);
     }
   }
 
@@ -1252,6 +1256,7 @@ export class Stage {
     });
     this.labels = []; // freed with the rest of the content above
     this.content.clear();
+    this.keyBatch = undefined;
     this.keys = [];
     this.keyByLane.clear();
     this.arches = [];

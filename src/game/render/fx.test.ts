@@ -1,5 +1,5 @@
 import { expect, it } from "vitest";
-import { Particles } from "./fx";
+import { Particles, WeatherFx } from "./fx";
 import type { BufferAttribute } from "three";
 
 it("submits only active particles, removes expired ones, and uploads only their data", () => {
@@ -33,4 +33,17 @@ it("reuses full pool slots without duplicating particles or reviving cleared one
   particles.update(0);
   expect(geometry.drawRange.count).toBe(1);
   expect(geometry.attributes.position.getX(0)).toBe(10);
+});
+
+it("weather skips unchanged/disabled uploads and reappears when enabled", () => {
+  const weather = new WeatherFx(10);
+  weather.setKind("snow");weather.update(0, 0, 0);
+  const position=weather.points.geometry.attributes.position as BufferAttribute;
+  position.clearUpdateRanges();const version=position.version;
+  weather.update(0,0,0);expect(position.version).toBe(version);
+  weather.update(0.1,0.1,2);expect(position.version).toBeGreaterThan(version);
+  weather.setKind("none");const disabledVersion=position.version;
+  weather.update(1,1,3);expect(position.version).toBe(disabledVersion);expect(weather.points.visible).toBe(false);
+  weather.setKind("fireflies");weather.update(0.1,2,3);
+  expect(weather.points.visible).toBe(true);expect(position.version).toBeGreaterThan(disabledVersion);
 });

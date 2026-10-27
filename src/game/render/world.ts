@@ -2,6 +2,7 @@
 // the destination island (beacon + landmark) growing on the horizon, clouds,
 // and the Hush colour drain that the player's harmony washes away.
 import * as THREE from "three";
+import { uploadChangedPrefix } from "./upload";
 import { applyHush, hushUniforms, materialsOf, ownAllMaterials, spawn, type Kit } from "./assets";
 import { bakeStatic, disposeBaked, type BakeMaterials } from "./bake";
 import { createFlock, type FlyerKind } from "./flock";
@@ -395,7 +396,7 @@ export class World {
       this.cloudMatrix.makeScale(c.scale, c.scale, c.scale).setPosition(c.x, c.y, c.z);
       mesh.setMatrixAt(i, this.cloudMatrix);
     });
-    mesh.instanceMatrix.needsUpdate = true;
+    uploadChangedPrefix(mesh.instanceMatrix, this.clouds.length);
   }
 
   clear() {

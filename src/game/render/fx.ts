@@ -1,7 +1,7 @@
 // GPU-light effects: one pooled additive particle cloud (sparks, fireworks,
 // confetti, weather) and pooled shockwave rings.
 import * as THREE from "three";
-import { uploadPrefix } from "./upload";
+import { uploadPrefix, uploadChangedPrefix } from "./upload";
 import type { Weather } from "./themes";
 
 const pointsVertex = /* glsl */ `
@@ -263,6 +263,7 @@ export class WeatherFx {
 
   setKind(kind: Weather) {
     this.kind = kind;
+    this.points.visible = kind !== "none";
     const palette: Record<Weather, string[]> = {
       petals: ["#ff8fb8", "#ffc1d8", "#fff0f6"],
       snow: ["#ffffff", "#e8f2ff"],
@@ -300,6 +301,7 @@ export class WeatherFx {
   update(dt: number, time: number, drift: number) {
     const pos = this.geometry.attributes.position as THREE.BufferAttribute;
     const k = this.kind;
+    if (k === "none") return;
     for (let i = 0; i < this.data.length; i++) {
       const p = this.data[i];
       const fall = k === "snow" ? 1.6 : k === "petals" || k === "leaves" || k === "confetti" ? 1.2 : k === "bubbles" ? -0.9 : 0;
@@ -312,11 +314,11 @@ export class WeatherFx {
       if (p.z > 12) p.z -= 120;
       pos.setXYZ(i, p.x, p.y, p.z);
     }
-    pos.needsUpdate = true;
+    uploadChangedPrefix(pos, this.data.length);
     if (k === "fireflies" || k === "sparkles") {
       const tint = this.geometry.attributes.tint as THREE.BufferAttribute;
       for (let i = 0; i < this.data.length; i++) tint.setW(i, 0.45 + 0.55 * Math.max(0, Math.sin(time * 2 + this.data[i].phase * 3)));
-      tint.needsUpdate = true;
+      uploadChangedPrefix(tint, this.data.length);
     }
   }
 }

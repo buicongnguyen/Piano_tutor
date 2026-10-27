@@ -1,6 +1,7 @@
 // WebGL renderer with quality tiers, bloom, a colour-grade finishing pass and
 // adaptive resolution. Adapted from the Lantern Picnic engine.
 import * as THREE from "three";
+import { cacheTransforms } from "./transforms";
 import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
@@ -132,6 +133,7 @@ export class Renderer {
 
   /** Show another scene. The post chain is reused: only its render pass is re-pointed. */
   attach(scene: THREE.Scene, camera: THREE.PerspectiveCamera) {
+    cacheTransforms(scene);
     this.scene = scene;
     this.camera = camera;
     this.grace = 2; // loading a scene hitches: don't read it as a slow device

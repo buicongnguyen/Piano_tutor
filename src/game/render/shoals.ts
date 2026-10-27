@@ -10,6 +10,7 @@
 //     refraction. A fish in the air (a leap) gets its full colour back. This is
 //     the same 2.5D trick as Zoo Garden's translucent pond, without the overdraw.
 import * as THREE from "three";
+import { uploadChangedPrefix } from "./upload";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import { ShoalSim } from "../shoal-sim";
 import type { HushUniforms, Kit } from "./assets";
@@ -247,8 +248,8 @@ export class Shoals {
         a[i * 4 + 2] = f.wagAmp;
         a[i * 4 + 3] = f.lift;
       });
-      mesh.instanceMatrix.needsUpdate = true;
-      swim.needsUpdate = true;
+      uploadChangedPrefix(mesh.instanceMatrix, ids.length);
+      uploadChangedPrefix(swim, ids.length);
     }
   }
 
