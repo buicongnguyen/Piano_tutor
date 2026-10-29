@@ -2,6 +2,7 @@
 // beat lines, bar arches and lamps, and all hit feedback. World dressing
 // (islets, destination island, characters) lives in world.ts.
 import * as THREE from "three";
+import { RoadWaves, SpeedLines } from "./roadfx";
 import { beatIndexAt } from "../timeline";
 import { uploadChangedPrefix as uploadPrefix } from "./upload";
 import { stdMaterial } from "./lite";
@@ -221,6 +222,11 @@ export class Stage {
   private lineColor?: THREE.Color;
   private gemGlow = { value: 0.55 };
   private halfWidth = 4;
+  /** GPU road ripples and edge glow, and Encore speed lines (one draw each). */
+  readonly waves = new RoadWaves();
+  readonly speedLines = new SpeedLines();
+  private clock = 0;
+  combo = 0;
   private firstKey = 48;
   private laneW = LANE_W;
   private tmp = new THREE.Object3D();
@@ -240,7 +246,7 @@ export class Stage {
 
   constructor(readonly stageKit: Kit) {
     this.particles = new Particles(3000, 1);
-    this.scene.add(this.content, this.particles.points, this.rings.group, this.weather.points);
+    this.scene.add(this.content, this.particles.points, this.rings.group, this.weather.points, this.waves.mesh, this.speedLines.mesh);
     // Tune shared kit materials for the real-time look: keep ivory off the clip point
     // and let bulbs glow without flooding the bloom.
     const tuned = new Set<THREE.Material>();
@@ -294,6 +300,7 @@ export class Stage {
     this.buildNotes(chart);
     this.buildDressing(theme);
     this.fitCamera(this.camera.aspect);
+    this.waves.fit(this.halfWidth);
     this.intro = options.reducedMotion ? 1 : 0;
     this.outro = 0;
   }
@@ -763,6 +770,8 @@ export class Stage {
     this.particles.burst(key.x, 0.35, 0.05, color, judgement === "perfect" ? 26 : 16, power);
     this.rings.spawn(key.x, 0.08, -0.05, color, key.width * (judgement === "perfect" ? 1.5 : 1.1));
     if (judgement === "perfect" && !this.options?.reducedMotion) this.kick = Math.min(1, this.kick + 0.25);
+    // A Perfect (or any golden note) sends a ripple racing down the road from its key.
+    if (judgement === "perfect" || note.golden) this.waves.wave(key.x, this.clock, this.options?.reducedMotion ? 0.4 : 0.9, note.golden ? 1 : 0);
   }
 
   miss(note: ChartNote) {
@@ -798,6 +807,7 @@ export class Stage {
     const colors = this.laneColors.length ? this.laneColors : [new THREE.Color("#ffd02a")];
     const x = (Math.random() - 0.5) * 30;
     this.particles.firework(x, 20 + Math.random() * 8, -70 - Math.random() * 30, colors, combo >= 100 ? 140 : 100);
+    this.waves.wave(0, this.clock, 1.4, 1); // a wide gold wave down the whole road
   }
 
   noteColor(note: ChartNote) {
@@ -880,6 +890,12 @@ export class Stage {
       this.beatPulse = 1;
     }
     this.beatPulse = Math.max(0, this.beatPulse - dt * 4);
+    this.clock += dt;
+    this.waves.update(this.clock, this.combo, this.beatPulse);
+    // Speed lines: full during Encore, a hint at a big combo; never on low quality or reduced motion.
+    const lines = reduced || (o.quality ?? 1) < 0.6 ? 0 : state.encoreActive ? 1 : this.combo >= 50 ? 0.25 : 0;
+    this.speedLines.set(lines);
+    this.speedLines.update(this.clock, dt);
     this.encoreGlow += ((state.encoreActive ? 1 : 0) - this.encoreGlow) * Math.min(1, dt * 3);
     this.gemGlow.value = 0.45 + 0.25 * this.beatPulse + 0.3 * this.encoreGlow;
 

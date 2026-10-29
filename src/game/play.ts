@@ -376,6 +376,7 @@ export class PlaySession {
     this.beat = beat;
     if (this.chart.mode === "words") this.updateWords();
     if (this.setup.piece.chords) this.updateChord(t);
+    this.stage.combo = this.judge.combo;
     this.stage.update(dt, t, {
       encore: this.judge.encore,
       encoreActive: this.judge.encoreActive,
