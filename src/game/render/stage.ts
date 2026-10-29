@@ -301,6 +301,9 @@ export class Stage {
     this.buildDressing(theme);
     this.fitCamera(this.camera.aspect);
     this.waves.fit(this.halfWidth);
+    this.waves.reset();
+    this.speedLines.reset();
+    this.combo = 0;
     this.intro = options.reducedMotion ? 1 : 0;
     this.outro = 0;
   }
@@ -807,7 +810,7 @@ export class Stage {
     const colors = this.laneColors.length ? this.laneColors : [new THREE.Color("#ffd02a")];
     const x = (Math.random() - 0.5) * 30;
     this.particles.firework(x, 20 + Math.random() * 8, -70 - Math.random() * 30, colors, combo >= 100 ? 140 : 100);
-    this.waves.wave(0, this.clock, 1.4, 1); // a wide gold wave down the whole road
+    this.waves.wave(0, this.clock, this.options?.reducedMotion ? 0.5 : 1.4, 1); // a wide gold wave down the whole road
   }
 
   noteColor(note: ChartNote) {

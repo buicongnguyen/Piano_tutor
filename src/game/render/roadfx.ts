@@ -6,7 +6,8 @@
 //                faintly at high combo): one instanced draw, positions from time.
 // Each is ONE draw call and no per-frame allocation; both honour reduced motion.
 import * as THREE from "three";
-import { ROAD_VIEW } from "./stage";
+// Road length the overlay covers (matches ROAD_VIEW in stage.ts; kept here to avoid a circular import).
+const ROAD_VIEW = 64;
 
 const WAVES = 6;
 
@@ -81,6 +82,12 @@ void main(){
     this.next = (this.next + 1) % WAVES;
   }
 
+  /** Clear ripples and glow for a fresh song. */
+  reset() {
+    for (const w of this.waves) w.set(0, -100, 0, 0);
+    this.uniforms.uEdge.value = 0;
+  }
+
   update(time: number, combo: number, beat: number) {
     const u = this.uniforms;
     u.uTime.value = time;
@@ -143,6 +150,11 @@ void main(){
   /** 1 during Encore, a faint hint at high combo, 0 otherwise. */
   set(amount: number) {
     this.target = amount;
+  }
+
+  reset() {
+    this.target = this.uniforms.uAmount.value = 0;
+    this.mesh.visible = false;
   }
 
   update(time: number, dt: number) {
